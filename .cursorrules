@@ -1,0 +1,74 @@
+# -----------------------------------------------------------------------------
+# Chromatica Project Rules - .cursorrules
+# -----------------------------------------------------------------------------
+# This file directs the AI assistant to adhere to the consolidated plan for
+# the color search engine project, as detailed in ./docs/.cursor/critical_instructions.md.
+# All generated code, architectural decisions, and suggestions must strictly
+# follow these guidelines.
+# -----------------------------------------------------------------------------
+
+behavior:
+  # The AI must always prioritize the instructions in the critical_instructions.md file.
+  # This document is the single source of truth for the project.
+  # Before generating any code or making a suggestion, the AI must state:
+  # "Consulting critical_instructions.md..."
+  pre-response-directive: "Consulting critical_instructions.md..."
+  
+  # When asked to implement a feature, always refer to the relevant section
+  # (e.g., "Section D. Algorithm specification") to ensure complete alignment.
+  # Do not improvise on core architectural components.
+  # If a detail is missing, ask for clarification rather than making an assumption.
+  strictness: high
+
+# The directory and file structure for the project.
+file-layout:
+  - path: src/chromatica/
+    description: "Main source code for the Chromatica application."
+  - path: src/chromatica/core/
+    description: "Core logic for color space conversion, histogram generation, and distance metrics."
+  - path: src/chromatica/indexing/
+    description: "Scripts and modules for the offline indexing pipeline (processing images, building the FAISS index)."
+  - path: src/chromatica/api/
+    description: "FastAPI application, including endpoints, request/response models."
+  - path: src/chromatica/utils/
+    description: "Utility functions, configuration management, and helper scripts."
+  - path: scripts/
+    description: "Standalone scripts for tasks like bulk indexing, evaluation, and data downloading."
+  - path: data/
+    description: "Placeholder for image datasets (e.g., Unsplash Lite, COCO subset)."
+  - path: notebooks/
+    description: "Jupyter notebooks for experimentation, analysis, and visualization."
+  - path: tests/
+    description: "Unit and integration tests for the application."
+  - path: docs/.cursor/critical_instructions.md
+    description: "The primary project plan. This is the source of truth."
+    
+rules:
+  # General Rules
+  - rule: "Always adhere to the consolidated plan in ./docs/.cursor/critical_instructions.md."
+  - rule: "Use Python 3.10+ with type hints for all new code."
+  - rule: "Follow the PEP 8 style guide for all Python code."
+  - rule: "Ensure all code is well-commented, especially complex algorithmic sections."
+
+  # Technology Stack Rules
+  - rule: "Use 'opencv-python' for image loading and resizing."
+  - rule: "Use 'scikit-image' specifically for the sRGB to CIE Lab color conversion."
+  - rule: "Use 'numpy' for all numerical operations, especially for vectorized histogram generation."
+  - rule: "Use 'faiss-cpu' for the ANN index. The specific index must be 'IndexHNSWFlat' as specified in Section C."
+  - rule: "Use the 'POT' (Python Optimal Transport) library for the Sinkhorn-EMD reranking stage."
+  - rule: "Use 'DuckDB' for storing metadata and raw histograms. Do not use other databases unless specified."
+  - rule: "The web API must be built using 'FastAPI'."
+
+  # Algorithmic Specification Rules
+  - rule: "The color space for all processing MUST be CIE Lab (D65 illuminant)."
+  - rule: "The histogram binning grid MUST be 8x12x12 (L* a* b*) for a total of 1,152 dimensions."
+  - rule: "Implement tri-linear soft assignment for histogram generation as described in Section D."
+  - rule: "The embedding for the ANN index MUST be created by applying an element-wise square root (Hellinger transform) to the normalized histogram."
+  - rule: "The final reranking distance metric MUST be the Sinkhorn-approximated Earth Mover's Distance (EMD)."
+  - rule: "The cost matrix (M) for the Sinkhorn-EMD calculation must be pre-computed based on the squared Euclidean distance between bin centers in Lab space."
+  
+  # API & Configuration Rules
+  - rule: "Implement the REST endpoint 'GET /search' exactly as defined in Section H, including all query parameters and the JSON response structure."
+  - rule: "Key constants (bin sizes, color ranges, rerank K) should be stored in a central configuration file or module (e.g., src/chromatica/utils/config.py)."
+
+  
