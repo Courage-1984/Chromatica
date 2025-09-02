@@ -1,1 +1,27 @@
+# Chromatica Color Search Engine Dependencies
+
+# Core image processing and computer vision
+opencv-python>=4.8.0
+scikit-image>=0.22.0
+numpy>=1.24.0
+
+# Vector similarity search and machine learning
+faiss-cpu>=1.7.4
+
+# Optimal transport for Earth Mover's Distance
+POT>=0.9.0
+
+# Database for metadata and histogram storage
+duckdb>=0.9.0
+
+# Web API framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Testing framework
+pytest>=7.4.0
+
+# Additional dependencies for development and production
+python-multipart>=0.0.6
+pillow>=10.0.0
 

@@ -10,10 +10,10 @@ Here is a list of 21+ optimized prompts to guide you through the development pro
 
 ```bash
 # On Windows (PowerShell/CMD):
-venv311\Scripts\activate
+venv311/Scripts/activate
 
 # On Unix/MacOS:
-source venv311/bin/activate
+source venv311/Scripts/activate
 ```
 
 **The virtual environment is located at `venv311` and was created with Python 3.11.**
@@ -31,7 +31,7 @@ source venv311/bin/activate
 > **Tool**: `brave-search`, `filesystem` (edit_file)
 > **Instructions**: Use `brave-search` to find the latest stable versions of the required libraries. Edit `requirements.txt` to include: `opencv-python`, `scikit-image`, `numpy`, `faiss-cpu`, `POT-Python-Optimal-Transport`, `duckdb`, `fastapi`, `uvicorn`, and `pytest`.
 >
-> **Note**: After updating requirements.txt, activate the virtual environment (`venv311\Scripts\activate`) and run `pip install -r requirements.txt` to install all dependencies.
+> **Note**: After updating requirements.txt, activate the virtual environment (`venv311/Scripts/activate`) and run `pip install -r requirements.txt` to install all dependencies.
 
 **Prompt 3: Implement Core Configuration**
 
@@ -90,7 +90,7 @@ source venv311/bin/activate
 > 6.  Save the index and close the connection.
 > 7.  **Add a comment at the top with an example command**: `# Example: python scripts/build_index.py ./data/unsplash-lite`
 >
-> **Note**: Remember to activate the virtual environment first: `venv311\Scripts\activate`
+> **Note**: Remember to activate the virtual environment first: `venv311/Scripts/activate`
 
 ### Phase 3: Search and API (Weeks 3-5)
 
@@ -140,7 +140,7 @@ source venv311/bin/activate
 > 5.  Use `create_query_histogram` and `find_similar` to get results.
 > 6.  Format the response into the exact JSON structure from Section H, including timings captured by the logger.
 >
-> **Note**: To test the API, activate the virtual environment (`venv311\Scripts\activate`) and run `uvicorn src.chromatica.api.main:app --reload`
+> **Note**: To test the API, activate the virtual environment (`venv311/Scripts/activate`) and run `uvicorn src.chromatica.api.main:app --reload`
 
 ### Phase 4: Evaluation and Refinement (Weeks 6-8)
 
@@ -150,7 +150,7 @@ source venv311/bin/activate
 > **Tool**: `filesystem` (write_file)
 > **Instructions**: Create `scripts/run_sanity_checks.py`. This script should programmatically execute the four sanity checks from Section F. For each check, print the query and the top 5 results for manual verification. Log the output clearly.
 >
-> **Note**: To run sanity checks, activate the virtual environment (`venv311\Scripts\activate`) and execute `python scripts/run_sanity_checks.py`
+> **Note**: To run sanity checks, activate the virtual environment (`venv311/Scripts/activate`) and execute `python scripts/run_sanity_checks.py`
 
 **Prompt 13: Address Background Dominance Risk**
 
@@ -180,7 +180,7 @@ source venv311/bin/activate
 > 4.  Calculate and print P95 latency.
 > 5.  Provide a placeholder structure for loading ground truth labels and calculating Precision@10.
 >
-> **Note**: To run evaluation, activate the virtual environment (`venv311\Scripts\activate`) and execute `python scripts/evaluate.py`
+> **Note**: To run evaluation, activate the virtual environment (`venv311/Scripts/activate`) and execute `python scripts/evaluate.py`
 
 ### Phase 5: Testing and Validation (Weeks 7-8)
 
@@ -194,7 +194,7 @@ source venv311/bin/activate
 > 2.  **Test `create_query_histogram`**: Use a simple two-color query and assert correct normalization and weight concentration.
 > 3.  Add docstrings to test functions explaining what they are testing.
 >
-> **Note**: To run tests, activate the virtual environment (`venv311\Scripts\activate`) and execute `pytest tests/`
+> **Note**: To run tests, activate the virtual environment (`venv311/Scripts/activate`) and execute `pytest tests/`
 
 **Prompt 17: Write Integration Test for the Search Pipeline**
 
@@ -255,4 +255,4 @@ source venv311/bin/activate
 > 5.  Append the new data to the existing stores.
 > 6.  Save the updated index back to disk. Add an example run command in the comments.
 >
-> **Note**: To run the update script, activate the virtual environment (`venv311\Scripts\activate`) and execute `python scripts/update_index.py ./path/to/new/images`
+> **Note**: To run the update script, activate the virtual environment (`venv311/Scripts/activate`) and execute `python scripts/update_index.py ./path/to/new/images`
