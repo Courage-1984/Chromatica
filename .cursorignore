@@ -12,3 +12,8 @@
 /__pycache__/
 __pycache__/
 
+!/histograms/
+!histograms/
+!/reports/
+!reports/
+
