@@ -1,5 +1,7 @@
 .vscode/
-/.cursor/
+
+/.cursor/*
+!/.cursor/mcp_server_usage.md
 
 /venv311/
 
@@ -7,7 +9,5 @@
 __pycache__/
 
 /histograms/
-histograms/
 /reports/
-reports/
 

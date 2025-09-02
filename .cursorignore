@@ -1,7 +1,8 @@
 
+!/.cursor/*
 !/.cursor/
+!/.cursor/mcp_server_usage.md
 !/.cursor/mcp.json
-!.cursor/mcp.json
 
 /docs/ColorSearchEngine_Plans/
 /docs/ColorSearchEngine_Plans_Consolidated/
@@ -13,7 +14,5 @@
 __pycache__/
 
 !/histograms/
-!histograms/
 !/reports/
-!reports/
 

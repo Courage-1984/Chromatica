@@ -44,6 +44,10 @@ file-layout:
     description: "Project documentation, including progress reports and troubleshooting guides."
   - path: docs/.cursor/critical_instructions.md
     description: "The primary project plan. This is the source of truth."
+  - path: tools/
+    description: "Testing and development tools, including histogram generation testing tool."
+  - path: datasets/
+    description: "Test datasets for development and validation (test-dataset-20, test-dataset-50)."
 
 rules:
   # General Rules
@@ -92,3 +96,32 @@ rules:
   - rule: "Incorporate the standard 'logging' module in all scripts and API endpoints. Log key events, errors, and performance metrics."
   - rule: "When providing code for standalone scripts, include the command to run it in a comment at the top of the file or in the instructions."
   - rule: "When troubleshooting, systematically use logs and debugging tools. Document the resolution in 'docs/troubleshooting.md'."
+
+  # Implementation Status Rules
+  - rule: "Week 1 is COMPLETED: Core histogram generation pipeline is fully implemented and tested."
+  - rule: "The histogram generation module (src/chromatica/core/histogram.py) is production-ready with comprehensive validation."
+  - rule: "Configuration management (src/chromatica/utils/config.py) is fully implemented with all required constants."
+  - rule: "Testing infrastructure (tools/test_histogram_generation.py) is comprehensive and handles batch processing."
+  - rule: "Current focus is Week 2: Implementing FAISS HNSW index and DuckDB metadata store."
+  - rule: "All new code must integrate with existing histogram generation and configuration modules."
+
+  # Testing and Validation Rules
+  - rule: "Use the existing test datasets in datasets/ for development and validation."
+  - rule: "The histogram testing tool generates 6 different report types for comprehensive analysis."
+  - rule: "All histograms must pass validation: 1152 dimensions, L1 normalization, proper bounds."
+  - rule: "Performance targets: ~200ms per image for histogram generation, 100% validation success rate."
+  - rule: "Use the testing tool for validating new implementations before proceeding to next phases."
+
+  # Code Quality and Standards
+  - rule: "All new functions must include comprehensive input validation and error handling."
+  - rule: "Performance monitoring must be built into all new components (timing, memory usage)."
+  - rule: "Error messages must be descriptive and actionable for debugging."
+  - rule: "Logging must be implemented at appropriate levels (DEBUG, INFO, WARNING, ERROR)."
+  - rule: "All new modules must include proper __init__.py files and import statements."
+
+  # Integration Rules
+  - rule: "New components must integrate seamlessly with existing histogram generation pipeline."
+  - rule: "FAISS index implementation must use HNSW with M=32 as specified in configuration."
+  - rule: "DuckDB implementation must support batch operations and efficient histogram retrieval."
+  - rule: "All new code must follow the established project structure and naming conventions."
+  - rule: "Dependencies must be added to requirements.txt with appropriate version constraints."
