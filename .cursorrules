@@ -13,7 +13,7 @@ behavior:
   # Before generating any code or making a suggestion, the AI must state:
   # "Consulting critical_instructions.md..."
   pre-response-directive: "Consulting critical_instructions.md..."
-  
+
   # When asked to implement a feature, always refer to the relevant section
   # (e.g., "Section D. Algorithm specification") to ensure complete alignment.
   # Do not improvise on core architectural components.
@@ -40,15 +40,23 @@ file-layout:
     description: "Jupyter notebooks for experimentation, analysis, and visualization."
   - path: tests/
     description: "Unit and integration tests for the application."
+  - path: docs/
+    description: "Project documentation, including progress reports and troubleshooting guides."
   - path: docs/.cursor/critical_instructions.md
     description: "The primary project plan. This is the source of truth."
-    
+
 rules:
   # General Rules
   - rule: "Always adhere to the consolidated plan in ./docs/.cursor/critical_instructions.md."
   - rule: "Use Python 3.10+ with type hints for all new code."
   - rule: "Follow the PEP 8 style guide for all Python code."
-  - rule: "Ensure all code is well-commented, especially complex algorithmic sections."
+
+  # Documentation and Commenting Rules
+  - rule: "All functions, classes, and modules must have Google-style docstrings."
+  - rule: "Ensure all code is well-commented, especially complex algorithmic sections, to explain the 'why' behind the code."
+  - rule: "Maintain a project-level README.md with setup instructions and an overview."
+  - rule: "Maintain a progress report in 'docs/progress.md', updating it after major phases."
+  - rule: "Create and update a troubleshooting guide in 'docs/troubleshooting.md' as issues are identified and resolved."
 
   # Technology Stack Rules
   - rule: "Use 'opencv-python' for image loading and resizing."
@@ -66,9 +74,21 @@ rules:
   - rule: "The embedding for the ANN index MUST be created by applying an element-wise square root (Hellinger transform) to the normalized histogram."
   - rule: "The final reranking distance metric MUST be the Sinkhorn-approximated Earth Mover's Distance (EMD)."
   - rule: "The cost matrix (M) for the Sinkhorn-EMD calculation must be pre-computed based on the squared Euclidean distance between bin centers in Lab space."
-  
+
   # API & Configuration Rules
   - rule: "Implement the REST endpoint 'GET /search' exactly as defined in Section H, including all query parameters and the JSON response structure."
   - rule: "Key constants (bin sizes, color ranges, rerank K) should be stored in a central configuration file or module (e.g., src/chromatica/utils/config.py)."
 
-  
+  # Tool Usage Rules
+  - rule: "Use the 'filesystem' tool for all file and directory manipulations as requested in prompts."
+  - rule: "When researching external information, library documentation, or error solutions, use the 'brave-search' or 'gitmcp-docs' tools to find relevant information."
+  - rule: "When needing to understand the current state of the repository, use 'gitmvp' tools like 'get_file_tree' or 'read_repository'."
+  - rule: "When encountering a new library, use 'context7' to get its documentation and understand its API."
+  - rule: "For complex web scraping tasks during research, the 'firecrawl' tool can be used."
+
+  # Development and Operations Rules
+  - rule: "ALWAYS activate the virtual environment first before running any project commands, tests, or scripts."
+  - rule: "The virtual environment is located at 'venv311' and must be activated using 'venv311\\Scripts\\activate' on Windows."
+  - rule: "Incorporate the standard 'logging' module in all scripts and API endpoints. Log key events, errors, and performance metrics."
+  - rule: "When providing code for standalone scripts, include the command to run it in a comment at the top of the file or in the instructions."
+  - rule: "When troubleshooting, systematically use logs and debugging tools. Document the resolution in 'docs/troubleshooting.md'."
