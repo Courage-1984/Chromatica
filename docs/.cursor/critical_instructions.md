@@ -316,7 +316,7 @@ Start with **K=200**. This value represents a trade-off: it must be large enough
     },
     {
       "image_id": "img_def456",
-      "distance": 0.091,
+      "distance": "0.091",
       "dominant_colors": ["#d05f71", "#f9e045"]
     }
   ],
@@ -361,6 +361,7 @@ Start with **K=200**. This value represents a trade-off: it must be large enough
 #### Dataset Expansion Recommendation
 
 **Priority**: Expand test-dataset-999 from current 896 images to **7,500 images** for comprehensive production-scale testing. This will:
+
 - Enable stress testing of FAISS HNSW index performance
 - Validate memory management under realistic workloads
 - Provide statistical significance for evaluation metrics
@@ -412,12 +413,12 @@ Start with **K=200**. This value represents a trade-off: it must be large enough
 
 The project maintains a comprehensive set of test datasets for development and validation across all phases:
 
-| Dataset | Size | Purpose | Use Case |
-|---------|------|---------|----------|
-| **test-dataset-20** | 20 images | Quick development testing | Debugging, unit testing, rapid iteration |
-| **test-dataset-50** | 50 images | Small-scale validation | Feature validation, basic performance testing |
-| **test-dataset-200** | 200 images | Medium-scale testing | Performance validation, integration testing |
-| **test-dataset-5000** | 5,000 images (current) | Production-scale testing | Stress testing, evaluation, ablation studies |
+| Dataset               | Size                   | Purpose                   | Use Case                                      |
+| --------------------- | ---------------------- | ------------------------- | --------------------------------------------- |
+| **test-dataset-20**   | 20 images              | Quick development testing | Debugging, unit testing, rapid iteration      |
+| **test-dataset-50**   | 50 images              | Small-scale validation    | Feature validation, basic performance testing |
+| **test-dataset-200**  | 200 images             | Medium-scale testing      | Performance validation, integration testing   |
+| **test-dataset-5000** | 5,000 images (current) | Production-scale testing  | Stress testing, evaluation, ablation studies  |
 
 #### Dataset Expansion Strategy
 
@@ -426,6 +427,7 @@ The project maintains a comprehensive set of test datasets for development and v
 **Recommended Target**: Expand to **7,500 images** for comprehensive production-scale testing.
 
 **Benefits of 7,500 Image Dataset**:
+
 - **Performance Validation**: Test FAISS HNSW index with realistic workloads
 - **Memory Testing**: Validate memory management under production conditions
 - **Statistical Significance**: Enable meaningful evaluation metrics and ablation studies
@@ -433,6 +435,7 @@ The project maintains a comprehensive set of test datasets for development and v
 - **Production Readiness**: Validate the complete pipeline at scale
 
 **Memory Requirements** (based on Section G calculations):
+
 - **5,000 images (current)**: ~23MB raw histograms + ~40MB FAISS index = ~63MB total RAM
 - **7,500 images (target)**: ~34MB raw histograms + ~60MB FAISS index = ~94MB total RAM
 - **Future scaling**: 25k images (Unsplash Lite) = ~870MB total RAM
@@ -515,6 +518,288 @@ The project maintains a comprehensive set of test datasets for development and v
 
 ---
 
+## N. COMPREHENSIVE DOCUMENTATION REQUIREMENTS
+
+#### Documentation Lifecycle Management
+
+**MANDATORY REQUIREMENT**: Documentation updates are REQUIRED for ALL project changes, including but not limited to:
+
+- **New Features**: Every new feature, module, class, or function
+- **Bug Fixes**: All bug fixes and error resolutions
+- **Enhancements**: Performance improvements, optimizations, and refactoring
+- **API Changes**: Endpoint modifications, request/response model updates
+- **Configuration Changes**: New constants, environment variables, or settings
+- **Dependency Updates**: New libraries, version changes, or removal of dependencies
+- **Testing Updates**: New test cases, testing tools, or validation procedures
+
+#### Documentation Standards & Quality Requirements
+
+1. **Comprehensive Coverage**
+
+   - **Purpose & Goals**: Clear explanation of what the component does and why it exists
+   - **Features & Capabilities**: Complete list of functionality and capabilities
+   - **Usage Examples**: Practical code examples for both simple and complex use cases
+   - **Integration Patterns**: How the component works with other parts of the system
+   - **Configuration Options**: All parameters, settings, and customization options
+   - **Error Handling**: Common error scenarios and resolution steps
+   - **Performance Characteristics**: Benchmarks, metrics, and optimization guidelines
+
+2. **Documentation Types Required**
+
+   - **API Documentation**: Complete endpoint documentation with examples
+   - **User Guides**: Step-by-step tutorials for common workflows
+   - **Developer Guides**: Technical implementation details and architecture
+   - **Troubleshooting Guides**: Problem identification and resolution procedures
+   - **Performance Guides**: Optimization strategies and benchmarking results
+   - **Integration Guides**: How to use components together effectively
+
+3. **Quality Standards**
+   - **Accuracy**: All examples must be tested and verified to work
+   - **Completeness**: Cover all aspects of functionality without gaps
+   - **Clarity**: Use clear, concise language with appropriate technical detail
+   - **Consistency**: Maintain uniform style, format, and terminology across all docs
+   - **Currency**: Documentation must be updated immediately when code changes
+
+#### Documentation File Organization
+
+**Required Documentation Structure**:
+
+```
+docs/
+├── api/                           # API endpoint documentation
+│   ├── endpoints.md              # Complete API reference
+│   ├── models.md                 # Request/response models
+│   └── examples.md               # API usage examples
+├── guides/                       # User and developer guides
+│   ├── getting_started.md        # Setup and first steps
+│   ├── user_workflows.md         # Common user scenarios
+│   ├── development.md            # Development setup and practices
+│   └── deployment.md             # Production deployment
+├── modules/                      # Module-specific documentation
+│   ├── core/                     # Core module documentation
+│   ├── indexing/                 # Indexing system documentation
+│   ├── api/                      # API module documentation
+│   └── utils/                    # Utility module documentation
+├── tools/                        # Tool documentation (COMPLETED)
+│   ├── test_histogram_generation.md
+│   ├── demo.md
+│   ├── demo_search.md
+│   ├── demo_query_processor.md
+│   ├── test_api.md
+│   ├── test_search_system.md
+│   ├── test_query_processor.md
+│   ├── test_reranking.md
+│   ├── test_faiss_duckdb.md
+│   └── tools_test_image_pipeline.md
+├── troubleshooting/               # Problem resolution guides
+│   ├── common_issues.md          # Frequently encountered problems
+│   ├── error_codes.md            # Error code explanations
+│   └── performance_issues.md     # Performance troubleshooting
+├── progress.md                    # Project progress tracking
+├── changelog.md                  # Version history and changes
+└── README.md                     # Project overview and setup
+```
+
+#### Documentation Update Workflow
+
+**For Every Code Change**:
+
+1. **Pre-Implementation**: Plan documentation updates alongside code changes
+2. **During Implementation**: Create/update documentation simultaneously with code
+3. **Post-Implementation**: Verify documentation accuracy and completeness
+4. **Review Process**: Include documentation review in code review process
+5. **Validation**: Test all documentation examples and procedures
+6. **Publication**: Update all relevant documentation files and indexes
+
+**Documentation Review Checklist**:
+
+- [ ] All new functionality is documented
+- [ ] All modified functionality has updated documentation
+- [ ] All examples are tested and verified
+- [ ] All configuration options are documented
+- [ ] All error scenarios are covered
+- [ ] Integration examples are provided
+- [ ] Performance characteristics are documented
+- [ ] Troubleshooting steps are clear and actionable
+
+#### Documentation Maintenance Schedule
+
+**Regular Maintenance Tasks**:
+
+- **Weekly**: Review documentation for any code changes made during the week
+- **Bi-weekly**: Update progress reports and milestone tracking
+- **Monthly**: Comprehensive documentation review and quality assessment
+- **Per Release**: Update version numbers, changelog, and migration guides
+- **Per Major Feature**: Create comprehensive feature documentation
+
+**Documentation Debt Management**:
+
+- **Identification**: Regularly identify outdated or incomplete documentation
+- **Prioritization**: Treat documentation debt with same priority as technical debt
+- **Resolution**: Allocate dedicated time for documentation improvements
+- **Prevention**: Establish documentation requirements in development workflow
+
+#### Success Metrics for Documentation
+
+**Quality Indicators**:
+
+- **Completeness**: 100% of functionality documented
+- **Accuracy**: 0% of documentation errors or outdated information
+- **Usability**: Clear examples and procedures for all common tasks
+- **Maintenance**: Documentation updated within 24 hours of code changes
+- **User Satisfaction**: Documentation effectively supports user needs
+
+**Compliance Requirements**:
+
+- **Mandatory**: No code changes without documentation updates
+- **Timing**: Documentation must be updated before or simultaneously with code
+- **Quality**: All documentation must meet quality standards
+- **Review**: Documentation changes must be reviewed and approved
+- **Testing**: All examples and procedures must be verified
+
+---
+
+## N. COMPREHENSIVE DOCUMENTATION REQUIREMENTS
+
+#### Documentation Lifecycle Management
+
+**MANDATORY REQUIREMENT**: Documentation updates are REQUIRED for ALL project changes, including but not limited to:
+
+- **New Features**: Every new feature, module, class, or function
+- **Bug Fixes**: All bug fixes and error resolutions
+- **Enhancements**: Performance improvements, optimizations, and refactoring
+- **API Changes**: Endpoint modifications, request/response model updates
+- **Configuration Changes**: New constants, environment variables, or settings
+- **Dependency Updates**: New libraries, version changes, or removal of dependencies
+- **Testing Updates**: New test cases, testing tools, or validation procedures
+
+#### Documentation Standards & Quality Requirements
+
+1. **Comprehensive Coverage**
+
+   - **Purpose & Goals**: Clear explanation of what the component does and why it exists
+   - **Features & Capabilities**: Complete list of functionality and capabilities
+   - **Usage Examples**: Practical code examples for both simple and complex use cases
+   - **Integration Patterns**: How the component works with other parts of the system
+   - **Configuration Options**: All parameters, settings, and customization options
+   - **Error Handling**: Common error scenarios and resolution steps
+   - **Performance Characteristics**: Benchmarks, metrics, and optimization guidelines
+
+2. **Documentation Types Required**
+
+   - **API Documentation**: Complete endpoint documentation with examples
+   - **User Guides**: Step-by-step tutorials for common workflows
+   - **Developer Guides**: Technical implementation details and architecture
+   - **Troubleshooting Guides**: Problem identification and resolution procedures
+   - **Performance Guides**: Optimization strategies and benchmarking results
+   - **Integration Guides**: How to use components together effectively
+
+3. **Quality Standards**
+   - **Accuracy**: All examples must be tested and verified to work
+   - **Completeness**: Cover all aspects of functionality without gaps
+   - **Clarity**: Use clear, concise language with appropriate technical detail
+   - **Consistency**: Maintain uniform style, format, and terminology across all docs
+   - **Currency**: Documentation must be updated immediately when code changes
+
+#### Documentation File Organization
+
+**Required Documentation Structure**:
+
+```
+docs/
+├── api/                           # API endpoint documentation
+│   ├── endpoints.md              # Complete API reference
+│   ├── models.md                 # Request/response models
+│   └── examples.md               # API usage examples
+├── guides/                       # User and developer guides
+│   ├── getting_started.md        # Setup and first steps
+│   ├── user_workflows.md         # Common user scenarios
+│   ├── development.md            # Development setup and practices
+│   └── deployment.md             # Production deployment
+├── modules/                      # Module-specific documentation
+│   ├── core/                     # Core module documentation
+│   ├── indexing/                 # Indexing system documentation
+│   ├── api/                      # API module documentation
+│   └── utils/                    # Utility module documentation
+├── tools/                        # Tool documentation (COMPLETED)
+│   ├── test_histogram_generation.md
+│   ├── demo.md
+│   ├── demo_search.md
+│   ├── demo_query_processor.md
+│   ├── test_api.md
+│   ├── test_search_system.md
+│   ├── test_query_processor.md
+│   ├── test_reranking.md
+│   ├── test_faiss_duckdb.md
+│   └── tools_test_image_pipeline.md
+├── troubleshooting/               # Problem resolution guides
+│   ├── common_issues.md          # Frequently encountered problems
+│   ├── error_codes.md            # Error code explanations
+│   └── performance_issues.md     # Performance troubleshooting
+├── progress.md                    # Project progress tracking
+├── changelog.md                  # Version history and changes
+└── README.md                     # Project overview and setup
+```
+
+#### Documentation Update Workflow
+
+**For Every Code Change**:
+
+1. **Pre-Implementation**: Plan documentation updates alongside code changes
+2. **During Implementation**: Create/update documentation simultaneously with code
+3. **Post-Implementation**: Verify documentation accuracy and completeness
+4. **Review Process**: Include documentation review in code review process
+5. **Validation**: Test all documentation examples and procedures
+6. **Publication**: Update all relevant documentation files and indexes
+
+**Documentation Review Checklist**:
+
+- [ ] All new functionality is documented
+- [ ] All modified functionality has updated documentation
+- [ ] All examples are tested and verified
+- [ ] All configuration options are documented
+- [ ] All error scenarios are covered
+- [ ] Integration examples are provided
+- [ ] Performance characteristics are documented
+- [ ] Troubleshooting steps are clear and actionable
+
+#### Documentation Maintenance Schedule
+
+**Regular Maintenance Tasks**:
+
+- **Weekly**: Review documentation for any code changes made during the week
+- **Bi-weekly**: Update progress reports and milestone tracking
+- **Monthly**: Comprehensive documentation review and quality assessment
+- **Per Release**: Update version numbers, changelog, and migration guides
+- **Per Major Feature**: Create comprehensive feature documentation
+
+**Documentation Debt Management**:
+
+- **Identification**: Regularly identify outdated or incomplete documentation
+- **Prioritization**: Treat documentation debt with same priority as technical debt
+- **Resolution**: Allocate dedicated time for documentation improvements
+- **Prevention**: Establish documentation requirements in development workflow
+
+#### Success Metrics for Documentation
+
+**Quality Indicators**:
+
+- **Completeness**: 100% of functionality documented
+- **Accuracy**: 0% of documentation errors or outdated information
+- **Usability**: Clear examples and procedures for all common tasks
+- **Maintenance**: Documentation updated within 24 hours of code changes
+- **User Satisfaction**: Documentation effectively supports user needs
+
+**Compliance Requirements**:
+
+- **Mandatory**: No code changes without documentation updates
+- **Timing**: Documentation must be updated before or simultaneously with code
+- **Quality**: All documentation must meet quality standards
+- **Review**: Documentation changes must be reviewed and approved
+- **Testing**: All examples and procedures must be verified
+
+---
+
 ```json
 {
   "chosen_color_space": "CIE Lab (D65)",
@@ -525,6 +810,7 @@ The project maintains a comprehensive set of test datasets for development and v
   "topK_rerank": 200,
   "estimated_index_size_per_M": "12.7 GB",
   "implementation_status": "Week 1 Complete - Core Pipeline Ready",
-  "next_milestone": "Week 2 - FAISS Index and DuckDB Store"
+  "next_milestone": "Week 2 - FAISS Index and DuckDB Store",
+  "documentation_requirement": "MANDATORY for ALL changes - No exceptions"
 }
 ```

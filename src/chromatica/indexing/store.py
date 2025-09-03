@@ -432,6 +432,44 @@ class MetadataStore:
             logger.error(f"Failed to retrieve histograms: {e}")
             raise RuntimeError(f"Database query failed: {e}")
 
+    def get_all_histograms(self) -> Dict[str, np.ndarray]:
+        """
+        Retrieve all histograms from the metadata store.
+
+        This method returns all histograms in the database, ordered by
+        insertion order. This is useful for mapping FAISS indices to
+        actual histograms during the reranking stage.
+
+        Returns:
+            Dictionary mapping image_id to histogram numpy array.
+            Histograms are ordered by insertion order (matching FAISS indices).
+
+        Raises:
+            RuntimeError: If database query fails.
+        """
+        query_sql = f"""
+        SELECT image_id, histogram
+        FROM {self.table_name}
+        ORDER BY ROWID
+        """
+
+        try:
+            result = self.connection.execute(query_sql).fetchall()
+
+            # Convert results to dictionary
+            histograms = {}
+            for image_id, histogram_blob in result:
+                # Convert BLOB back to numpy array
+                histogram_array = np.frombuffer(histogram_blob, dtype=np.float32)
+                histograms[image_id] = histogram_array
+
+            logger.debug(f"Retrieved {len(histograms)} total histograms")
+            return histograms
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve all histograms: {e}")
+            raise RuntimeError(f"Database query failed: {e}")
+
     def get_image_count(self) -> int:
         """
         Get the total number of images in the metadata store.

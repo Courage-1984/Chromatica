@@ -62,6 +62,35 @@ rules:
   - rule: "Maintain a progress report in 'docs/progress.md', updating it after major phases."
   - rule: "Create and update a troubleshooting guide in 'docs/troubleshooting.md' as issues are identified and resolved."
 
+  # COMPREHENSIVE DOCUMENTATION LIFECYCLE RULES
+  - rule: "ALL new files, modules, classes, or functions MUST have corresponding documentation created or updated."
+  - rule: "When creating new code files, immediately create/update relevant documentation files in ./docs/."
+  - rule: "When modifying existing code, update ALL related documentation to reflect changes."
+  - rule: "Documentation must be created BEFORE or SIMULTANEOUSLY with code implementation."
+  - rule: "Every new feature, bug fix, or enhancement requires documentation updates."
+  - rule: "Documentation updates are MANDATORY and non-negotiable for all project changes."
+
+  # Documentation File Requirements
+  - rule: "Create comprehensive documentation for ALL new tools, scripts, and utilities in ./tools/."
+  - rule: "Update API documentation whenever endpoints, models, or request/response structures change."
+  - rule: "Maintain up-to-date module documentation for all source code directories."
+  - rule: "Create user guides and tutorials for all major features and workflows."
+  - rule: "Document all configuration options, environment variables, and deployment procedures."
+
+  # Documentation Quality Standards
+  - rule: "All documentation must include practical usage examples and code snippets."
+  - rule: "Documentation must be comprehensive, covering purpose, features, usage, and troubleshooting."
+  - rule: "Include integration examples showing how components work together."
+  - rule: "Document error scenarios, common issues, and resolution steps."
+  - rule: "Provide performance metrics, benchmarks, and optimization guidelines where applicable."
+
+  # Documentation Maintenance Rules
+  - rule: "Review and update documentation after EVERY code change, bug fix, or feature addition."
+  - rule: "Ensure documentation accuracy by testing all examples and procedures."
+  - rule: "Update version numbers, changelogs, and migration guides for breaking changes."
+  - rule: "Maintain consistency across all documentation files in style, format, and terminology."
+  - rule: "Archive outdated documentation rather than deleting it, maintaining project history."
+
   # Technology Stack Rules
   - rule: "Use 'opencv-python' for image loading and resizing."
   - rule: "Use 'scikit-image' specifically for the sRGB to CIE Lab color conversion."
@@ -126,3 +155,10 @@ rules:
   - rule: "DuckDB implementation must support batch operations and efficient histogram retrieval."
   - rule: "All new code must follow the established project structure and naming conventions."
   - rule: "Dependencies must be added to requirements.txt with appropriate version constraints."
+
+  # Documentation Enforcement Rules
+  - rule: "NO code changes should be committed without corresponding documentation updates."
+  - rule: "Documentation updates are part of the definition of 'done' for any feature or fix."
+  - rule: "When reviewing code, always verify that documentation has been updated accordingly."
+  - rule: "Documentation debt is treated with the same priority as technical debt."
+  - rule: "All documentation must be version-controlled and tracked alongside code changes."

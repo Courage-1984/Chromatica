@@ -16,3 +16,6 @@ __pycache__/
 !/histograms/
 !/reports/
 
+!/logs/
+!/test_index/
+
