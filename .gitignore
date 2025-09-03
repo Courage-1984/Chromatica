@@ -1,6 +1,7 @@
 .vscode/
 
 /.cursor/*
+!/.cursor/README.md
 !/.cursor/mcp_server_usage.md
 
 /venv311/

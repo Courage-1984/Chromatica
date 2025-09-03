@@ -47,7 +47,7 @@ file-layout:
   - path: tools/
     description: "Testing and development tools, including histogram generation testing tool."
   - path: datasets/
-    description: "Test datasets for development and validation (test-dataset-20, test-dataset-50)."
+    description: "Comprehensive test datasets for development and validation across all phases: test-dataset-20 (20 images), test-dataset-50 (50 images), test-dataset-200 (200 images), test-dataset-5000 (5,000 images, renamed from test-dataset-999, recommended expansion to 7,500 for production-scale testing)."
 
 rules:
   # General Rules
@@ -106,11 +106,12 @@ rules:
   - rule: "All new code must integrate with existing histogram generation and configuration modules."
 
   # Testing and Validation Rules
-  - rule: "Use the existing test datasets in datasets/ for development and validation."
+  - rule: "Use the existing test datasets in datasets/ for development and validation across all phases: test-dataset-20 (quick testing), test-dataset-50 (validation), test-dataset-200 (performance), test-dataset-5000 (production-scale testing, renamed from test-dataset-999, recommended expansion to 7,500 images)."
   - rule: "The histogram testing tool generates 6 different report types for comprehensive analysis."
   - rule: "All histograms must pass validation: 1152 dimensions, L1 normalization, proper bounds."
   - rule: "Performance targets: ~200ms per image for histogram generation, 100% validation success rate."
   - rule: "Use the testing tool for validating new implementations before proceeding to next phases."
+  - rule: "Follow dataset usage guidelines: test-dataset-20 for development, test-dataset-50/200 for validation, test-dataset-5000 for production-scale testing. Prioritize expanding test-dataset-5000 to 7,500 images for comprehensive evaluation."
 
   # Code Quality and Standards
   - rule: "All new functions must include comprehensive input validation and error handling."

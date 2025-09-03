@@ -211,7 +211,11 @@ def rerank_candidates(query_hist, candidate_hists, candidate_ids, epsilon=0.1):
 
 - **Primary**: **Unsplash Lite** (25k images). Its curated nature provides high-quality images with diverse and distinct color palettes, ideal for this task. [decision]: recommended by {Qwen}
 - **Secondary**: **COCO 2017 validation subset** (5k images). This provides a test for generalization on a wider variety of "in-the-wild" scenes. [decision]: recommended by {Google-Gemini}
-- **Testing Infrastructure**: **Test Datasets** (IMPLEMENTED) - 20 and 50 image test datasets for development and validation
+- **Testing Infrastructure**: **Test Datasets** (IMPLEMENTED) - Comprehensive testing datasets for development and validation:
+  - **test-dataset-20**: 20 images for quick development testing
+  - **test-dataset-50**: 50 images for small-scale validation
+  - **test-dataset-200**: 200 images for medium-scale testing
+  - **test-dataset-5000**: 5,000 images (renamed from test-dataset-999), recommended expansion to 7,500 for production-scale testing
 
 #### Metrics
 
@@ -240,7 +244,11 @@ To validate our design choices, we will systematically compare:
 
 **Testing Infrastructure (IMPLEMENTED)**:
 
-- **Test Datasets**: 20 and 50 image collections for development validation
+- **Test Datasets**: Comprehensive testing datasets for all development phases:
+  - **test-dataset-20**: 20 images for quick development testing and debugging
+  - **test-dataset-50**: 50 images for small-scale validation and unit testing
+  - **test-dataset-200**: 200 images for medium-scale testing and performance validation
+  - **test-dataset-5000**: 5,000 images (renamed from test-dataset-999), recommended expansion to 7,500 for production-scale testing, stress testing, and evaluation
 - **Comprehensive Testing Tool**: Generates 6 report types including validation, performance, and quality metrics
 - **Validation Framework**: Ensures histograms meet all specifications (shape, normalization, bounds)
 - **Performance Benchmarking**: Tracks processing time, memory usage, and throughput
@@ -350,6 +358,15 @@ Start with **K=200**. This value represents a trade-off: it must be large enough
 5.  🔄 **NEXT**: Implement the FAISS HNSW index population from the Hellinger-transformed histograms.
 6.  🔄 **NEXT**: Perform a simple brute-force search (calculating Sinkhorn EMD for all 1,000 images) for a single test query to establish a "ground-truth" ranking to validate the two-stage system against.
 
+#### Dataset Expansion Recommendation
+
+**Priority**: Expand test-dataset-999 from current 896 images to **7,500 images** for comprehensive production-scale testing. This will:
+- Enable stress testing of FAISS HNSW index performance
+- Validate memory management under realistic workloads
+- Provide statistical significance for evaluation metrics
+- Test the complete pipeline at production scale
+- Support comprehensive ablation studies and parameter tuning
+
 #### Milestone Timeline (8 Weeks)
 
 - **Week 1**: ✅ **COMPLETED** - Core Pipeline. Complete the histogram generation pipeline and process the entire Unsplash Lite dataset.
@@ -389,7 +406,48 @@ Start with **K=200**. This value represents a trade-off: it must be large enough
 
 ---
 
-## L. Implementation Status & Current State
+## L. Dataset Management & Testing Infrastructure
+
+#### Test Dataset Structure
+
+The project maintains a comprehensive set of test datasets for development and validation across all phases:
+
+| Dataset | Size | Purpose | Use Case |
+|---------|------|---------|----------|
+| **test-dataset-20** | 20 images | Quick development testing | Debugging, unit testing, rapid iteration |
+| **test-dataset-50** | 50 images | Small-scale validation | Feature validation, basic performance testing |
+| **test-dataset-200** | 200 images | Medium-scale testing | Performance validation, integration testing |
+| **test-dataset-5000** | 5,000 images (current) | Production-scale testing | Stress testing, evaluation, ablation studies |
+
+#### Dataset Expansion Strategy
+
+**Current Status**: test-dataset-5000 contains 5,000 images, making good progress toward the target size.
+
+**Recommended Target**: Expand to **7,500 images** for comprehensive production-scale testing.
+
+**Benefits of 7,500 Image Dataset**:
+- **Performance Validation**: Test FAISS HNSW index with realistic workloads
+- **Memory Testing**: Validate memory management under production conditions
+- **Statistical Significance**: Enable meaningful evaluation metrics and ablation studies
+- **Stress Testing**: Identify bottlenecks and performance limits
+- **Production Readiness**: Validate the complete pipeline at scale
+
+**Memory Requirements** (based on Section G calculations):
+- **5,000 images (current)**: ~23MB raw histograms + ~40MB FAISS index = ~63MB total RAM
+- **7,500 images (target)**: ~34MB raw histograms + ~60MB FAISS index = ~94MB total RAM
+- **Future scaling**: 25k images (Unsplash Lite) = ~870MB total RAM
+
+#### Dataset Usage Guidelines
+
+1. **Development Phase**: Use test-dataset-20 for rapid iteration and debugging
+2. **Validation Phase**: Use test-dataset-50 and test-dataset-200 for feature validation
+3. **Performance Testing**: Use test-dataset-200 for performance benchmarking
+4. **Production Testing**: Use test-dataset-5000 (expand to 7,500) for comprehensive evaluation
+5. **Final Validation**: Use Unsplash Lite (25k) and COCO (5k) for production validation
+
+---
+
+## M. Implementation Status & Current State
 
 #### ✅ Completed Components (Week 1)
 

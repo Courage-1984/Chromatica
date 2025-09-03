@@ -26,6 +26,22 @@ The Chromatica project uses several MCP servers to enhance development capabilit
 5. **context7** - Library documentation and API reference
 6. **gitmvp** - GitHub repository analysis and file access
 
+### Dataset Management with MCP Servers
+
+The project maintains comprehensive test datasets in `./datasets/` that can be managed using MCP servers:
+
+- **test-dataset-20**: 20 images for quick development testing
+- **test-dataset-50**: 50 images for small-scale validation
+- **test-dataset-200**: 200 images for medium-scale testing
+- **test-dataset-5000**: 5,000 images (renamed from test-dataset-999), recommended expansion to 7,500 for production-scale testing
+
+**Use filesystem MCP server** for:
+
+- Organizing and managing test datasets
+- Processing image collections
+- Managing histogram outputs and reports
+- Creating dataset documentation
+
 ## When to Use MCP Servers
 
 Based on the Chromatica project rules and critical instructions:
@@ -142,6 +158,26 @@ mcp_filesystem_write_file(
     path="reports/test_results.json",
     content=json.dumps(results, indent=2)
 )
+```
+
+#### Managing Test Datasets
+
+```python
+# Organize test datasets
+mcp_filesystem_create_directory(path="datasets/test-dataset-5000/")
+
+# Process image collections
+mcp_filesystem_list_directory(path="datasets/test-dataset-200/")
+
+# Create dataset documentation
+mcp_filesystem_write_file(
+    path="datasets/README.md",
+    content="# Test Datasets Documentation\n\n## Overview\n- test-dataset-20: 20 images for development\n- test-dataset-50: 50 images for validation\n- test-dataset-200: 200 images for testing\n- test-dataset-5000: 5,000 images (expand to 7,500)"
+)
+
+# Manage histogram outputs
+mcp_filesystem_create_directory(path="histograms/test-dataset-5000/")
+mcp_filesystem_create_directory(path="reports/test-dataset-5000/")
 ```
 
 ### Best Practices
