@@ -2,6 +2,48 @@
 
 This directory contains utility tools for testing, debugging, and analyzing the Chromatica color search engine.
 
+## Sanity Check Script
+
+The `run_sanity_checks.py` script (located in `scripts/`) is a comprehensive validation tool that programmatically executes the four sanity checks defined in Section F of the critical instructions document. This script serves as a critical quality assurance tool to validate that the Chromatica color search engine is working correctly.
+
+### Features
+
+- **Programmatic Sanity Checks**: Automatically executes all four sanity checks from Section F
+- **Comprehensive Validation**: Tests monochrome, complementary, weight sensitivity, and subtle hue queries
+- **Real-Time Results Display**: Shows top 5 results for each check with detailed metrics
+- **Performance Monitoring**: Tracks query time, search time, and total processing time
+- **Detailed Logging**: Comprehensive logging to both console and log files
+- **Error Handling**: Robust error handling with clear failure reporting
+- **Summary Reporting**: Generates comprehensive summary reports with success/failure counts
+
+### Usage
+
+```bash
+# Activate virtual environment
+venv311\Scripts\activate
+
+# Run sanity checks with default settings
+python scripts/run_sanity_checks.py
+
+# Run with verbose logging
+python scripts/run_sanity_checks.py --verbose
+
+# Run with custom number of top results
+python scripts/run_sanity_checks.py --top-k 10
+```
+
+### Sanity Checks
+
+1. **Monochrome Red Query**: 100% #FF0000 should return red-dominant images
+2. **Complementary Colors Query**: 50% #0000FF and 50% #FFA500 should return contrasting images
+3. **Weight Sensitivity Test 1**: 90% red, 10% blue should yield red-dominant results
+4. **Weight Sensitivity Test 2**: 10% red, 90% blue should yield blue-dominant results
+5. **Subtle Hues Test**: Similar colors #FF0000 and #EE0000 should test fine-grained perception
+
+For detailed documentation, see `docs/tools_sanity_checks.md`.
+
+---
+
 ## Histogram Generation Testing Tool
 
 The `test_histogram_generation.py` tool provides comprehensive testing capabilities for the histogram generation module. It can process single images or entire directories, generating histograms and providing detailed analysis, validation, and visualization.

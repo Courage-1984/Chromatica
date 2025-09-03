@@ -499,6 +499,63 @@ The complete two-stage search pipeline is now fully implemented and tested. This
 - `tools/test_faiss_duckdb.py` - Comprehensive testing and validation script
 - `scripts/build_index.py` - Main offline indexing script for building production indexes
 
+---
+
+### ✅ Week 2: Sanity Check Script Implementation
+
+#### 4. Sanity Check Script (`scripts/run_sanity_checks.py`)
+
+- **Status**: COMPLETED
+- **Date**: [Current Date]
+- **Description**: Implemented a comprehensive sanity check script that programmatically executes the four sanity checks defined in Section F of the critical instructions document.
+
+**Key Features Implemented:**
+
+- **Programmatic Sanity Checks**: Automatically executes all four sanity checks from Section F
+- **Comprehensive Validation**: Tests monochrome, complementary, weight sensitivity, and subtle hue queries
+- **Real-Time Results Display**: Shows top 5 results for each check with detailed metrics
+- **Performance Monitoring**: Tracks query time, search time, and total processing time
+- **Detailed Logging**: Comprehensive logging to both console and log files
+- **Error Handling**: Robust error handling with clear failure reporting
+- **Summary Reporting**: Generates comprehensive summary reports with success/failure counts
+
+**Sanity Checks Implemented:**
+
+1. **Monochrome Red Query**: 100% #FF0000 should return red-dominant images
+2. **Complementary Colors Query**: 50% #0000FF and 50% #FFA500 should return contrasting images
+3. **Weight Sensitivity Test 1**: 90% red, 10% blue should yield red-dominant results
+4. **Weight Sensitivity Test 2**: 10% red, 90% blue should yield blue-dominant results
+5. **Subtle Hues Test**: Similar colors #FF0000 and #EE0000 should test fine-grained perception
+
+**Technical Implementation:**
+
+- **Integration**: Seamlessly integrates with existing search system and test index
+- **Query Processing**: Uses `create_query_histogram()` for consistent query generation
+- **Search Execution**: Leverages `find_similar()` for complete two-stage search pipeline
+- **Result Analysis**: Comprehensive result display with distance scores and rankings
+- **Performance Metrics**: Tracks timing for each stage of the search process
+- **Logging Infrastructure**: Structured logging with configurable verbosity levels
+
+**Usage and Features:**
+
+- **Command Line Interface**: Supports --verbose and --top-k options
+- **Virtual Environment**: Requires activated venv311 environment
+- **Test Index Integration**: Automatically loads test_index/chromatica_index.faiss
+- **Comprehensive Output**: Console display, log files, and summary reports
+- **Exit Codes**: Returns 0 for success, 1 for failures (suitable for CI/CD)
+
+**Files Created:**
+
+- `scripts/run_sanity_checks.py` - Main sanity check script
+- `docs/tools_sanity_checks.md` - Comprehensive documentation and usage guide
+
+**Integration Status:**
+
+- **Search System**: Fully integrated with existing two-stage search pipeline
+- **Test Infrastructure**: Works with existing test index and metadata store
+- **Documentation**: Comprehensive documentation following project standards
+- **Quality Assurance**: Serves as critical validation tool for system correctness
+
 **Architectural Benefits:**
 
 - **Separation of Concerns**: FAISS handles vector search, DuckDB handles metadata
