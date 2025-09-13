@@ -1,0 +1,190 @@
+---
+description: Migration guide from legacy .cursorrules to new project rules format
+globs: [".cursorrules"]
+alwaysApply: false
+---
+
+# Legacy .cursorrules Migration Guide
+
+## Overview
+
+This rule provides guidance for migrating from the legacy `.cursorrules` file to the new `.cursor/rules` project rules format. The legacy file has been successfully migrated to the new MDC format with improved organization and scoping.
+
+## Migration Status
+
+### ✅ Completed Migration
+
+- **Core Rules**: Migrated to `chromatica-core.mdc` (always applied)
+- **Module-Specific Rules**: Migrated to scoped rules for different modules
+- **Technology-Specific Rules**: Migrated to specialized rules for different technologies
+- **Workflow Rules**: Migrated to development workflow standards
+
+### Legacy File Status
+
+- **`.cursorrules`**: Deprecated but maintained for reference
+- **New Format**: All rules now in `.cursor/rules/` directory
+- **Improved Organization**: Better scoping and organization of rules
+- **Enhanced Functionality**: Better rule application and management
+
+## Migration Benefits
+
+### Improved Organization
+
+- **Scoped Rules**: Rules apply only to relevant files and directories
+- **Better Categorization**: Rules organized by purpose and scope
+- **Easier Maintenance**: Easier to maintain and update specific rule sets
+- **Reduced Conflicts**: Less chance of rule conflicts and overlaps
+
+### Enhanced Functionality
+
+- **Auto-Attached Rules**: Rules automatically apply based on file patterns
+- **Manual Rules**: Rules available for manual invocation
+- **Agent-Requested Rules**: AI can decide when to include rules
+- **Better Metadata**: Rich metadata for rule management
+
+### Improved Performance
+
+- **Selective Application**: Only relevant rules are applied
+- **Reduced Context**: Smaller context windows for better performance
+- **Faster Processing**: More efficient rule processing
+- **Better Caching**: Improved rule caching and management
+
+## Rule Mapping
+
+### Core Rules → chromatica-core.mdc
+
+- **Critical Instructions Compliance**: Always applied core rules
+- **Project Overview**: Project status and implementation details
+- **Technology Stack**: Required libraries and frameworks
+- **Algorithmic Specifications**: Core algorithm requirements
+- **Development Environment**: Virtual environment and setup
+
+### Module Rules → Scoped Rules
+
+- **Core Module**: `core-module.mdc` for `src/chromatica/core/**/*`
+- **API Module**: `api-module.mdc` for `src/chromatica/api/**/*`
+- **Indexing Module**: `indexing-module.mdc` for `src/chromatica/indexing/**/*`
+- **Tools Module**: `tools-module.mdc` for `tools/**/*` and `scripts/**/*`
+
+### Specialized Rules → Technology Rules
+
+- **Documentation**: `documentation-standards.mdc` for comprehensive documentation
+- **Testing**: `testing-standards.mdc` for testing and validation
+- **Web Interface**: `web-interface.mdc` for web development
+- **Development Workflow**: `development-workflow.mdc` for development practices
+
+## Usage Guidelines
+
+### For Developers
+
+- **Automatic Application**: Most rules apply automatically based on file patterns
+- **Manual Invocation**: Use `@ruleName` to manually invoke specific rules
+- **Rule Discovery**: Check `.cursor/rules/` directory for available rules
+- **Rule Customization**: Modify rules as needed for specific requirements
+
+### For AI Assistant
+
+- **Rule Selection**: AI can automatically select relevant rules
+- **Context Awareness**: Rules provide better context for AI assistance
+- **Scoped Assistance**: More targeted assistance based on current file/context
+- **Improved Accuracy**: Better understanding of project requirements
+
+## Migration Checklist
+
+### ✅ Completed Tasks
+
+- [x] Create `.cursor/rules/` directory structure
+- [x] Migrate core rules to `chromatica-core.mdc`
+- [x] Create scoped rules for different modules
+- [x] Create specialized rules for different technologies
+- [x] Set up proper rule metadata and glob patterns
+- [x] Test rule application and functionality
+
+### 🔄 Ongoing Tasks
+
+- [ ] Monitor rule effectiveness and usage
+- [ ] Update rules based on project evolution
+- [ ] Refine rule scoping and application
+- [ ] Optimize rule performance and context usage
+
+## Rule Maintenance
+
+### Regular Updates
+
+- **Project Evolution**: Update rules as project evolves
+- **New Requirements**: Add new rules for new requirements
+- **Rule Optimization**: Optimize rules for better performance
+- **Documentation Updates**: Keep rule documentation current
+
+### Rule Validation
+
+- **Effectiveness**: Monitor rule effectiveness and impact
+- **Usage Patterns**: Track rule usage patterns
+- **Performance Impact**: Monitor performance impact of rules
+- **User Feedback**: Collect feedback on rule usefulness
+
+## Best Practices
+
+### Rule Design
+
+- **Focused Scope**: Keep rules focused and specific
+- **Clear Purpose**: Make rule purpose clear and understandable
+- **Appropriate Length**: Keep rules concise but comprehensive
+- **Regular Updates**: Update rules regularly to stay current
+
+### Rule Application
+
+- **Selective Use**: Use rules selectively based on context
+- **Manual Override**: Allow manual rule invocation when needed
+- **Performance Consideration**: Consider performance impact of rules
+- **User Control**: Give users control over rule application
+
+## Troubleshooting
+
+### Common Issues
+
+- **Rule Not Applying**: Check glob patterns and rule metadata
+- **Rule Conflicts**: Resolve conflicts between overlapping rules
+- **Performance Issues**: Optimize rules for better performance
+- **Context Overload**: Reduce rule context when needed
+
+### Resolution Steps
+
+1. **Check Rule Metadata**: Verify rule metadata and glob patterns
+2. **Test Rule Application**: Test rule application in different contexts
+3. **Monitor Performance**: Monitor performance impact of rules
+4. **Update Rules**: Update rules based on issues and feedback
+
+## Future Enhancements
+
+### Planned Improvements
+
+- **Rule Templates**: Create templates for common rule types
+- **Rule Analytics**: Add analytics for rule usage and effectiveness
+- **Rule Sharing**: Enable sharing of rules between projects
+- **Rule Versioning**: Add versioning for rule evolution
+
+### Advanced Features
+
+- **Dynamic Rules**: Rules that adapt based on project state
+- **Rule Dependencies**: Rules that depend on other rules
+- **Rule Inheritance**: Rules that inherit from parent rules
+- **Rule Composition**: Ability to compose rules from smaller parts
+
+## Conclusion
+
+The migration from legacy `.cursorrules` to the new `.cursor/rules` format provides significant improvements in organization, functionality, and performance. The new format allows for better rule scoping, more targeted assistance, and improved maintainability.
+
+### Key Benefits
+
+- **Better Organization**: Rules are better organized and categorized
+- **Improved Performance**: More efficient rule application and processing
+- **Enhanced Functionality**: More flexible and powerful rule system
+- **Easier Maintenance**: Easier to maintain and update rules
+
+### Next Steps
+
+- **Monitor Usage**: Monitor rule usage and effectiveness
+- **Gather Feedback**: Collect feedback from developers and AI assistant
+- **Iterate and Improve**: Continuously improve rules based on usage patterns
+- **Document Best Practices**: Document best practices for rule creation and usage

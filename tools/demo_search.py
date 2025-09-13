@@ -99,7 +99,10 @@ def create_demo_index(dataset_path: str, max_images: int = 20) -> tuple[AnnIndex
     added_count = index.add(histograms_array)
     stored_count = store.add_batch(metadata_batch)
     
-    print(f"   📊 Index created: {added_count} vectors in FAISS, {stored_count} records in store")
+    try:
+        print(f"   📊 Index created: {added_count} vectors in FAISS, {stored_count} records in store")
+    except UnicodeEncodeError:
+        print(f"   Index created: {added_count} vectors in FAISS, {stored_count} records in store")
     print()
     
     return index, store
@@ -107,7 +110,10 @@ def create_demo_index(dataset_path: str, max_images: int = 20) -> tuple[AnnIndex
 
 def demo_synthetic_search(index: AnnIndex, store: MetadataStore):
     """Demonstrate search with synthetic query histograms."""
-    print("🔍 Demo 1: Synthetic Query Search")
+    try:
+        print("🔍 Demo 1: Synthetic Query Search")
+    except UnicodeEncodeError:
+        print("Demo 1: Synthetic Query Search")
     print("=" * 50)
     
     # Create synthetic query histogram
@@ -142,7 +148,10 @@ def demo_synthetic_search(index: AnnIndex, store: MetadataStore):
 
 def demo_real_image_search(index: AnnIndex, store: MetadataStore, dataset_path: str):
     """Demonstrate search with a real image from the dataset."""
-    print("🔍 Demo 2: Real Image Query Search")
+    try:
+        print("🔍 Demo 2: Real Image Query Search")
+    except UnicodeEncodeError:
+        print("Demo 2: Real Image Query Search")
     print("=" * 50)
     
     # Find a test image
@@ -194,7 +203,10 @@ def demo_real_image_search(index: AnnIndex, store: MetadataStore, dataset_path: 
 
 def demo_performance_analysis(index: AnnIndex, store: MetadataStore):
     """Demonstrate performance characteristics."""
-    print("📊 Demo 3: Performance Analysis")
+    try:
+        print("📊 Demo 3: Performance Analysis")
+    except UnicodeEncodeError:
+        print("Demo 3: Performance Analysis")
     print("=" * 50)
     
     # Run multiple searches to measure performance
@@ -273,12 +285,20 @@ def main():
     # Setup logging
     setup_logging(args.verbose)
     
-    print("🔍 Chromatica Search System Demonstration")
-    print("=" * 60)
-    print(f"Dataset: {args.dataset}")
-    print(f"Max images: {args.max_images}")
-    print("=" * 60)
-    print()
+    try:
+        print("🔍 Chromatica Search System Demonstration")
+        print("=" * 60)
+        print(f"Dataset: {args.dataset}")
+        print(f"Max images: {args.max_images}")
+        print("=" * 60)
+        print()
+    except UnicodeEncodeError:
+        print("Chromatica Search System Demonstration")
+        print("=" * 60)
+        print(f"Dataset: {args.dataset}")
+        print(f"Max images: {args.max_images}")
+        print("=" * 60)
+        print()
     
     try:
         # Create demo index

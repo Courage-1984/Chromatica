@@ -1,342 +1,268 @@
-# Chromatica Documentation
+# 📚 Chromatica Documentation Hub
 
-This directory contains comprehensive documentation for the Chromatica color search engine project, including technical specifications, implementation guides, progress tracking, and troubleshooting information.
+Welcome to the comprehensive documentation for the Chromatica color search engine project. This hub provides access to all project documentation, guides, and resources.
 
-## 📁 Documentation Overview
+## 🎯 Quick Start
 
-The documentation provides a complete reference for:
+**New to Chromatica?** Start here:
 
-- **Project Planning**: Technical specifications and architectural decisions
-- **Implementation Guides**: Step-by-step development instructions
-- **Progress Tracking**: Current status and milestone completion
-- **Troubleshooting**: Common issues and solutions
-- **Usage Examples**: Practical implementation examples
-- **API Reference**: Complete API documentation and usage
+1. **[Complete Usage Guide](complete_usage_guide.md)** - Step-by-step setup and usage instructions
+2. **[Project Architecture](project_architecture.md)** - System design and component overview
+3. **[API Reference](api_reference.md)** - Complete API documentation and examples
 
-## 🚀 Available Documentation
+## 📋 Documentation Index
 
-### Core Project Documentation
+### **🚀 Getting Started**
 
-#### Project Plan and Specifications
+- **[Complete Usage Guide](complete_usage_guide.md)** - Comprehensive setup and usage guide
+- **[Project Architecture](project_architecture.md)** - System architecture and design principles
+- **[README](../README.md)** - Project overview and quick start
 
-- **`critical_instructions.md`**: Comprehensive technical specifications and project plan
-  - Executive summary and system design
-  - Algorithm specifications and implementation details
-  - Technology stack and architectural decisions
-  - Development phases and milestones
+### **🔧 Core Components**
 
-#### Implementation Guides
+- **[Histogram Generation Guide](histogram_generation_guide.md)** - Color histogram generation details
+- **[Image Processing Pipeline](image_processing_pipeline.md)** - Image processing workflow
+- **[Two-Stage Search Architecture](two_stage_search_architecture.md)** - Search system design
+- **[Query Processor](query_processor.md)** - Query handling and processing
+- **[Sinkhorn Reranking Logic](sinkhorn_reranking_logic.md)** - Advanced reranking algorithms
 
-- **`histogram_generation_guide.md`**: Complete guide to histogram generation
+### **🌐 API & Interface**
 
-  - Algorithm implementation details
-  - Color space conversion and processing
-  - Performance optimization techniques
-  - Quality validation and testing
+- **[API Reference](api_reference.md)** - Complete API documentation
+- **[FastAPI Endpoint](fastapi_endpoint.md)** - Web API implementation details
+- **[Visualization Features](visualization_features.md)** - Query and result visualization
+- **[Web Interface Usage](visualization_features.md#web-interface-usage)** - Interactive color picker guide
+- **[Catppuccin Mocha Theme](catppuccin_mocha_theme.md)** - Web interface theming documentation
+- **[Theme Quick Reference](catppuccin_mocha_quick_reference.md)** - Developer theme guide
+- **[Font Setup Guide](font_setup_guide.md)** - Custom font configuration
 
-- **`faiss_duckdb_guide.md`**: FAISS and DuckDB integration guide
-  - Vector indexing implementation
-  - Database design and optimization
-  - Performance tuning and scaling
-  - Integration with the main pipeline
+### **🏗️ Infrastructure**
 
-#### Architecture Documentation
+- **[FAISS & DuckDB Guide](faiss_duckdb_guide.md)** - Search index and database setup
+- **[FAISS & DuckDB Integration](faiss_duckdb_integration.md)** - Integration patterns
+- **[FAISS & DuckDB Wrappers](faiss_duckdb_wrappers.md)** - Component wrappers
+- **[FAISS & DuckDB Usage Examples](faiss_duckdb_usage_examples.md)** - Practical examples
+- **[Build Index Script](scripts_build_index.md)** - Comprehensive index building documentation
+- **[Offline Indexing Script](offline_indexing_script.md)** - Index building process
 
-- **`two_stage_search_architecture.md`**: System architecture overview
-  - Two-stage search pipeline design
-  - Component interactions and data flow
-  - Performance characteristics and trade-offs
-  - Scalability considerations
+### **🧪 Testing & Development**
 
-### Development Documentation
+- **[Tools Overview](../tools/README.md)** - Testing and demonstration tools
+- **[Histogram Generation Testing](tools_histogram_generation_testing.md)** - Histogram validation
+- **[FAISS & DuckDB Testing](tools_test_faiss_duckdb.md)** - Search component testing
+- **[Search System Testing](tools_test_search_system.md)** - End-to-end testing
+- **[API Testing](tools_test_api.md)** - Web API validation
+- **[Visualization Demo](tools_demo.md)** - Feature demonstration
 
-#### Progress Tracking
+### **🔍 Troubleshooting & Support**
 
-- **`progress.md`**: Current implementation status and milestones
-  - Week-by-week progress updates
-  - Completed features and achievements
-  - Current development focus
-  - Upcoming milestones and goals
+- **[Comprehensive Troubleshooting](troubleshooting_comprehensive.md)** - Complete troubleshooting guide
+- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[Sanity Checks](tools_sanity_checks.md)** - System validation tools
 
-#### Integration Guides
+### **📊 Progress & Planning**
 
-- **`faiss_duckdb_integration.md`**: Integration implementation details
-  - Component integration patterns
-  - Data flow and error handling
-  - Testing and validation approaches
-  - Performance optimization strategies
+- **[Progress Report](progress.md)** - Current development status
+- **[Critical Instructions](../.cursor/critical_instructions.md)** - Core project specifications
 
-#### Usage Examples
+### **⚙️ Development Configuration**
 
-- **`faiss_duckdb_usage_examples.md`**: Practical implementation examples
-  - Code examples and snippets
-  - Common use cases and patterns
-  - Best practices and recommendations
-  - Troubleshooting examples
+- **[Cursor Rules Migration Guide](cursor_rules_migration_guide.md)** - Migration to new Cursor Rules system
+- **[Cursor Rules Setup Summary](cursor_rules_setup_summary.md)** - Quick reference for new setup
+- **[Cursor Rules Guide](cursor_rules_guide.md)** - Cursor Rules implementation guide
+- **[Cursor Rules Summary](cursor_rules_summary.md)** - Overview of Cursor Rules system
 
-#### Index Implementation
+## 🎨 What is Chromatica?
 
-- **`faiss_duckdb_index.md`**: FAISS index implementation details
-  - Index configuration and optimization
-  - Search performance tuning
-  - Memory management strategies
-  - Scaling considerations
+Chromatica is a **sophisticated color-based image search engine** that combines:
 
-### Troubleshooting and Support
+- **🔬 Advanced Color Science**: CIE Lab color space with 8x12x12 histogram binning
+- **⚡ High Performance**: FAISS HNSW index for sub-second search times
+- **🎯 Accuracy**: Sinkhorn-EMD reranking for perceptually accurate results
+- **🎨 Rich Visualizations**: Query representations and result collages
+- **🌐 Modern Interface**: Interactive web interface with real-time feedback
 
-#### Troubleshooting Guide
+### **Key Features**
 
-- **`troubleshooting.md`**: Common issues and solutions
-  - Installation and setup problems
-  - Runtime errors and debugging
-  - Performance issues and optimization
-  - Integration problems and solutions
+- **Multi-color queries** with customizable weights
+- **Real-time search** with comprehensive metadata
+- **Visual query representation** showing color distributions
+- **Results collage** with distance annotations
+- **RESTful API** with full documentation
+- **Interactive web interface** for easy exploration
 
-## 📚 Documentation Structure
+## 🚀 Quick Setup
 
-### Directory Organization
+For experienced users, here's the minimal setup:
 
-```
-docs/
-├── README.md                           # This documentation overview
-├── .cursor/                            # Cursor-specific documentation
-│   └── critical_instructions.md       # Primary project plan
-├── ColorSearchEngine_Plans/            # Original planning documents
-├── ColorSearchEngine_Plans_Consolidated/ # Consolidated planning materials
-├── ColorSearchEngine_Plans_Final/      # Final planning documents
-├── histogram_generation_guide.md       # Histogram implementation guide
-├── faiss_duckdb_guide.md              # FAISS and DuckDB guide
-├── faiss_duckdb_integration.md        # Integration implementation
-├── faiss_duckdb_usage_examples.md     # Practical usage examples
-├── faiss_duckdb_index.md              # Index implementation details
-├── two_stage_search_architecture.md    # System architecture
-├── progress.md                         # Progress tracking
-└── troubleshooting.md                  # Troubleshooting guide
+```bash
+# 1. Setup
+cd Chromatica
+venv311\Scripts\activate
+pip install -r requirements.txt
+
+# 2. Build index
+python scripts/build_index.py datasets/test-dataset-20 --output-dir test_index
+
+# 3. Start server
+python -m src.chromatica.api.main
+
+# 4. Open browser
+# Navigate to: http://localhost:8000/
 ```
 
-### Documentation Categories
+**For detailed setup instructions, see the [Complete Usage Guide](complete_usage_guide.md).**
 
-#### 1. Planning and Specification
+## 🔧 System Requirements
 
-- **Purpose**: Define project scope, requirements, and technical approach
-- **Audience**: Project stakeholders, architects, and developers
-- **Content**: High-level design, algorithms, and technology choices
+- **Python**: 3.10 or higher
+- **Memory**: 4GB RAM minimum (8GB+ recommended)
+- **Storage**: 2GB+ free space
+- **OS**: Windows 10/11, macOS, or Linux
 
-#### 2. Implementation Guides
+## 📚 Learning Path
 
-- **Purpose**: Provide step-by-step implementation instructions
-- **Audience**: Developers implementing specific features
-- **Content**: Code examples, configuration, and best practices
+### **Beginner Level**
 
-#### 3. Reference Documentation
+1. Read the [Complete Usage Guide](complete_usage_guide.md)
+2. Set up the project following the step-by-step instructions
+3. Try the interactive web interface
+4. Experiment with different color combinations
 
-- **Purpose**: Serve as authoritative reference for system components
-- **Audience**: Developers, maintainers, and users
-- **Content**: API specifications, configuration options, and usage patterns
+### **Intermediate Level**
 
-#### 4. Progress and Status
+1. Study the [Project Architecture](project_architecture.md)
+2. Understand the [Two-Stage Search Logic](two_stage_search_logic.md)
+3. Explore the [API Reference](api_reference.md)
+4. Test with different datasets and configurations
 
-- **Purpose**: Track project progress and current status
-- **Audience**: Project managers, stakeholders, and team members
-- **Content**: Milestone completion, current focus, and upcoming goals
+### **Advanced Level**
 
-## 🔍 Navigation and Search
+1. Dive into the [Core Component Documentation](histogram_generation_guide.md)
+2. Study the [Sinkhorn Reranking Logic](sinkhorn_reranking_logic.md)
+3. Examine the [FAISS & DuckDB Implementation](faiss_duckdb_guide.md)
+4. Contribute to the project or extend functionality
 
-### Quick Reference
+## 🛠️ Development Tools
 
-| Topic                    | Primary Document                   | Related Documents                                               |
-| ------------------------ | ---------------------------------- | --------------------------------------------------------------- |
-| **Project Overview**     | `critical_instructions.md`         | `two_stage_search_architecture.md`                              |
-| **Histogram Generation** | `histogram_generation_guide.md`    | `progress.md`                                                   |
-| **FAISS & DuckDB**       | `faiss_duckdb_guide.md`            | `faiss_duckdb_integration.md`, `faiss_duckdb_usage_examples.md` |
-| **System Architecture**  | `two_stage_search_architecture.md` | `critical_instructions.md`                                      |
-| **Current Status**       | `progress.md`                      | All implementation guides                                       |
-| **Troubleshooting**      | `troubleshooting.md`               | All technical guides                                            |
+### **Testing Tools**
 
-### Search Strategies
+- **`tools/test_histogram_generation.py`** - Validate histogram generation
+- **`tools/test_faiss_duckdb.py`** - Test search components
+- **`tools/test_search_system.py`** - End-to-end system testing
+- **`tools/demo_visualization.py`** - Visualization feature demonstration
 
-#### By Development Phase
+### **Utility Scripts**
 
-- **Week 1 (Completed)**: `histogram_generation_guide.md`, `progress.md`
-- **Week 2 (In Progress)**: `faiss_duckdb_guide.md`, `faiss_duckdb_integration.md`
-- **Week 3+ (Planned)**: API documentation, deployment guides
+- **`scripts/build_index.py`** - Build search indices (comprehensive offline indexing)
+- **`scripts/run_sanity_checks.py`** - System validation
 
-#### By Component
+### **API Testing**
 
-- **Core Algorithms**: `histogram_generation_guide.md`
-- **Storage & Indexing**: `faiss_duckdb_guide.md`, `faiss_duckdb_index.md`
-- **System Integration**: `faiss_duckdb_integration.md`, `two_stage_search_architecture.md`
-- **API & Deployment**: Future documentation
+- **`tools/test_api.py`** - Web API validation
+- **Interactive docs**: `http://localhost:8000/docs`
 
-#### By Use Case
+## 🔍 Troubleshooting
 
-- **Getting Started**: `critical_instructions.md`, `progress.md`
-- **Implementation**: All implementation guides
-- **Troubleshooting**: `troubleshooting.md`
-- **Advanced Usage**: `faiss_duckdb_usage_examples.md`
+### **Common Issues**
 
-## 📖 Reading Recommendations
+- **"Search components not initialized"** → [Build the index](complete_usage_guide.md#building-the-search-index)
+- **"Failed to generate visualization"** → [Check package installation](troubleshooting_comprehensive.md#issue-failed-to-generate-visualization)
+- **Import errors** → [Activate virtual environment](troubleshooting_comprehensive.md#issue-virtual-environment-not-working)
 
-### For New Team Members
+### **Getting Help**
 
-1. **Start Here**: `critical_instructions.md` - Complete project overview
-2. **Current Status**: `progress.md` - What's implemented and what's next
-3. **Core Concepts**: `two_stage_search_architecture.md` - System design
-4. **Implementation**: `histogram_generation_guide.md` - Core algorithms
+1. **Check the [Comprehensive Troubleshooting Guide](troubleshooting_comprehensive.md)**
+2. **Run sanity checks**: `python scripts/run_sanity_checks.py`
+3. **Review logs** in the `logs/` directory
+4. **Test components** using tools in the `tools/` directory
 
-### For Developers
+## 📈 Performance Benchmarks
 
-1. **Implementation**: Relevant implementation guides for your component
-2. **Integration**: `faiss_duckdb_integration.md` - How components work together
-3. **Examples**: `faiss_duckdb_usage_examples.md` - Practical code examples
-4. **Troubleshooting**: `troubleshooting.md` - Common issues and solutions
+### **Expected Performance**
 
-### For Project Managers
+- **Index Building**: 2-5 seconds (20 images), 5-15 minutes (5000 images)
+- **Search Response**: 150-500ms total time
+- **Query Visualization**: 50-200ms generation time
+- **Results Collage**: 100-500ms for 10 images
 
-1. **Overview**: `critical_instructions.md` - Project scope and goals
-2. **Progress**: `progress.md` - Current status and milestones
-3. **Architecture**: `two_stage_search_architecture.md` - System design
-4. **Timeline**: `progress.md` - Development phases and schedules
+### **Scalability**
 
-## 🔧 Documentation Maintenance
+- **Current Design**: Up to 10,000 images
+- **Memory Usage**: 100-500MB runtime, 100-500MB index storage
+- **Response Time**: Linear scaling with dataset size
 
-### Update Schedule
+## 🌟 Use Cases
 
-- **Weekly Updates**: `progress.md` - Development status and achievements
-- **Milestone Updates**: Implementation guides - New features and changes
-- **Quarterly Reviews**: All documentation - Accuracy and completeness
-- **Release Updates**: API documentation - New versions and changes
+### **Design & Creative**
 
-### Contribution Guidelines
+- **Interior Design**: Find images matching room color schemes
+- **Brand Identity**: Search for brand color combinations
+- **Art Projects**: Discover color palettes for creative work
 
-#### Adding New Documentation
+### **Research & Analysis**
 
-1. **Follow Structure**: Use existing templates and organization patterns
-2. **Include Examples**: Provide practical code examples and use cases
-3. **Cross-Reference**: Link to related documentation and resources
-4. **Update Index**: Add new documents to this README and navigation
+- **Color Trends**: Analyze popular color combinations
+- **Palette Creation**: Build harmonious color schemes
+- **Contrast Testing**: Find high-contrast color pairs
 
-#### Updating Existing Documentation
+### **Educational**
 
-1. **Version Control**: Track changes and maintain history
-2. **Cross-Reference**: Update related documents when making changes
-3. **Review Process**: Have changes reviewed by relevant team members
-4. **Testing**: Verify that examples and instructions still work
+- **Color Theory**: Learn about color relationships
+- **Visual Design**: Understand color weight and balance
+- **Art History**: Explore color usage across different styles
 
-### Quality Standards
+## 🔮 Future Enhancements
 
-#### Content Requirements
+### **Planned Features**
 
-- **Accuracy**: All technical information must be correct and up-to-date
-- **Completeness**: Cover all necessary topics and edge cases
-- **Clarity**: Use clear, concise language with examples
-- **Consistency**: Follow established patterns and terminology
+- **Distributed indexing** for multi-node deployments
+- **Advanced caching** for improved performance
+- **Machine learning** for query optimization
+- **Real-time streaming** for live search results
 
-#### Format Requirements
+### **Extensibility**
 
-- **Markdown**: Use consistent Markdown formatting and structure
-- **Code Examples**: Include working, tested code examples
-- **Diagrams**: Use clear diagrams and visual aids where helpful
-- **Navigation**: Provide clear navigation and cross-references
+- **Plugin architecture** for custom algorithms
+- **API versioning** for backward compatibility
+- **Custom metrics** for specialized use cases
+- **Integration APIs** for third-party services
 
-## 📊 Documentation Metrics
+## 📞 Support & Community
 
-### Current Coverage
+### **Documentation Issues**
 
-- **Core Algorithms**: 100% documented
-- **System Architecture**: 100% documented
-- **Implementation Guides**: 85% documented
-- **API Documentation**: 0% documented (planned for Week 3+)
-- **Deployment Guides**: 0% documented (planned for Week 4+)
+- Check the [troubleshooting guides](troubleshooting_comprehensive.md)
+- Review the [complete usage guide](complete_usage_guide.md)
+- Test with the [validation tools](../tools/README.md)
 
-### Documentation Quality
+### **Feature Requests**
 
-- **Technical Accuracy**: 95%+ verified
-- **Code Examples**: 90%+ tested and working
-- **User Feedback**: Positive from development team
-- **Maintenance**: Regular updates and improvements
+- Review the [project architecture](project_architecture.md)
+- Check the [progress report](progress.md)
+- Consider contributing to the project
 
-## 🚨 Common Documentation Issues
+### **Technical Questions**
 
-### Missing Information
-
-If you can't find information on a specific topic:
-
-1. **Check Related Documents**: Look in related implementation guides
-2. **Search the Codebase**: Check source code and comments
-3. **Review Progress**: Check `progress.md` for current status
-4. **Ask the Team**: Contact relevant team members
-
-### Outdated Information
-
-If you find outdated or incorrect information:
-
-1. **Note the Issue**: Document what's wrong and what should be correct
-2. **Check Recent Changes**: Review recent commits and updates
-3. **Update Documentation**: Submit corrections or updates
-4. **Verify Accuracy**: Test examples and verify technical details
-
-### Incomplete Examples
-
-If code examples don't work:
-
-1. **Check Dependencies**: Ensure all required packages are installed
-2. **Verify Versions**: Check if versions have changed
-3. **Test Incrementally**: Test individual components step by step
-4. **Report Issues**: Document problems for future updates
-
-## 🔮 Future Documentation
-
-### Planned Additions
-
-#### Week 3+ Documentation
-
-- **API Reference**: Complete FastAPI endpoint documentation
-- **Deployment Guide**: Production deployment and scaling
-- **Performance Guide**: Optimization and benchmarking
-- **User Manual**: End-user documentation and tutorials
-
-#### Advanced Topics
-
-- **Machine Learning Integration**: ML-based color analysis
-- **Cloud Deployment**: AWS, Azure, and GCP deployment guides
-- **Monitoring and Observability**: System monitoring and alerting
-- **Security Guide**: Security best practices and considerations
-
-### Documentation Improvements
-
-- **Interactive Examples**: Jupyter notebooks with live examples
-- **Video Tutorials**: Screen recordings of common tasks
-- **Search Functionality**: Full-text search across all documentation
-- **Version Control**: Documentation versioning and change tracking
-- **Community Contributions**: Guidelines for external contributions
-
-## 📞 Getting Help
-
-### Documentation Issues
-
-- **Missing Information**: Check related documents or ask the team
-- **Outdated Content**: Report issues for updates
-- **Unclear Instructions**: Request clarification or examples
-- **Broken Links**: Report broken references
-
-### Technical Support
-
-- **Implementation Questions**: Check relevant implementation guides
-- **Troubleshooting**: Use `troubleshooting.md` and related guides
-- **Performance Issues**: Review performance and optimization guides
-- **Integration Problems**: Check integration and architecture documents
-
-### Contributing to Documentation
-
-- **Suggestions**: Propose improvements and additions
-- **Corrections**: Submit fixes for errors or outdated information
-- **Examples**: Provide additional code examples and use cases
-- **Translations**: Help with internationalization if needed
+- Study the [component documentation](histogram_generation_guide.md)
+- Examine the [API reference](api_reference.md)
+- Test with the [development tools](../tools/README.md)
 
 ---
 
-**Last Updated**: December 2024  
-**Document Count**: 12+ comprehensive guides  
-**Coverage**: 85%+ of implemented features documented  
-**Status**: Comprehensive documentation infrastructure implemented
+## 🎯 Documentation Goals
+
+This documentation hub aims to provide:
+
+- **📖 Comprehensive Coverage**: All aspects of the project documented
+- **🚀 Quick Start**: Easy setup for new users
+- **🔧 Deep Dive**: Technical details for developers
+- **🛠️ Practical Examples**: Real-world usage scenarios
+- **🔍 Troubleshooting**: Solutions for common issues
+- **📈 Performance**: Benchmarks and optimization guidance
+
+---
+
+**🎨 Welcome to Chromatica!** Start your color search journey with the [Complete Usage Guide](complete_usage_guide.md) and explore the rich world of color-based image search.
+
+_For the latest updates and development status, see the [Progress Report](progress.md)._

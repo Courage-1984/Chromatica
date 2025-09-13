@@ -1,18 +1,20 @@
 .vscode/
 
 /.cursor/*
+!/.cursor/rules/
 !/.cursor/README.md
 !/.cursor/mcp_server_usage.md
+!/.cursor/Cursor_Rules_by_ChatGPT.md
 
 /venv311/
 
 /__pycache__/
 __pycache__/
 
-/histograms/
-/reports/
+histograms/
+reports/
 
-/logs/
+logs/
 
-/test_index/
+test_index/
 

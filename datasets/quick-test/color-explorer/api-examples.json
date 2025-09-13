@@ -1,0 +1,55 @@
+{
+  "api_examples": {
+    "search_queries": [
+      {
+        "name": "Single Color Search",
+        "query": {
+          "colors": ["FF0000"],
+          "weights": [1.0]
+        },
+        "description": "Search for images with dominant red color"
+      },
+      {
+        "name": "Weighted Color Search",
+        "query": {
+          "colors": ["FF0000", "00FF00"],
+          "weights": [0.7, 0.3]
+        },
+        "description": "Search prioritizing red over green"
+      },
+      {
+        "name": "Multi-Color Search",
+        "query": {
+          "colors": ["FF0000", "00FF00", "0000FF"],
+          "weights": [0.5, 0.3, 0.2]
+        },
+        "description": "Balanced three-color search"
+      }
+    ],
+    "response_examples": [
+      {
+        "name": "Successful Search",
+        "response": {
+          "query_id": "example-001",
+          "results_count": 3,
+          "results": [
+            {
+              "image_id": "img_001",
+              "distance": 0.15,
+              "rank": 1,
+              "dominant_colors": ["#FF0000", "#CC0000", "#990000"]
+            }
+          ]
+        }
+      },
+      {
+        "name": "No Results",
+        "response": {
+          "query_id": "example-002",
+          "results_count": 0,
+          "results": []
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "templates": {
+    "professional": [
+      {
+        "name": "Corporate Blue",
+        "colors": ["#1E3A8A", "#3B82F6", "#60A5FA", "#93C5FD", "#DBEAFE"],
+        "description": "Professional corporate color scheme"
+      },
+      {
+        "name": "Business Gray",
+        "colors": ["#111827", "#374151", "#6B7280", "#9CA3AF", "#D1D5DB"],
+        "description": "Sophisticated business color scheme"
+      },
+      {
+        "name": "Tech Green",
+        "colors": ["#064E3B", "#059669", "#10B981", "#34D399", "#6EE7B7"],
+        "description": "Modern technology color scheme"
+      }
+    ],
+    "creative": [
+      {
+        "name": "Artistic Rainbow",
+        "colors": ["#FF0000", "#FF8000", "#FFFF00", "#80FF00", "#00FF00", "#00FF80", "#00FFFF", "#0080FF", "#0000FF", "#8000FF", "#FF00FF", "#FF0080"],
+        "description": "Full spectrum creative palette"
+      },
+      {
+        "name": "Pastel Dreams",
+        "colors": ["#FFB3BA", "#BAFFC9", "#BAE1FF", "#FFFFBA", "#FFB3F7"],
+        "description": "Soft pastel color scheme"
+      },
+      {
+        "name": "Neon Vibes",
+        "colors": ["#FF0080", "#00FF80", "#0080FF", "#FF8000", "#8000FF"],
+        "description": "Vibrant neon color scheme"
+      }
+    ],
+    "nature": [
+      {
+        "name": "Forest Greens",
+        "colors": ["#064E3B", "#065F46", "#047857", "#059669", "#10B981"],
+        "description": "Natural forest color scheme"
+      },
+      {
+        "name": "Ocean Blues",
+        "colors": ["#0C4A6E", "#075985", "#0369A1", "#0284C7", "#0EA5E9"],
+        "description": "Ocean-inspired color scheme"
+      },
+      {
+        "name": "Sunset Warmth",
+        "colors": ["#7C2D12", "#9A3412", "#C2410C", "#EA580C", "#F97316"],
+        "description": "Warm sunset color scheme"
+      }
+    ]
+  }
+}

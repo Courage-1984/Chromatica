@@ -251,19 +251,33 @@ def compute_sinkhorn_distance(
         hist1_reg = hist1_reg / hist1_reg.sum()
         hist2_reg = hist2_reg / hist2_reg.sum()
         
-        distance = ot.sinkhorn2(hist1_reg, hist2_reg, cost_matrix, reg=epsilon)
-
-        # Validate the result
-        if not np.isfinite(distance):
-            raise RuntimeError(f"Sinkhorn distance is not finite: {distance}")
-
-        if distance < 0:
-            logger.warning(
-                f"Negative Sinkhorn distance computed: {distance}, clamping to 0"
-            )
-            distance = max(0.0, distance)
-
-        return float(distance)
+        try:
+            distance = ot.sinkhorn2(hist1_reg, hist2_reg, cost_matrix, reg=epsilon)
+            
+            # Validate the result
+            if not np.isfinite(distance):
+                logger.warning(f"Sinkhorn distance not finite: {distance}, using fallback")
+                # Fallback to L2 distance if Sinkhorn fails
+                distance = np.linalg.norm(hist1_reg - hist2_reg)
+            elif distance < 0:
+                logger.warning(
+                    f"Negative Sinkhorn distance computed: {distance}, clamping to 0"
+                )
+                distance = max(0.0, distance)
+            elif distance < 1e-10:
+                logger.warning(
+                    f"Sinkhorn distance very small: {distance}, using fallback"
+                )
+                # Use L2 distance for very small values to avoid numerical issues
+                distance = np.linalg.norm(hist1_reg - hist2_reg)
+                
+            return float(distance)
+            
+        except Exception as e:
+            logger.warning(f"Sinkhorn algorithm failed: {e}, using L2 fallback")
+            # Fallback to L2 distance if Sinkhorn completely fails
+            distance = np.linalg.norm(hist1_reg - hist2_reg)
+            return float(distance)
 
     except Exception as e:
         logger.error(f"Sinkhorn distance computation failed: {e}")

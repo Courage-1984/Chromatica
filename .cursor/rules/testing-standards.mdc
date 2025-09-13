@@ -1,0 +1,415 @@
+---
+description: Testing standards and validation requirements for all components
+globs: ["tests/**/*", "tools/test_*.py", "**/*test*.py"]
+alwaysApply: false
+---
+
+# Testing Standards and Validation Requirements
+
+## Overview
+
+This rule establishes comprehensive testing standards for the Chromatica project, ensuring that all components are thoroughly tested and validated before deployment. Testing is integrated into the development workflow and covers unit testing, integration testing, performance testing, and validation testing.
+
+## Testing Philosophy
+
+### Test-Driven Development
+
+- **Write tests first** for new functionality when possible
+- **Test all code paths** including error conditions and edge cases
+- **Maintain test coverage** above 90% for critical components
+- **Refactor tests** when refactoring code to maintain test quality
+
+### Quality Assurance
+
+- **All tests must pass** before code can be merged
+- **Performance tests** must meet specified targets
+- **Integration tests** must validate end-to-end functionality
+- **Validation tests** must ensure algorithmic correctness
+
+## Testing Infrastructure
+
+### Test Datasets
+
+- **test-dataset-20**: 20 images for quick development testing
+- **test-dataset-50**: 50 images for small-scale validation
+- **test-dataset-200**: 200 images for medium-scale testing
+- **test-dataset-5000**: 5,000 images for production-scale testing
+- **datasets/quick-test/**: Specialized datasets for specific tools
+
+### Testing Tools
+
+- **pytest**: Primary testing framework
+- **Custom testing tools**: Specialized tools in `tools/` directory
+- **Performance benchmarking**: Built-in performance measurement
+- **Visualization tools**: For test result analysis and debugging
+
+## Unit Testing Standards
+
+### Test Structure
+
+- **Test classes**: Group related tests logically
+- **Test methods**: One test per method, clear naming
+- **Setup/teardown**: Proper test isolation and cleanup
+- **Fixtures**: Reusable test data and setup
+
+### Test Coverage
+
+- **All public methods**: Test all public API methods
+- **Error conditions**: Test all error paths and exceptions
+- **Edge cases**: Test boundary conditions and edge cases
+- **Input validation**: Test all input validation logic
+
+### Example Unit Test
+
+```python
+import pytest
+import numpy as np
+from src.chromatica.core.histogram import build_histogram
+from src.chromatica.utils.config import TOTAL_BINS, LAB_RANGES
+
+class TestHistogramGeneration:
+    """Test suite for histogram generation functionality."""
+
+    def test_build_histogram_valid_input(self):
+        """Test histogram generation with valid Lab input."""
+        # Create test Lab pixels
+        lab_pixels = np.array([
+            [50.0, 0.0, 0.0],    # Neutral gray
+            [75.0, 10.0, -5.0],  # Light red
+            [25.0, -10.0, 5.0]   # Dark green
+        ])
+
+        # Generate histogram
+        histogram = build_histogram(lab_pixels)
+
+        # Validate results
+        assert histogram.shape == (TOTAL_BINS,)
+        assert np.isclose(histogram.sum(), 1.0, rtol=1e-6)
+        assert np.all(histogram >= 0)
+
+    def test_build_histogram_invalid_input(self):
+        """Test histogram generation with invalid input."""
+        with pytest.raises(ValueError):
+            build_histogram(np.array([]))  # Empty array
+
+    def test_build_histogram_edge_cases(self):
+        """Test histogram generation with edge case values."""
+        # Test with Lab values at boundaries
+        lab_pixels = np.array([
+            [0.0, -86.0, -108.0],    # Minimum values
+            [100.0, 98.0, 95.0]      # Maximum values
+        ])
+
+        histogram = build_histogram(lab_pixels)
+        assert histogram.shape == (TOTAL_BINS,)
+        assert np.isclose(histogram.sum(), 1.0, rtol=1e-6)
+```
+
+## Integration Testing Standards
+
+### End-to-End Testing
+
+- **Complete workflows**: Test entire processing pipelines
+- **Component integration**: Test interaction between modules
+- **Data flow validation**: Ensure data flows correctly between components
+- **Error propagation**: Test error handling across component boundaries
+
+### API Integration Testing
+
+- **Endpoint testing**: Test all API endpoints
+- **Request/response validation**: Validate API request and response formats
+- **Authentication testing**: Test authentication and authorization
+- **Performance testing**: Validate API performance requirements
+
+### Example Integration Test
+
+```python
+import pytest
+from src.chromatica.api.main import app
+from src.chromatica.indexing.store import AnnIndex, MetadataStore
+from fastapi.testclient import TestClient
+
+class TestAPIIntegration:
+    """Integration tests for API endpoints."""
+
+    @pytest.fixture
+    def client(self):
+        """Create test client with test index and store."""
+        # Setup test index and store
+        test_index = AnnIndex()
+        test_store = MetadataStore(":memory:")
+
+        # Populate with test data
+        # ... test data setup ...
+
+        return TestClient(app)
+
+    def test_search_endpoint(self, client):
+        """Test the search endpoint with valid query."""
+        response = client.get(
+            "/search",
+            params={
+                "colors": "FF0000,00FF00",
+                "weights": "0.5,0.5",
+                "k": 10
+            }
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "query_id" in data
+        assert "results" in data
+        assert len(data["results"]) <= 10
+
+    def test_search_endpoint_invalid_input(self, client):
+        """Test the search endpoint with invalid input."""
+        response = client.get(
+            "/search",
+            params={
+                "colors": "invalid_color",
+                "weights": "0.5,0.5"
+            }
+        )
+
+        assert response.status_code == 400
+```
+
+## Performance Testing Standards
+
+### Performance Targets
+
+- **Histogram generation**: ~200ms per image
+- **ANN search**: <150ms (P95)
+- **Reranking**: <300ms for K=200 candidates
+- **Total search latency**: <450ms (P95)
+- **API response time**: <500ms (P95)
+
+### Performance Test Structure
+
+- **Benchmarking**: Measure execution time and memory usage
+- **Load testing**: Test under various load conditions
+- **Stress testing**: Test system limits and failure points
+- **Regression testing**: Ensure performance doesn't degrade
+
+### Example Performance Test
+
+```python
+import pytest
+import time
+import psutil
+from src.chromatica.core.histogram import build_histogram
+
+class TestPerformance:
+    """Performance tests for critical components."""
+
+    def test_histogram_generation_performance(self):
+        """Test histogram generation meets performance targets."""
+        # Create test image data
+        lab_pixels = np.random.rand(1000, 3) * 100
+
+        # Measure execution time
+        start_time = time.time()
+        histogram = build_histogram(lab_pixels)
+        execution_time = time.time() - start_time
+
+        # Validate performance target
+        assert execution_time < 0.2  # 200ms target
+
+        # Validate memory usage
+        memory_usage = psutil.Process().memory_info().rss / 1024 / 1024  # MB
+        assert memory_usage < 100  # 100MB limit
+
+    def test_batch_processing_performance(self):
+        """Test batch processing performance."""
+        # Test with multiple images
+        batch_size = 100
+        lab_pixels_batch = [np.random.rand(1000, 3) * 100 for _ in range(batch_size)]
+
+        start_time = time.time()
+        histograms = [build_histogram(pixels) for pixels in lab_pixels_batch]
+        execution_time = time.time() - start_time
+
+        # Validate batch processing efficiency
+        avg_time_per_image = execution_time / batch_size
+        assert avg_time_per_image < 0.2  # 200ms per image target
+```
+
+## Validation Testing Standards
+
+### Algorithmic Validation
+
+- **Histogram properties**: Validate histogram dimensions, normalization, and bounds
+- **Color space conversion**: Validate Lab color space conversions
+- **Distance calculations**: Validate Sinkhorn-EMD distance calculations
+- **Search accuracy**: Validate search result quality and relevance
+
+### Data Validation
+
+- **Input validation**: Test all input validation logic
+- **Output validation**: Validate output format and content
+- **Data consistency**: Ensure data consistency across components
+- **Error handling**: Validate error handling and recovery
+
+### Example Validation Test
+
+```python
+import pytest
+import numpy as np
+from src.chromatica.core.histogram import build_histogram
+from src.chromatica.utils.config import TOTAL_BINS, LAB_RANGES
+
+class TestValidation:
+    """Validation tests for algorithmic correctness."""
+
+    def test_histogram_validation(self):
+        """Validate histogram properties and constraints."""
+        lab_pixels = np.random.rand(1000, 3) * 100
+        histogram = build_histogram(lab_pixels)
+
+        # Validate dimensions
+        assert histogram.shape == (TOTAL_BINS,)
+
+        # Validate normalization
+        assert np.isclose(histogram.sum(), 1.0, rtol=1e-6)
+
+        # Validate bounds
+        assert np.all(histogram >= 0)
+        assert np.all(histogram <= 1)
+
+        # Validate data type
+        assert histogram.dtype == np.float32
+
+    def test_color_space_validation(self):
+        """Validate color space conversion accuracy."""
+        # Test known color conversions
+        test_cases = [
+            ([0, 0, 0], "black"),
+            ([100, 0, 0], "white"),
+            ([50, 50, 0], "red"),
+            ([50, -50, 0], "green"),
+            ([50, 0, 50], "yellow")
+        ]
+
+        for lab_values, color_name in test_cases:
+            lab_pixels = np.array([lab_values])
+            histogram = build_histogram(lab_pixels)
+
+            # Validate histogram properties
+            assert histogram.shape == (TOTAL_BINS,)
+            assert np.isclose(histogram.sum(), 1.0, rtol=1e-6)
+```
+
+## Testing Tools and Utilities
+
+### Custom Testing Tools
+
+- **test_histogram_generation.py**: Comprehensive histogram testing
+- **test_api.py**: API endpoint testing
+- **test_faiss_duckdb.py**: Index and database testing
+- **test_search_system.py**: End-to-end search testing
+
+### Test Data Management
+
+- **Test dataset organization**: Structured test datasets for different scenarios
+- **Test data generation**: Synthetic data generation for edge cases
+- **Test data validation**: Ensure test data quality and consistency
+- **Test data cleanup**: Proper cleanup of test data and resources
+
+### Test Reporting
+
+- **Test result reporting**: Comprehensive test result reports
+- **Performance metrics**: Performance measurement and reporting
+- **Coverage reporting**: Code coverage analysis and reporting
+- **Visualization**: Charts and graphs for test result analysis
+
+## Testing Workflow Integration
+
+### Pre-commit Testing
+
+- **Unit tests**: Run unit tests before commit
+- **Linting**: Run code linting and formatting checks
+- **Type checking**: Run type checking for Python code
+- **Quick validation**: Run quick validation tests
+
+### CI/CD Integration
+
+- **Automated testing**: Run full test suite on every commit
+- **Performance testing**: Run performance tests on CI/CD
+- **Integration testing**: Run integration tests on CI/CD
+- **Deployment testing**: Test deployment procedures
+
+### Release Testing
+
+- **Full test suite**: Run complete test suite before release
+- **Performance validation**: Validate performance targets
+- **Integration validation**: Validate end-to-end functionality
+- **User acceptance testing**: Validate user-facing functionality
+
+## Test Maintenance and Quality
+
+### Test Quality Standards
+
+- **Test clarity**: Tests should be clear and easy to understand
+- **Test maintainability**: Tests should be easy to maintain and update
+- **Test reliability**: Tests should be reliable and not flaky
+- **Test performance**: Tests should run efficiently
+
+### Test Documentation
+
+- **Test purpose**: Clear explanation of what each test validates
+- **Test setup**: Documentation of test setup and prerequisites
+- **Test data**: Documentation of test data and test cases
+- **Test results**: Documentation of expected test results
+
+### Test Review Process
+
+- **Code review**: Include tests in code review process
+- **Test review**: Review test quality and coverage
+- **Performance review**: Review test performance and efficiency
+- **Documentation review**: Review test documentation quality
+
+## Error Handling and Debugging
+
+### Test Error Handling
+
+- **Error scenario testing**: Test error conditions and edge cases
+- **Error message validation**: Validate error messages and codes
+- **Error recovery testing**: Test error recovery and cleanup
+- **Error logging testing**: Test error logging and reporting
+
+### Test Debugging
+
+- **Debug information**: Provide detailed debug information for failed tests
+- **Test isolation**: Ensure tests are properly isolated
+- **Test data debugging**: Provide debugging information for test data
+- **Performance debugging**: Provide performance debugging information
+
+### Test Failure Analysis
+
+- **Failure categorization**: Categorize test failures by type
+- **Failure root cause analysis**: Analyze root causes of test failures
+- **Failure resolution**: Document resolution of test failures
+- **Failure prevention**: Implement measures to prevent test failures
+
+## Testing Best Practices
+
+### Test Design
+
+- **Test independence**: Tests should be independent and not depend on each other
+- **Test repeatability**: Tests should be repeatable and deterministic
+- **Test simplicity**: Tests should be simple and focused
+- **Test completeness**: Tests should cover all important scenarios
+
+### Test Implementation
+
+- **Test naming**: Use clear and descriptive test names
+- **Test organization**: Organize tests logically and consistently
+- **Test data**: Use appropriate test data for different scenarios
+- **Test assertions**: Use appropriate assertions for validation
+
+### Test Maintenance
+
+- **Test updates**: Update tests when code changes
+- **Test refactoring**: Refactor tests to improve quality
+- **Test cleanup**: Clean up obsolete or redundant tests
+- **Test optimization**: Optimize tests for better performance

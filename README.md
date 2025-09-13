@@ -25,22 +25,27 @@ Chromatica is a production-ready color search engine that retrieves images whose
 
 ## 🚀 Current Status
 
-### ✅ Completed (Week 1)
+### ✅ Completed (Week 1 & 2)
+
 - **Core Histogram Generation**: Fully implemented with tri-linear soft assignment
 - **Image Processing Pipeline**: Complete preprocessing with Lab color space conversion
 - **Configuration Management**: Centralized constants and parameters
 - **Testing Infrastructure**: Comprehensive testing tools with validation and visualization
-- **Documentation**: Detailed guides and progress tracking
-
-### 🔄 In Progress (Week 2)
 - **FAISS HNSW Index**: Vector similarity search implementation
 - **DuckDB Metadata Store**: Efficient storage and retrieval system
-- **Integration Pipeline**: Connecting all components
-
-### 📋 Planned (Week 3+)
+- **Two-Stage Search Pipeline**: Complete ANN search + Sinkhorn-EMD reranking
 - **FastAPI Web API**: REST endpoints for search functionality
+- **Advanced Visualization Tools**: 6 comprehensive tools with expandable panels
+- **Output Cleanup Tool**: Comprehensive utility for managing generated files and maintaining clean development environment
+- **Web Interface**: Catppuccin Mocha theme with custom typography
+- **Documentation**: Detailed guides and progress tracking
+- **Cursor Rules System**: Modern `.cursor/rules` structure with comprehensive project guidance
+
+### 🔄 In Progress (Week 3)
+
 - **Performance Optimization**: Latency and throughput improvements
 - **Production Deployment**: Scaling and monitoring
+- **Large-Scale Testing**: 10,000+ image validation
 
 ## 🛠️ Technology Stack
 
@@ -56,10 +61,12 @@ Chromatica is a production-ready color search engine that retrieves images whose
 ## 📦 Installation
 
 ### Prerequisites
+
 - Python 3.10 or higher
 - Virtual environment (recommended)
 
 ### Setup
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -78,22 +85,119 @@ pip install -r requirements.txt
 ## 🧪 Testing
 
 ### Quick Test
+
 ```bash
 # Test histogram generation on a single image
 python tools/test_histogram_generation.py --image datasets/test-dataset-20/a1.png
 ```
 
 ### Comprehensive Testing
+
 ```bash
 # Test entire dataset with visualization
 python tools/test_histogram_generation.py --directory datasets/test-dataset-50/ --output-format both
 ```
 
 ### Test Datasets
+
 - **test-dataset-20**: 20 images for rapid development and debugging
 - **test-dataset-50**: 50 images for validation and testing
 - **test-dataset-200**: 200 images for performance testing
 - **test-dataset-5000**: 5,000 images for production-scale validation
+
+## 🎨 Advanced Visualization Tools
+
+Chromatica includes a comprehensive suite of **6 Advanced Visualization Tools** that provide powerful analysis and visualization capabilities:
+
+### 🎨 Color Palette Analyzer
+
+- Image color analysis with K-means clustering
+- Multiple output formats (PNG, PDF, JSON, CSV)
+- Performance benchmarking and validation
+
+### 📊 Search Results Analyzer
+
+- Search result visualization and analysis
+- Multiple visualization styles (charts, heatmaps, 3D projections)
+- Performance metrics and ranking analysis
+
+### 🔍 Interactive Color Explorer
+
+- Color harmony generation (complementary, analogous, triadic)
+- Real-time preview and live search integration
+- Palette export and scheme saving
+
+### 📈 Histogram Analysis Tool
+
+- Histogram validation and visualization
+- Performance benchmarking and timing analysis
+- Multiple visualization types and comprehensive reporting
+
+### 🎯 Distance Debugger Tool
+
+- Sinkhorn-EMD debugging and analysis
+- Multiple test types and dataset support
+- Comprehensive debugging options and analysis reports
+
+### 🎭 Query Visualizer Tool
+
+- Color query visualization with multiple styles
+- Various layout options and customization
+- Accessibility features and color harmony analysis
+
+### ✨ Key Features
+
+- **Expandable Tool Panels**: Full configuration options for each tool
+- **Real Quick Test Execution**: Actual tool execution with specialized datasets
+- **Consistent Interface**: Three-button design (Run Tool, Info, Quick Test)
+- **Professional Quality**: Production-ready implementation with comprehensive error handling
+
+**Quick Test Datasets**: Each tool includes specialized datasets in `datasets/quick-test/` for immediate testing and validation.
+
+## 🧹 Output Cleanup Tool
+
+The Chromatica project includes a comprehensive output cleanup tool (`tools/cleanup_outputs.py`) for managing generated files and maintaining a clean development environment.
+
+### Key Features
+
+- **Selective Cleanup**: Choose specific output types (histograms, reports, logs, test_index, cache, temp)
+- **Interactive Mode**: User-friendly interface with guided selection
+- **Safety Features**: Confirmation prompts, dry-run mode, and comprehensive error handling
+- **Size Reporting**: Shows disk space usage and freed space
+- **Script Generation**: Create standalone cleanup scripts for specific operations
+
+### Usage Examples
+
+```bash
+# Interactive mode - guided cleanup selection
+python tools/cleanup_outputs.py
+
+# Clean specific output types
+python tools/cleanup_outputs.py --logs --reports --histograms
+
+# Clean all outputs with confirmation
+python tools/cleanup_outputs.py --all --confirm
+
+# Preview what would be deleted (safe)
+python tools/cleanup_outputs.py --datasets --dry-run
+
+# Clean dataset outputs (histograms + reports)
+python tools/cleanup_outputs.py --datasets
+```
+
+### Current Project Status
+
+The cleanup tool can manage:
+
+- **21 histogram files** (13.8 MB)
+- **67 report files** (1.2 MB)
+- **3 log files** (119.8 KB)
+- **3 test index files** (124.1 MB)
+- **7,101 cache files** (146.0 MB)
+
+**Total**: ~285 MB of generated files that can be cleaned up as needed.
+
+For detailed documentation, see [`docs/tools_cleanup_outputs.md`](docs/tools_cleanup_outputs.md).
 
 ## 📚 Documentation
 
@@ -101,11 +205,14 @@ python tools/test_histogram_generation.py --directory datasets/test-dataset-50/ 
 - **[Progress Report](docs/progress.md)**: Current implementation status
 - **[Histogram Guide](docs/histogram_generation_guide.md)**: Detailed histogram generation documentation
 - **[FAISS & DuckDB Guide](docs/faiss_duckdb_guide.md)**: Vector indexing and storage implementation
+- **[Cleanup Tool Guide](docs/tools_cleanup_outputs.md)**: Comprehensive output cleanup utility documentation
+- **[Cleanup Troubleshooting](docs/troubleshooting_cleanup_tool.md)**: Cleanup tool troubleshooting guide
 - **[Troubleshooting](docs/troubleshooting.md)**: Common issues and solutions
 
 ## 🔧 Development
 
 ### Project Structure
+
 ```
 src/chromatica/
 ├── core/           # Histogram generation and color processing
@@ -119,6 +226,7 @@ docs/               # Comprehensive documentation
 ```
 
 ### Key Modules
+
 - **`histogram.py`**: Core histogram generation with tri-linear soft assignment
 - **`pipeline.py`**: Complete image processing pipeline
 - **`store.py`**: FAISS and DuckDB integration
@@ -138,6 +246,34 @@ docs/               # Comprehensive documentation
 3. Run tests before submitting changes
 4. Update documentation as needed
 
+## 🤖 Cursor Rules System
+
+Chromatica uses a comprehensive Cursor rules system for AI-assisted development:
+
+### Modern Rules Structure
+
+- **`.cursor/rules/`**: MDC format rules with metadata and scoping
+- **Always Applied**: Core project rules that ensure consistency
+- **Auto-Attached**: Rules that automatically apply based on file patterns
+- **Agent-Requested**: Rules available for AI to include when needed
+- **Manual**: Rules for explicit invocation with `@ruleName`
+
+### Rule Categories
+
+- **Core Rules**: Project overview, technology stack, and critical instructions
+- **Module Rules**: Scoped rules for core, API, indexing, and tools modules
+- **Specialized Rules**: Documentation, testing, web interface, and workflow standards
+- **Alternative Format**: `AGENTS.md` for simple markdown instructions
+
+### Key Benefits
+
+- **Better Organization**: Rules organized by scope and purpose
+- **Improved Performance**: Selective rule application for efficiency
+- **Enhanced Functionality**: More flexible and powerful rule system
+- **Easier Maintenance**: Easier to maintain and update specific rule sets
+
+For detailed information, see [Cursor Rules Guide](docs/cursor_rules_guide.md).
+
 ## 📄 License
 
 [Add your license information here]
@@ -151,5 +287,4 @@ docs/               # Comprehensive documentation
 
 ---
 
-**Project Status**: Week 1 Complete ✅ | Week 2 In Progress 🔄 | Production Target: Q1 2025 🎯
-
+**Project Status**: Week 1 Complete ✅ | Week 2 Complete ✅ | Week 3 In Progress 🔄 | Production Target: Q1 2025 🎯

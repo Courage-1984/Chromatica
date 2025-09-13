@@ -1,0 +1,427 @@
+---
+description: Web interface development standards (Catppuccin Mocha theme, visualization tools, accessibility)
+globs: ["src/chromatica/api/static/**/*", "src/chromatica/visualization/**/*"]
+alwaysApply: false
+---
+
+# Web Interface Development Standards
+
+## Overview
+
+This rule establishes standards for web interface development in the Chromatica project, including the Catppuccin Mocha theme implementation, visualization tools, accessibility requirements, and responsive design principles.
+
+## Theme Implementation Standards
+
+### Catppuccin Mocha Theme
+
+- **25-Color Palette**: Complete implementation of official Catppuccin Mocha colors
+- **CSS Variables**: Centralized color management using CSS custom properties
+- **Semantic Naming**: Use semantic color names (e.g., `--ctp-base`, `--ctp-text`)
+- **Accessibility**: WCAG-compliant contrast ratios for all text and interactive elements
+
+### Color Application Strategy
+
+```css
+/* Base Colors */
+--ctp-base: #1e1e2e; /* Background */
+--ctp-mantle: #181825; /* Secondary background */
+--ctp-crust: #11111b; /* Tertiary background */
+
+/* Surface Colors */
+--ctp-surface0: #313244; /* Cards and sections */
+--ctp-surface1: #45475a; /* Hover states */
+--ctp-surface2: #585b70; /* Active states */
+
+/* Text Colors */
+--ctp-text: #cdd6f4; /* Primary text */
+--ctp-subtext1: #bac2de; /* Secondary text */
+--ctp-subtext0: #a6adc8; /* Tertiary text */
+
+/* Accent Colors */
+--ctp-blue: #89b4fa; /* Primary accent */
+--ctp-green: #a6e3a1; /* Success states */
+--ctp-mauve: #cba6f7; /* Interactive elements */
+--ctp-red: #f38ba8; /* Error states */
+```
+
+### Theme Implementation Requirements
+
+- **Consistent Application**: Apply theme colors consistently across all components
+- **Hover Effects**: Use subtle mauve accents and smooth transitions
+- **Focus States**: Clear focus indicators for accessibility
+- **Dark Mode**: Optimized for dark theme with proper contrast
+
+## Typography System
+
+### Font Implementation
+
+- **Primary Font**: JetBrains Mono Nerd Font Mono with multiple weights
+- **Emoji Font**: Segoe UI Emoji for crisp, high-quality emoji rendering
+- **Symbol Font**: Segoe UI Symbol for comprehensive symbol coverage
+- **Fallback Strategy**: Comprehensive fallback chain for cross-platform compatibility
+
+### Typography Features
+
+```css
+/* Font Stack */
+font-family: "JetBrains Mono Nerd Font Mono", "Segoe UI Emoji",
+  "Segoe UI Symbol", "Consolas", "Monaco", "Courier New", monospace;
+
+/* Font Weights */
+--font-weight-regular: 400;
+--font-weight-medium: 500;
+--font-weight-semibold: 600;
+--font-weight-bold: 700;
+
+/* Font Optimization */
+font-display: swap; /* Optimize loading performance */
+```
+
+### Typography Standards
+
+- **Monospace Design**: Perfect for technical content and developer interfaces
+- **Nerd Font Support**: Includes programming icons and symbols
+- **Visual Hierarchy**: Use appropriate font weights for different content levels
+- **Readability**: Ensure excellent readability across all screen sizes
+
+## Responsive Design Standards
+
+### Mobile-First Approach
+
+- **Base Styles**: Design for mobile devices first
+- **Progressive Enhancement**: Add features for larger screens
+- **Breakpoints**: Use consistent breakpoints across the application
+- **Touch-Friendly**: Ensure touch targets are appropriately sized
+
+### Responsive Breakpoints
+
+```css
+/* Mobile First */
+@media (min-width: 768px) {
+  /* Tablet and desktop styles */
+}
+
+@media (min-width: 1024px) {
+  /* Desktop styles */
+}
+
+@media (min-width: 1440px) {
+  /* Large desktop styles */
+}
+```
+
+### Layout Standards
+
+- **Flexbox/Grid**: Use modern CSS layout methods
+- **Container Queries**: Use container queries where appropriate
+- **Fluid Typography**: Use relative units for scalable typography
+- **Responsive Images**: Optimize images for different screen sizes
+
+## Accessibility Standards
+
+### WCAG Compliance
+
+- **Level AA**: Meet WCAG 2.1 Level AA standards
+- **Contrast Ratios**: Ensure proper contrast ratios for all text
+- **Keyboard Navigation**: Support full keyboard navigation
+- **Screen Reader Support**: Provide proper ARIA labels and descriptions
+
+### Accessibility Features
+
+```html
+<!-- Semantic HTML -->
+<main role="main">
+  <section aria-labelledby="search-heading">
+    <h2 id="search-heading">Color Search</h2>
+    <!-- Content -->
+  </section>
+</main>
+
+<!-- ARIA Labels -->
+<button aria-label="Search for images" aria-describedby="search-help">
+  Search
+</button>
+<div id="search-help">
+  Enter colors and weights to search for similar images
+</div>
+
+<!-- Focus Management -->
+<div tabindex="0" role="button" aria-pressed="false">Interactive Element</div>
+```
+
+### Accessibility Testing
+
+- **Automated Testing**: Use accessibility testing tools
+- **Manual Testing**: Test with screen readers and keyboard navigation
+- **User Testing**: Include users with disabilities in testing
+- **Continuous Monitoring**: Monitor accessibility compliance over time
+
+## Advanced Visualization Tools
+
+### Tool Architecture
+
+- **Expandable Panels**: Each tool has an expandable interface
+- **Three-Button Interface**: Info, Run Tool, and Quick Test buttons
+- **Real Execution**: Tools execute with actual datasets, not hardcoded results
+- **Dynamic Results**: Results are generated from actual tool execution
+
+### Implemented Tools
+
+#### 1. Color Palette Analyzer
+
+- **Purpose**: Comprehensive analysis and visualization of color palettes
+- **Features**: Image upload, color extraction, multiple output formats
+- **Quick Test**: Uses `datasets/quick-test/color-palette/`
+- **Export**: PNG, PDF, JSON, CSV formats
+
+#### 2. Search Results Analyzer
+
+- **Purpose**: Advanced visualization and analysis of search results
+- **Features**: Query analysis, weighted analysis, multiple visualization styles
+- **Quick Test**: Uses `datasets/quick-test/search-results/`
+- **Export**: Analysis results and visualizations
+
+#### 3. Interactive Color Explorer
+
+- **Purpose**: Interactive interface for exploring color combinations
+- **Features**: Color selection, harmony generation, live search integration
+- **Quick Test**: Uses `datasets/quick-test/color-explorer/`
+- **Export**: Palette export and scheme saving
+
+#### 4. Histogram Analysis Tool
+
+- **Purpose**: Comprehensive testing and visualization of histogram generation
+- **Features**: Single/batch processing, validation, performance benchmarking
+- **Quick Test**: Uses `datasets/quick-test/histogram-analysis/`
+- **Export**: Reports and visualizations
+
+#### 5. Distance Debugger Tool
+
+- **Purpose**: Debug and analyze Sinkhorn-EMD distance calculations
+- **Features**: Multiple test types, dataset selection, comprehensive debugging
+- **Quick Test**: Uses `datasets/quick-test/distance-debugger/`
+- **Export**: Analysis reports and recommendations
+
+#### 6. Query Visualizer Tool
+
+- **Purpose**: Create visual representations of color queries
+- **Features**: Color query input, multiple visualization styles, layout options
+- **Quick Test**: Uses `datasets/quick-test/query-visualizer/`
+- **Export**: Visualizations in multiple formats
+
+### Tool Panel Standards
+
+```html
+<!-- Tool Panel Structure -->
+<div class="tool-panel" data-tool="color-palette-analyzer">
+  <div class="tool-header">
+    <h3>Color Palette Analyzer</h3>
+    <button class="close-panel" aria-label="Close panel">×</button>
+  </div>
+
+  <div class="tool-content">
+    <div class="tool-config">
+      <!-- Configuration options -->
+    </div>
+
+    <div class="tool-actions">
+      <button class="run-tool">Run Tool</button>
+      <button class="reset-tool">Reset</button>
+      <button class="help-tool">Help</button>
+    </div>
+
+    <div class="tool-results">
+      <!-- Results display area -->
+    </div>
+  </div>
+</div>
+```
+
+## JavaScript Standards
+
+### Modern JavaScript
+
+- **ES6+ Features**: Use modern JavaScript features
+- **Module System**: Use ES6 modules for code organization
+- **Async/Await**: Use async/await for asynchronous operations
+- **Error Handling**: Implement comprehensive error handling
+
+### Code Organization
+
+```javascript
+// Module structure
+export class ColorPaletteAnalyzer {
+  constructor(container) {
+    this.container = container;
+    this.config = {};
+    this.results = null;
+  }
+
+  async runTool(config) {
+    try {
+      this.config = config;
+      this.showLoading();
+      this.results = await this.executeTool(config);
+      this.displayResults(this.results);
+    } catch (error) {
+      this.showError(error);
+    }
+  }
+
+  async executeTool(config) {
+    // Tool execution logic
+  }
+
+  displayResults(results) {
+    // Results display logic
+  }
+}
+```
+
+### Event Handling
+
+- **Event Delegation**: Use event delegation for dynamic content
+- **Event Cleanup**: Properly clean up event listeners
+- **Error Boundaries**: Implement error boundaries for JavaScript errors
+- **Performance**: Optimize event handling for performance
+
+## CSS Standards
+
+### CSS Architecture
+
+- **BEM Methodology**: Use BEM naming convention for CSS classes
+- **CSS Custom Properties**: Use CSS variables for theming
+- **CSS Grid/Flexbox**: Use modern layout methods
+- **CSS Modules**: Consider CSS modules for component styling
+
+### CSS Organization
+
+```css
+/* Component Structure */
+.tool-panel {
+  /* Block styles */
+}
+
+.tool-panel__header {
+  /* Element styles */
+}
+
+.tool-panel--expanded {
+  /* Modifier styles */
+}
+
+/* CSS Custom Properties */
+.tool-panel {
+  --tool-bg: var(--ctp-surface0);
+  --tool-text: var(--ctp-text);
+  --tool-accent: var(--ctp-mauve);
+}
+```
+
+### Performance Optimization
+
+- **Critical CSS**: Inline critical CSS for above-the-fold content
+- **CSS Minification**: Minify CSS for production
+- **CSS Purging**: Remove unused CSS
+- **CSS Loading**: Optimize CSS loading strategy
+
+## Form Handling Standards
+
+### Form Validation
+
+- **Client-Side Validation**: Implement comprehensive client-side validation
+- **Real-Time Feedback**: Provide real-time validation feedback
+- **Error Messages**: Clear and actionable error messages
+- **Accessibility**: Ensure form accessibility compliance
+
+### Form Structure
+
+```html
+<form class="tool-form" novalidate>
+  <div class="form-group">
+    <label for="image-upload">Upload Image</label>
+    <input
+      type="file"
+      id="image-upload"
+      accept="image/*"
+      aria-describedby="image-upload-help"
+      required
+    />
+    <div id="image-upload-help" class="form-help">
+      Upload an image to analyze its color palette
+    </div>
+    <div class="form-error" role="alert" aria-live="polite"></div>
+  </div>
+</form>
+```
+
+## Performance Standards
+
+### Loading Performance
+
+- **Initial Page Load**: <2 seconds for initial page load
+- **Tool Execution**: <5 seconds for complex tool operations
+- **Font Loading**: Optimized with `font-display: swap`
+- **Asset Optimization**: Minified CSS and JavaScript
+
+### Runtime Performance
+
+- **Smooth Interactions**: 60fps for animations and transitions
+- **Responsive UI**: Immediate response to user interactions
+- **Memory Management**: Efficient memory usage for large datasets
+- **Error Recovery**: Graceful handling of performance issues
+
+## Browser Compatibility
+
+### Supported Browsers
+
+- **Modern Browsers**: Chrome, Firefox, Safari, Edge (latest versions)
+- **Mobile Browsers**: iOS Safari, Chrome Mobile, Samsung Internet
+- **Progressive Enhancement**: Graceful degradation for older browsers
+- **Feature Detection**: Use feature detection for modern features
+
+### Compatibility Testing
+
+- **Cross-Browser Testing**: Test on multiple browsers and devices
+- **Responsive Testing**: Test on different screen sizes and orientations
+- **Performance Testing**: Test performance across different browsers
+- **Accessibility Testing**: Test accessibility features across browsers
+
+## Security Standards
+
+### Client-Side Security
+
+- **Input Sanitization**: Sanitize all user inputs
+- **XSS Prevention**: Prevent cross-site scripting attacks
+- **CSRF Protection**: Implement CSRF protection where needed
+- **Content Security Policy**: Implement CSP headers
+
+### Data Handling
+
+- **Sensitive Data**: Never expose sensitive data in client-side code
+- **File Uploads**: Validate and sanitize file uploads
+- **API Security**: Secure API communication
+- **Error Handling**: Don't expose sensitive information in error messages
+
+## Maintenance Guidelines
+
+### Theme Maintenance
+
+- **Color Updates**: Keep synchronized with official Catppuccin releases
+- **Accessibility**: Regular contrast ratio testing and validation
+- **Browser Compatibility**: Test with new browser versions
+- **Performance**: Monitor font loading and rendering performance
+
+### Tool Maintenance
+
+- **Functionality**: Regular testing of tool functionality
+- **Datasets**: Keep quick test datasets updated and relevant
+- **Documentation**: Update tool information and help content
+- **Performance**: Monitor tool execution performance
+
+### Code Maintenance
+
+- **Code Quality**: Maintain high code quality standards
+- **Documentation**: Keep documentation up to date
+- **Testing**: Regular testing of all functionality
+- **Updates**: Regular updates of dependencies and frameworks

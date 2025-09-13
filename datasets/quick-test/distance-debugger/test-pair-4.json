@@ -1,0 +1,26 @@
+{
+  "test_pair": {
+    "name": "Numerical Stability Test",
+    "description": "Histograms designed to test numerical stability of distance calculations",
+    "histogram_1": {
+      "id": "hist_stable_001",
+      "file_path": "datasets/quick-test/histogram-analysis/sample-histogram-1.npy",
+      "description": "Well-conditioned histogram with balanced values",
+      "expected_distance": 0.45,
+      "distance_type": "Sinkhorn-EMD"
+    },
+    "histogram_2": {
+      "id": "hist_stable_002",
+      "file_path": "datasets/quick-test/histogram-analysis/sample-histogram-2.npy",
+      "description": "Well-conditioned histogram with balanced values",
+      "expected_distance": 0.45,
+      "distance_type": "Sinkhorn-EMD"
+    },
+    "analysis": {
+      "similarity_score": 0.55,
+      "common_features": ["Balanced distributions", "Well-conditioned values"],
+      "differences": ["Color dominance", "Peak positions"],
+      "stability_notes": "Should provide stable Sinkhorn-EMD calculations without numerical issues"
+    }
+  }
+}

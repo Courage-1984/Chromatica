@@ -1,0 +1,60 @@
+{
+    "query": {
+        "name": "Two-Color Weighted Query",
+        "description": "Query with two colors and different weights",
+        "colors": [
+            "FF0000",
+            "00FF00"
+        ],
+        "weights": [
+            0.7,
+            0.3
+        ],
+        "query_id": "weighted-red-green-002",
+        "visualization_type": "weighted_color_bar"
+    },
+    "expected_output": {
+        "color_bar": {
+            "width": 800,
+            "height": 200,
+            "colors": [
+                "#FF0000",
+                "#00FF00"
+            ],
+            "weights": [
+                0.7,
+                0.3
+            ],
+            "labels": [
+                "Red (70%)",
+                "Green (30%)"
+            ],
+            "bar_widths": [
+                560,
+                240
+            ]
+        },
+        "palette": {
+            "width": 400,
+            "height": 300,
+            "colors": [
+                "#FF0000",
+                "#00FF00"
+            ],
+            "weights": [
+                0.7,
+                0.3
+            ],
+            "circle_sizes": [
+                70,
+                30
+            ]
+        },
+        "summary": {
+            "total_colors": 2,
+            "dominant_color": "#FF0000",
+            "weight_distribution": "Red dominant (70%), Green secondary (30%)",
+            "balance_score": 0.4
+        }
+    }
+}

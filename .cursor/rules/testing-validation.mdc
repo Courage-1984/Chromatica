@@ -1,0 +1,296 @@
+---
+description: Testing standards and validation requirements for Chromatica
+globs: ["tests/**/*", "tools/test_*.py", "scripts/test_*.py"]
+alwaysApply: false
+---
+
+# Testing Standards and Validation Requirements
+
+## Testing Philosophy
+
+### Comprehensive Testing Strategy
+
+- **Unit Tests**: Test individual functions and classes
+- **Integration Tests**: Test component interactions
+- **End-to-End Tests**: Test complete workflows
+- **Performance Tests**: Validate performance targets
+- **Validation Tests**: Ensure algorithmic correctness
+
+### Test Quality Standards
+
+- **Coverage**: Maintain high test coverage (>90%)
+- **Reliability**: Tests must be deterministic and repeatable
+- **Speed**: Tests should run quickly for rapid feedback
+- **Maintainability**: Tests should be easy to maintain and update
+
+## Test Dataset Management
+
+### Test Dataset Structure
+
+```
+datasets/
+├── test-dataset-20/          # Quick development testing (20 images)
+├── test-dataset-50/          # Small-scale validation (50 images)
+├── test-dataset-200/         # Medium-scale testing (200 images)
+├── test-dataset-5000/        # Production-scale testing (5,000 images)
+└── quick-test/               # Quick test datasets for tools
+    ├── color-palette/
+    ├── search-results/
+    ├── color-explorer/
+    ├── histogram-analysis/
+    ├── distance-debugger/
+    └── query-visualizer/
+```
+
+### Dataset Usage Guidelines
+
+- **Development**: Use test-dataset-20 for rapid iteration
+- **Validation**: Use test-dataset-50/200 for feature validation
+- **Performance**: Use test-dataset-200 for performance testing
+- **Production**: Use test-dataset-5000 for production-scale testing
+- **Tools**: Use quick-test datasets for tool validation
+
+## Unit Testing Standards
+
+### Test Structure
+
+```python
+import pytest
+import numpy as np
+from src.chromatica.core.histogram import build_histogram
+
+class TestHistogramGeneration:
+    """Test suite for histogram generation functionality."""
+
+    def test_histogram_dimensions(self):
+        """Test that histogram has correct dimensions."""
+        # Test implementation...
+
+    def test_histogram_normalization(self):
+        """Test that histogram is properly normalized."""
+        # Test implementation...
+
+    def test_histogram_validation(self):
+        """Test histogram validation logic."""
+        # Test implementation...
+```
+
+### Test Requirements
+
+- **Descriptive Names**: Test names should clearly describe what is being tested
+- **Single Responsibility**: Each test should test one specific behavior
+- **Independence**: Tests should not depend on each other
+- **Cleanup**: Tests should clean up after themselves
+
+### Assertion Standards
+
+- **Specific Assertions**: Use specific assertions rather than generic ones
+- **Error Messages**: Provide clear error messages for failed assertions
+- **Edge Cases**: Test edge cases and boundary conditions
+- **Error Conditions**: Test error handling and exception cases
+
+## Integration Testing
+
+### Component Integration
+
+- **Histogram Pipeline**: Test complete histogram generation pipeline
+- **Search Pipeline**: Test two-stage search process
+- **API Integration**: Test API endpoint functionality
+- **Database Integration**: Test database operations
+
+### Integration Test Examples
+
+```python
+def test_end_to_end_search():
+    """Test complete search pipeline from query to results."""
+    # Setup test data
+    query_colors = ["FF0000", "00FF00"]
+    query_weights = [0.5, 0.5]
+
+    # Execute search
+    results = search_api.search(query_colors, query_weights, k=10)
+
+    # Validate results
+    assert len(results) == 10
+    assert all(result.distance >= 0 for result in results)
+    assert results[0].distance <= results[-1].distance  # Sorted by distance
+```
+
+## Performance Testing
+
+### Latency Testing
+
+- **Histogram Generation**: Test ~200ms per image target
+- **ANN Search**: Test <150ms target
+- **Reranking**: Test <300ms target
+- **Total Latency**: Test <450ms end-to-end target
+
+### Performance Test Framework
+
+```python
+import time
+import pytest
+
+def test_histogram_generation_performance():
+    """Test histogram generation meets performance targets."""
+    test_image = load_test_image()
+
+    start_time = time.time()
+    histogram = build_histogram(test_image)
+    end_time = time.time()
+
+    execution_time = (end_time - start_time) * 1000  # Convert to ms
+    assert execution_time < 200, f"Histogram generation took {execution_time}ms, target is 200ms"
+```
+
+### Memory Testing
+
+- **Memory Usage**: Test memory usage stays within limits
+- **Memory Leaks**: Test for memory leaks in long-running processes
+- **Large Dataset**: Test memory usage with large datasets
+
+## Validation Testing
+
+### Histogram Validation
+
+```python
+def test_histogram_validation():
+    """Test histogram meets all validation requirements."""
+    histogram = build_histogram(test_pixels)
+
+    # Dimension validation
+    assert histogram.shape == (1152,), f"Expected 1152 dimensions, got {histogram.shape[0]}"
+
+    # Normalization validation
+    assert abs(histogram.sum() - 1.0) < 1e-6, f"Histogram not normalized, sum is {histogram.sum()}"
+
+    # Range validation
+    assert np.all(histogram >= 0), "Histogram contains negative values"
+    assert np.all(histogram <= 1.0), "Histogram contains values > 1.0"
+```
+
+### Algorithm Validation
+
+- **Soft Assignment**: Validate tri-linear soft assignment implementation
+- **Hellinger Transform**: Validate Hellinger transform application
+- **Sinkhorn-EMD**: Validate Sinkhorn-EMD distance calculation
+- **Cost Matrix**: Validate cost matrix computation
+
+## Test Data Management
+
+### Synthetic Test Data
+
+```python
+def create_synthetic_lab_pixels(n_pixels: int = 1000) -> np.ndarray:
+    """Create synthetic Lab pixel data for testing."""
+    # Generate random Lab values within valid ranges
+    l_values = np.random.uniform(0, 100, n_pixels)
+    a_values = np.random.uniform(-86, 98, n_pixels)
+    b_values = np.random.uniform(-108, 95, n_pixels)
+
+    return np.column_stack([l_values, a_values, b_values])
+```
+
+### Real Test Data
+
+- **Test Images**: Use actual images from test datasets
+- **Known Results**: Use images with known color characteristics
+- **Edge Cases**: Include images with unusual color distributions
+- **Performance Data**: Use images of varying sizes and complexities
+
+## Test Execution
+
+### Test Commands
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run specific test file
+pytest tests/test_histogram.py -v
+
+# Run tests with coverage
+pytest tests/ --cov=src/chromatica --cov-report=html
+
+# Run performance tests
+pytest tests/ -m performance -v
+
+# Run integration tests
+pytest tests/ -m integration -v
+```
+
+### Continuous Integration
+
+- **Automated Testing**: Run tests on every commit
+- **Performance Monitoring**: Monitor test execution time
+- **Coverage Reporting**: Track test coverage metrics
+- **Quality Gates**: Fail builds on test failures
+
+## Test Documentation
+
+### Test Documentation Requirements
+
+- **Test Purpose**: Clearly document what each test validates
+- **Test Data**: Document test data sources and characteristics
+- **Expected Results**: Document expected outcomes
+- **Dependencies**: Document test dependencies and setup
+
+### Test Maintenance
+
+- **Regular Updates**: Update tests when code changes
+- **Test Review**: Review tests for completeness and accuracy
+- **Test Refactoring**: Refactor tests for better maintainability
+- **Test Performance**: Monitor and optimize test execution time
+
+## Quality Assurance
+
+### Test Quality Metrics
+
+- **Coverage**: Maintain >90% code coverage
+- **Reliability**: <1% test flakiness rate
+- **Speed**: Complete test suite in <5 minutes
+- **Maintainability**: Clear and maintainable test code
+
+### Test Review Process
+
+- **Code Review**: Include tests in code review process
+- **Test Review**: Review tests for quality and completeness
+- **Coverage Review**: Review coverage reports for gaps
+- **Performance Review**: Review test performance and optimization
+
+## Error Testing
+
+### Error Condition Testing
+
+```python
+def test_invalid_input_handling():
+    """Test handling of invalid input data."""
+    with pytest.raises(ValueError, match="Invalid Lab values"):
+        build_histogram(invalid_pixels)
+
+    with pytest.raises(ValueError, match="Empty pixel array"):
+        build_histogram(np.array([]))
+```
+
+### Exception Testing
+
+- **Input Validation**: Test input validation error handling
+- **Resource Errors**: Test resource exhaustion scenarios
+- **Network Errors**: Test network-related error handling
+- **System Errors**: Test system-level error handling
+
+## Test Environment
+
+### Test Environment Setup
+
+- **Isolation**: Tests should run in isolated environments
+- **Reproducibility**: Tests should be reproducible across environments
+- **Cleanup**: Tests should clean up after themselves
+- **Configuration**: Use test-specific configuration
+
+### Test Data Cleanup
+
+- **Temporary Files**: Clean up temporary test files
+- **Database State**: Reset database state between tests
+- **Cache Cleanup**: Clear caches between tests
+- **Resource Cleanup**: Release resources after tests

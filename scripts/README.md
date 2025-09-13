@@ -16,11 +16,11 @@ The scripts directory provides automation and utility functions for:
 
 ### Data Processing Scripts
 
-#### Bulk Indexing Script
+#### Build Index Script
 
 ```bash
 # Process and index entire datasets
-python scripts/bulk_index.py --dataset datasets/test-dataset-5000 --output index_output/
+python scripts/build_index.py datasets/test-dataset-5000 --output-dir index_output/
 ```
 
 **Features:**
@@ -29,6 +29,27 @@ python scripts/bulk_index.py --dataset datasets/test-dataset-5000 --output index
 - Progress tracking and error handling
 - Memory-efficient processing with configurable batch sizes
 - Output validation and quality checks
+- FAISS HNSW index generation
+- DuckDB metadata store creation
+- Comprehensive logging and performance monitoring
+
+**Usage Examples:**
+
+```bash
+# Basic usage
+python scripts/build_index.py datasets/test-dataset-20
+
+# Advanced usage with custom settings
+python scripts/build_index.py datasets/test-dataset-5000 --output-dir ./production_index --batch-size 200 --verbose
+
+# Help and options
+python scripts/build_index.py --help
+```
+
+**Output Files:**
+
+- `chromatica_index.faiss`: FAISS HNSW index with Hellinger-transformed histograms
+- `chromatica_metadata.db`: DuckDB database with raw histograms and metadata
 
 #### Dataset Validation Script
 

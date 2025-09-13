@@ -369,7 +369,7 @@ class HistogramTester:
             base_name: Base name for output files
         """
         timestamp = time.strftime("%Y%m%d_%H%M%S")
-        
+
         # Create separate folders for different file types
         # PNG and NPY files stay in histograms folder
         # JSON, CSV, and other text files go to reports folder
@@ -604,7 +604,7 @@ class HistogramTester:
             # Save summary to reports folder (not histograms folder)
             reports_dir = os.path.join(os.path.dirname(output_dir), "reports")
             os.makedirs(reports_dir, exist_ok=True)
-            
+
             timestamp = time.strftime("%Y%m%d_%H%M%S")
             summary_path = os.path.join(reports_dir, f"summary_report_{timestamp}.json")
             with open(summary_path, "w") as f:
@@ -626,7 +626,9 @@ class HistogramTester:
             overall_stats = {
                 "total_images": len(all_histograms),
                 "total_pixels": sum(r["image_info"]["lab_pixels"] for r in results),
-                "total_resized_images": sum(r["image_info"]["resized"] for r in results),
+                "total_resized_images": sum(
+                    r["image_info"]["resized"] for r in results
+                ),
                 "mean_entropy": float(np.mean(all_entropies)),
                 "std_entropy": float(np.std(all_entropies)),
                 "min_entropy": float(np.min(all_entropies)),
@@ -642,7 +644,9 @@ class HistogramTester:
             os.makedirs(reports_dir, exist_ok=True)
 
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            detailed_path = os.path.join(reports_dir, f"detailed_analysis_{timestamp}.json")
+            detailed_path = os.path.join(
+                reports_dir, f"detailed_analysis_{timestamp}.json"
+            )
             with open(detailed_path, "w") as f:
                 json.dump(overall_stats, f, indent=2, default=str)
 
@@ -656,19 +660,23 @@ class HistogramTester:
         try:
             validation_results = []
             for r in results:
-                validation_results.append({
-                    "image_path": r["image_path"],
-                    "validation_passed": r["validation"]["validation_passed"],
-                    "errors": "; ".join(r["validation"]["errors"]),
-                    "warnings": "; ".join(r["validation"]["warnings"]),
-                })
+                validation_results.append(
+                    {
+                        "image_path": r["image_path"],
+                        "validation_passed": r["validation"]["validation_passed"],
+                        "errors": "; ".join(r["validation"]["errors"]),
+                        "warnings": "; ".join(r["validation"]["warnings"]),
+                    }
+                )
 
             # Save validation summary report
             reports_dir = os.path.join(os.path.dirname(output_dir), "reports")
             os.makedirs(reports_dir, exist_ok=True)
 
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            validation_path = os.path.join(reports_dir, f"validation_summary_{timestamp}.json")
+            validation_path = os.path.join(
+                reports_dir, f"validation_summary_{timestamp}.json"
+            )
             with open(validation_path, "w") as f:
                 json.dump(validation_results, f, indent=2, default=str)
 
@@ -677,27 +685,33 @@ class HistogramTester:
         except Exception as e:
             logger.warning(f"Failed to generate validation summary report: {e}")
 
-    def _generate_performance_analysis_report(self, results: List[Dict], output_dir: str):
+    def _generate_performance_analysis_report(
+        self, results: List[Dict], output_dir: str
+    ):
         """Generate a performance analysis report of histogram generation."""
         try:
             performance_results = []
             for r in results:
-                performance_results.append({
-                    "image_path": r["image_path"],
-                    "mean_time_ms": r["performance"]["mean_time_ms"],
-                    "std_time_ms": r["performance"]["std_time_ms"],
-                    "min_time_ms": r["performance"]["min_time_ms"],
-                    "max_time_ms": r["performance"]["max_time_ms"],
-                    "mean_memory_kb": r["performance"]["mean_memory_kb"],
-                    "pixels_per_second": r["performance"]["pixels_per_second"],
-                })
+                performance_results.append(
+                    {
+                        "image_path": r["image_path"],
+                        "mean_time_ms": r["performance"]["mean_time_ms"],
+                        "std_time_ms": r["performance"]["std_time_ms"],
+                        "min_time_ms": r["performance"]["min_time_ms"],
+                        "max_time_ms": r["performance"]["max_time_ms"],
+                        "mean_memory_kb": r["performance"]["mean_memory_kb"],
+                        "pixels_per_second": r["performance"]["pixels_per_second"],
+                    }
+                )
 
             # Save performance analysis report
             reports_dir = os.path.join(os.path.dirname(output_dir), "reports")
             os.makedirs(reports_dir, exist_ok=True)
 
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            performance_path = os.path.join(reports_dir, f"performance_analysis_{timestamp}.json")
+            performance_path = os.path.join(
+                reports_dir, f"performance_analysis_{timestamp}.json"
+            )
             with open(performance_path, "w") as f:
                 json.dump(performance_results, f, indent=2, default=str)
 
@@ -711,20 +725,24 @@ class HistogramTester:
         try:
             quality_results = []
             for r in results:
-                quality_results.append({
-                    "image_path": r["image_path"],
-                    "entropy": r["validation"]["metrics"]["entropy"],
-                    "sparsity": r["validation"]["metrics"]["sparsity"],
-                    "mean_time_ms": r["performance"]["mean_time_ms"],
-                    "pixels_per_second": r["performance"]["pixels_per_second"],
-                })
+                quality_results.append(
+                    {
+                        "image_path": r["image_path"],
+                        "entropy": r["validation"]["metrics"]["entropy"],
+                        "sparsity": r["validation"]["metrics"]["sparsity"],
+                        "mean_time_ms": r["performance"]["mean_time_ms"],
+                        "pixels_per_second": r["performance"]["pixels_per_second"],
+                    }
+                )
 
             # Save quality metrics report
             reports_dir = os.path.join(os.path.dirname(output_dir), "reports")
             os.makedirs(reports_dir, exist_ok=True)
 
             timestamp = time.strftime("%Y%m%d_%H%M%S")
-            quality_path = os.path.join(reports_dir, f"quality_metrics_{timestamp}.json")
+            quality_path = os.path.join(
+                reports_dir, f"quality_metrics_{timestamp}.json"
+            )
             with open(quality_path, "w") as f:
                 json.dump(quality_results, f, indent=2, default=str)
 
@@ -800,21 +818,47 @@ Examples:
             # Test single image
             result = tester.test_single_image(args.image)
             if result.get("success", True):
-                print(f"\n✅ Single image test completed successfully!")
-                print(f"   Image: {args.image}")
-                print(f"   Histogram shape: {result['histogram']['shape']}")
-                print(f"   Output directory: {result['output_directory']}")
-                if result["visualization"]:
-                    print(f"   Visualization: {result['visualization']}")
-                
-                # Inform about file organization
-                image_dir = os.path.dirname(args.image)
-                print(f"   📁 File organization:")
-                print(f"      • Histograms & Visualizations: {os.path.join(image_dir, 'histograms')}")
-                print(f"      • Reports & Data: {os.path.join(image_dir, 'reports')}")
+                try:
+                    print(f"\n✅ Single image test completed successfully!")
+                    print(f"   Image: {args.image}")
+                    print(f"   Histogram shape: {result['histogram']['shape']}")
+                    print(f"   Output directory: {result['output_directory']}")
+                    if result["visualization"]:
+                        print(f"   Visualization: {result['visualization']}")
+
+                    # Inform about file organization
+                    image_dir = os.path.dirname(args.image)
+                    print(f"   📁 File organization:")
+                    print(
+                        f"      • Histograms & Visualizations: {os.path.join(image_dir, 'histograms')}"
+                    )
+                    print(
+                        f"      • Reports & Data: {os.path.join(image_dir, 'reports')}"
+                    )
+                except UnicodeEncodeError:
+                    print(f"\nSingle image test completed successfully!")
+                    print(f"   Image: {args.image}")
+                    print(f"   Histogram shape: {result['histogram']['shape']}")
+                    print(f"   Output directory: {result['output_directory']}")
+                    if result["visualization"]:
+                        print(f"   Visualization: {result['visualization']}")
+
+                    # Inform about file organization
+                    image_dir = os.path.dirname(args.image)
+                    print(f"   File organization:")
+                    print(
+                        f"      • Histograms & Visualizations: {os.path.join(image_dir, 'histograms')}"
+                    )
+                    print(
+                        f"      • Reports & Data: {os.path.join(image_dir, 'reports')}"
+                    )
             else:
-                print(f"\n❌ Single image test failed!")
-                print(f"   Error: {result.get('error', 'Unknown error')}")
+                try:
+                    print(f"\n❌ Single image test failed!")
+                    print(f"   Error: {result.get('error', 'Unknown error')}")
+                except UnicodeEncodeError:
+                    print(f"\nSingle image test failed!")
+                    print(f"   Error: {result.get('error', 'Unknown error')}")
                 sys.exit(1)
 
         elif args.directory:
@@ -823,25 +867,51 @@ Examples:
             successful = sum(1 for r in results if r.get("success", True))
             total = len(results)
 
-            print(f"\n✅ Directory test completed!")
-            print(f"   Directory: {args.directory}")
-            print(f"   Total images: {total}")
-            print(f"   Successful: {successful}")
-            print(f"   Failed: {total - successful}")
-            
-            # Inform about file organization
-            print(f"   📁 File organization:")
-            print(f"      • Histograms & Visualizations: {os.path.join(args.directory, 'histograms')}")
-            print(f"      • Reports & Data: {os.path.join(args.directory, 'reports')}")
+            try:
+                print(f"\n✅ Directory test completed!")
+                print(f"   Directory: {args.directory}")
+                print(f"   Total images: {total}")
+                print(f"   Successful: {successful}")
+                print(f"   Failed: {total - successful}")
+
+                # Inform about file organization
+                print(f"   📁 File organization:")
+                print(
+                    f"      • Histograms & Visualizations: {os.path.join(args.directory, 'histograms')}"
+                )
+                print(
+                    f"      • Reports & Data: {os.path.join(args.directory, 'reports')}"
+                )
+            except UnicodeEncodeError:
+                print(f"\nDirectory test completed!")
+                print(f"   Directory: {args.directory}")
+                print(f"   Total images: {total}")
+                print(f"   Successful: {successful}")
+                print(f"   Failed: {total - successful}")
+
+                # Inform about file organization
+                print(f"   File organization:")
+                print(
+                    f"      • Histograms & Visualizations: {os.path.join(args.directory, 'histograms')}"
+                )
+                print(
+                    f"      • Reports & Data: {os.path.join(args.directory, 'reports')}"
+                )
 
             if successful < total:
                 sys.exit(1)
 
     except KeyboardInterrupt:
-        print("\n\n⚠️  Test interrupted by user")
+        try:
+            print("\n\n⚠️  Test interrupted by user")
+        except UnicodeEncodeError:
+            print("\n\nTest interrupted by user")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        try:
+            print(f"\n❌ Unexpected error: {e}")
+        except UnicodeEncodeError:
+            print(f"\nUnexpected error: {e}")
         logger.exception("Unexpected error occurred")
         sys.exit(1)
 

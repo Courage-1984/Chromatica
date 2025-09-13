@@ -1,0 +1,166 @@
+---
+description: Algorithmic specifications and implementation requirements for Chromatica
+globs: ["src/chromatica/core/**/*", "src/chromatica/indexing/**/*"]
+alwaysApply: false
+---
+
+# Algorithmic Specifications and Implementation Requirements
+
+## Color Space and Processing
+
+### CIE Lab Color Space
+
+- **Color Space**: CIE Lab (D65 illuminant) for all processing
+- **Conversion**: sRGB to CIE Lab using scikit-image
+- **Range Validation**: L* [0, 100], a* [-86, 98], b\* [-108, 95]
+- **Perceptual Uniformity**: Lab space provides perceptually uniform color differences
+
+### Histogram Generation
+
+- **Binning Grid**: 8x12x12 (L* a* b\*) for total of 1,152 dimensions
+- **Assignment Method**: Tri-linear soft assignment for robustness
+- **Normalization**: L1 normalization to create probability distributions
+- **Validation**: All histograms must be 1152 dimensions, sum to 1.0
+
+### Implementation Requirements
+
+```python
+# Required constants from config.py
+L_BINS = 8
+A_BINS = 12
+B_BINS = 12
+TOTAL_BINS = 1152
+LAB_RANGES = [[0., 100.], [-86., 98.], [-108., 95.]]
+RERANK_K = 200
+```
+
+## Search Pipeline Architecture
+
+### Two-Stage Search Process
+
+1. **ANN Search**: Fast approximate search using FAISS HNSW index
+2. **Reranking**: High-fidelity Sinkhorn-EMD distance calculation
+
+### ANN Index Requirements
+
+- **Index Type**: FAISS IndexHNSWFlat with M=32
+- **Embedding**: Hellinger transform (element-wise square root) of normalized histogram
+- **Search Parameters**: efSearch parameter for search breadth control
+- **Memory Management**: Efficient memory usage for large datasets
+
+### Reranking Implementation
+
+- **Distance Metric**: Sinkhorn-approximated Earth Mover's Distance (EMD)
+- **Cost Matrix**: Pre-computed squared Euclidean distance between bin centers
+- **Regularization**: Epsilon parameter (ε=0.1) for Sinkhorn algorithm
+- **Candidate Count**: Top K=200 candidates from ANN search
+
+## Performance Specifications
+
+### Latency Targets
+
+- **Histogram Generation**: ~200ms per image
+- **ANN Search**: <150ms (P95)
+- **Reranking**: <300ms (P95) for K=200 candidates
+- **Total End-to-End**: <450ms (P95)
+
+### Memory Requirements
+
+- **Raw Histogram**: 4.6KB per image (1152 × 4 bytes)
+- **FAISS Index**: ~1.75x overhead for HNSW structure
+- **Total RAM for 1M images**: ~12.7 GB
+
+### Quality Metrics
+
+- **Precision@10**: >0.7
+- **nDCG@50**: >0.6
+- **mAP**: >0.65
+- **Validation Success Rate**: 100%
+
+## Implementation Standards
+
+### Code Quality
+
+- **Type Hints**: Comprehensive type annotations for all functions
+- **Input Validation**: Validate all inputs with descriptive error messages
+- **Error Handling**: Graceful error handling with actionable messages
+- **Performance Monitoring**: Built-in timing and memory usage tracking
+
+### Documentation Requirements
+
+- **Google-style Docstrings**: All functions, classes, and modules
+- **Mathematical Explanations**: Detailed explanations for algorithmic functions
+- **Usage Examples**: Practical examples in docstrings
+- **Integration Patterns**: How components work together
+
+### Testing Requirements
+
+- **Unit Tests**: Test individual functions with synthetic data
+- **Integration Tests**: Test complete pipeline with real data
+- **Performance Tests**: Validate latency and memory targets
+- **Validation Tests**: Ensure histogram specifications are met
+
+## Algorithm Implementation Details
+
+### Tri-linear Soft Assignment
+
+```python
+def build_histogram(lab_pixels: np.ndarray) -> np.ndarray:
+    """
+    Implements tri-linear soft assignment for robust histogram generation.
+
+    Each pixel contributes to 8 neighboring bins using weights calculated
+    from fractional positions, preventing hard quantization boundaries.
+    """
+    # Implementation details...
+```
+
+### Hellinger Transform
+
+```python
+def apply_hellinger_transform(histogram: np.ndarray) -> np.ndarray:
+    """
+    Applies element-wise square root for FAISS compatibility.
+
+    The squared Euclidean distance between transformed vectors is
+    proportional to the Hellinger distance, a true probability metric.
+    """
+    return np.sqrt(histogram.astype(np.float32))
+```
+
+### Sinkhorn-EMD Implementation
+
+```python
+def compute_sinkhorn_emd(hist1: np.ndarray, hist2: np.ndarray,
+                        cost_matrix: np.ndarray, epsilon: float = 0.1) -> float:
+    """
+    Computes Sinkhorn-approximated Earth Mover's Distance.
+
+    Uses entropy-regularized optimal transport for efficient computation
+    of perceptually meaningful color distance.
+    """
+    # Implementation using POT library...
+```
+
+## Validation and Quality Assurance
+
+### Histogram Validation
+
+- **Dimension Check**: Exactly 1152 dimensions
+- **Normalization Check**: Sum equals 1.0 within tolerance
+- **Range Check**: All values non-negative
+- **Sparsity Check**: Reasonable sparsity for color distribution
+
+### Performance Validation
+
+- **Timing Validation**: Meet latency targets
+- **Memory Validation**: Stay within memory limits
+- **Accuracy Validation**: Meet quality metrics
+- **Scalability Validation**: Performance with large datasets
+
+### Integration Validation
+
+- **Pipeline Integration**: End-to-end functionality
+- **API Integration**: Proper request/response handling
+- **Database Integration**: Efficient data storage and retrieval
+- **Web Interface Integration**: User experience validation

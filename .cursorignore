@@ -1,21 +1,68 @@
+# Chromatica Project - .cursorignore
+# This file specifies which files and directories should be ignored by Cursor AI
 
+# Cursor Configuration (keep these)
 !/.cursor/*
 !/.cursor/
+!/.cursor/rules/
 !/.cursor/mcp_server_usage.md
 !/.cursor/mcp.json
+!/.cursor/Cursor_Rules_by_ChatGPT.md
+!/.cursor/README.md
 
+# Cursor Rules (keep all new Project Rules)
+!/.cursor/rules/*.mdc
+!/.cursor/rules/chromatica-project.mdc
+!/.cursor/rules/algorithmic-specifications.mdc
+!/.cursor/rules/api-endpoints.mdc
+!/.cursor/rules/testing-validation.mdc
+!/.cursor/rules/development-workflow.mdc
+!/.cursor/rules/documentation-standards.mdc
+!/.cursor/rules/indexing-module.mdc
+!/.cursor/rules/tools-module.mdc
+!/.cursor/rules/web-interface.mdc
+!/.cursor/rules/legacy-migration.mdc
+!/.cursor/rules/core-module.mdc
+
+# AGENTS.md (keep this as alternative to Project Rules)
+!/AGENTS.md
+
+# Legacy Documentation (ignore old planning docs)
 /docs/ColorSearchEngine_Plans/
 /docs/ColorSearchEngine_Plans_Consolidated/
 /docs/ColorSearchEngine_Plans_Final/
 
+# Virtual Environment
 /venv311/
 
+# Python Cache Files
 /__pycache__/
 __pycache__/
 
-!/histograms/
-!/reports/
+# Generated Content (keep these for analysis)
+!histograms/
+!reports/
+!logs/
+!test_index/
 
-!/logs/
-!/test_index/
+# Font Files (keep these for web interface)
+!src/chromatica/api/static/fonts/
+
+# Theme and Font Documentation (keep these)
+!docs/catppuccin_mocha_theme.md
+!docs/catppuccin_mocha_quick_reference.md
+!docs/font_setup_guide.md
+
+# Updated Documentation Index (keep this)
+!docs/README.md
+
+# Cursor Rules Documentation (keep these)
+!docs/cursor_rules_migration_guide.md
+!docs/cursor_rules_setup_summary.md
+
+# Web Interface Files (keep these)
+!src/chromatica/api/static/index.html
+
+# Legacy .cursorrules (deprecated, but keep for reference)
+!/.cursorrules
 

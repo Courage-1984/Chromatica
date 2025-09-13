@@ -1,0 +1,180 @@
+---
+description: Rules for core module development (histogram generation, color processing, algorithms)
+globs: ["src/chromatica/core/**/*"]
+alwaysApply: false
+---
+
+# Core Module Development Rules
+
+## Module Overview
+
+The core module (`src/chromatica/core/`) contains the fundamental algorithms and data structures for the Chromatica color search engine. This includes histogram generation, color space conversion, query processing, and reranking logic.
+
+## Key Components
+
+### Histogram Generation (`histogram.py`)
+- **Tri-linear soft assignment** for robust color representation
+- **Vectorized NumPy operations** for performance
+- **L1 normalization** to create probability distributions
+- **8x12x12 binning grid** (1,152 dimensions) in CIE Lab space
+
+### Query Processing (`query.py`)
+- **Hex color to Lab conversion** with proper color space handling
+- **Weighted query histogram generation** with Gaussian smoothing
+- **Input validation** for color codes and weight distributions
+
+### Reranking (`rerank.py`)
+- **Sinkhorn-EMD implementation** using POT library
+- **Pre-computed cost matrix** based on Lab space distances
+- **Batch processing** for efficient candidate reranking
+
+## Development Standards
+
+### Algorithm Implementation
+- **Follow exact specifications** from `docs/.cursor/critical_instructions.md`
+- **Use configuration constants** from `src/chromatica/utils/config.py`
+- **Implement comprehensive validation** for all inputs
+- **Include performance monitoring** and timing measurements
+
+### Code Quality
+- **Google-style docstrings** with mathematical explanations
+- **Type hints** for all function parameters and return values
+- **Error handling** with descriptive error messages
+- **Logging** at appropriate levels (DEBUG, INFO, WARNING, ERROR)
+
+### Testing Requirements
+- **Unit tests** for all core functions
+- **Validation tests** using test datasets
+- **Performance benchmarks** with timing measurements
+- **Edge case handling** for invalid inputs
+
+## Integration Points
+
+### Configuration Dependencies
+```python
+from ..utils.config import (
+    L_BINS, A_BINS, B_BINS, TOTAL_BINS, 
+    LAB_RANGES, RERANK_K, SINKHORN_EPSILON
+)
+```
+
+### External Libraries
+- **NumPy**: All numerical operations and array processing
+- **scikit-image**: Color space conversions (rgb2lab)
+- **POT**: Sinkhorn-EMD distance calculations
+- **OpenCV**: Image loading and preprocessing
+
+## Performance Requirements
+
+### Histogram Generation
+- **Target**: ~200ms per image (256px max dimension)
+- **Memory**: ~4.6KB per histogram (1152 × 4 bytes)
+- **Validation**: 100% success rate for proper histogram generation
+
+### Reranking Performance
+- **Target**: <300ms for K=200 candidates
+- **Memory efficiency**: Batch processing for multiple candidates
+- **Numerical stability**: Proper handling of edge cases
+
+## Error Handling
+
+### Input Validation
+- **Lab value ranges**: Validate against LAB_RANGES configuration
+- **Array shapes**: Ensure proper dimensions for all operations
+- **Weight validation**: Ensure weights sum to 1.0 for queries
+- **Color code validation**: Proper hex color format checking
+
+### Error Messages
+- **Descriptive**: Clear explanation of what went wrong
+- **Actionable**: Specific steps to resolve the issue
+- **Context**: Include relevant parameter values and ranges
+
+## Documentation Requirements
+
+### Function Documentation
+- **Purpose**: Clear explanation of what the function does
+- **Mathematical background**: Explain the algorithm and theory
+- **Parameters**: Detailed description of all inputs
+- **Returns**: Description of output format and meaning
+- **Examples**: Practical usage examples with sample data
+
+### Module Documentation
+- **Overview**: High-level description of module purpose
+- **Key features**: List of main capabilities
+- **Integration**: How it works with other modules
+- **Performance**: Expected performance characteristics
+
+## Testing Strategy
+
+### Unit Tests
+- **Individual functions**: Test each function in isolation
+- **Edge cases**: Test boundary conditions and invalid inputs
+- **Performance**: Measure execution time and memory usage
+- **Validation**: Ensure outputs meet specifications
+
+### Integration Tests
+- **End-to-end pipeline**: Test complete workflow
+- **Data consistency**: Ensure outputs are compatible with other modules
+- **Performance**: Test with realistic data volumes
+
+### Test Data
+- **Use test datasets**: `datasets/test-dataset-*` for validation
+- **Synthetic data**: Generate test cases for edge conditions
+- **Real images**: Use actual images for realistic testing
+
+## Code Examples
+
+### Histogram Generation
+```python
+def build_histogram(lab_pixels: np.ndarray) -> np.ndarray:
+    """
+    Converts Lab pixels into a normalized, soft-assigned histogram.
+    
+    Uses tri-linear soft assignment to distribute pixel counts across
+    neighboring bins, creating a robust representation that is less
+    sensitive to minor color variations.
+    
+    Args:
+        lab_pixels: Array of Lab color values, shape (N, 3)
+        
+    Returns:
+        Normalized histogram vector of shape (1152,)
+        
+    Raises:
+        ValueError: If input validation fails
+    """
+    # Implementation with comprehensive validation and error handling
+```
+
+### Query Processing
+```python
+def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarray:
+    """
+    Creates a query histogram from hex colors and weights.
+    
+    Converts hex colors to Lab space and generates a weighted histogram
+    with Gaussian smoothing for robust search queries.
+    
+    Args:
+        colors: List of hex color codes (e.g., ['#FF0000', '#00FF00'])
+        weights: List of weights corresponding to colors
+        
+    Returns:
+        Query histogram vector of shape (1152,)
+    """
+    # Implementation with color validation and weight normalization
+```
+
+## Maintenance Guidelines
+
+### Code Updates
+- **Preserve API compatibility** when possible
+- **Update documentation** for any changes
+- **Add tests** for new functionality
+- **Performance regression testing** for optimizations
+
+### Configuration Changes
+- **Update constants** in `config.py` as needed
+- **Validate changes** against existing implementations
+- **Update tests** to reflect new configuration values
+- **Document impact** of configuration changes

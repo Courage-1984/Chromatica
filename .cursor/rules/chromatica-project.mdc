@@ -1,0 +1,200 @@
+---
+description: Core Chromatica project rules and critical instructions compliance
+globs: []
+alwaysApply: true
+---
+
+# Chromatica Color Search Engine - Core Project Rules
+
+## Critical Instructions Compliance
+
+**MANDATORY**: Always consult `docs/.cursor/critical_instructions.md` before making any architectural decisions or implementing new features. This document is the single source of truth for the project.
+
+Before generating any code or making suggestions, state: "Consulting critical_instructions.md..."
+
+## Project Overview
+
+Chromatica is a production-ready, two-stage color search engine that retrieves images whose dominant palettes best match weighted, multi-color queries. The system uses:
+
+- **CIE Lab color space** (D65 illuminant) for perceptual uniformity
+- **8x12x12 binning grid** (1,152 dimensions) with tri-linear soft assignment
+- **FAISS HNSW index** for fast ANN search with Hellinger transform
+- **Sinkhorn-EMD reranking** for high-fidelity distance calculations
+- **DuckDB** for metadata and raw histogram storage
+
+## Implementation Status
+
+### ✅ Completed (Week 1 & 2)
+
+- Core histogram generation pipeline (`src/chromatica/core/histogram.py`)
+- Configuration management (`src/chromatica/utils/config.py`)
+- FAISS HNSW index and DuckDB metadata store (`src/chromatica/indexing/store.py`)
+- Web interface with Catppuccin Mocha theme and custom typography
+- Advanced Visualization Tools (6 tools with expandable panels)
+- Comprehensive testing infrastructure
+
+### 🔄 Current Focus
+
+- Performance optimization and production deployment
+- API endpoint refinement and error handling
+- Comprehensive evaluation and benchmarking
+
+## Technology Stack Requirements
+
+### Core Libraries
+
+- **opencv-python**: Image loading and resizing
+- **scikit-image**: sRGB to CIE Lab color conversion
+- **numpy**: Numerical operations and vectorized histogram generation
+- **faiss-cpu**: ANN index with IndexHNSWFlat (M=32)
+- **POT**: Sinkhorn-EMD reranking stage
+- **DuckDB**: Metadata and raw histogram storage
+- **FastAPI**: Web API framework
+
+### Web Interface
+
+- **Catppuccin Mocha theme**: 25-color palette with CSS variables
+- **JetBrains Mono Nerd Font Mono**: Primary typography
+- **Segoe UI Emoji/Symbol**: Emoji and symbol rendering
+- **WCAG compliance**: Accessibility standards
+
+## Algorithmic Specifications
+
+### Color Processing
+
+- Color space: **CIE Lab (D65 illuminant)**
+- Binning grid: **8x12x12 (L* a* b\*)** = 1,152 dimensions
+- Assignment: **Tri-linear soft assignment** for robustness
+- Normalization: **L1 normalization** to create probability distributions
+
+### Search Pipeline
+
+1. **ANN Search**: Hellinger-transformed histograms in FAISS HNSW index
+2. **Reranking**: Sinkhorn-EMD on raw histograms (K=200 candidates)
+3. **Cost Matrix**: Pre-computed squared Euclidean distance between bin centers
+
+### Performance Targets
+
+- Histogram generation: ~200ms per image
+- Total search latency (P95): <450ms
+- ANN search: <150ms
+- Reranking: <300ms
+
+## Development Environment
+
+### Virtual Environment
+
+- **Location**: `venv311` (Python 3.11)
+- **Activation**: `venv311\Scripts\activate` (Windows)
+- **Always activate** before running any project commands, tests, or scripts
+
+### Test Datasets
+
+- **test-dataset-20**: Quick development testing (20 images)
+- **test-dataset-50**: Small-scale validation (50 images)
+- **test-dataset-200**: Medium-scale testing (200 images)
+- **test-dataset-5000**: Production-scale testing (5,000 images, expand to 7,500)
+
+## Code Quality Standards
+
+### Python Standards
+
+- **Python 3.10+** with comprehensive type hints
+- **PEP 8** style guide compliance
+- **Google-style docstrings** for all functions, classes, and modules
+- **Comprehensive input validation** and error handling
+- **Performance monitoring** built into all components
+
+### Documentation Requirements
+
+- **MANDATORY**: Documentation updates for ALL code changes
+- **Comprehensive coverage**: Purpose, features, usage, troubleshooting
+- **Practical examples**: Code snippets and integration patterns
+- **Quality standards**: Accuracy, completeness, clarity, consistency
+
+## Integration Rules
+
+### New Components
+
+- Must integrate seamlessly with existing histogram generation pipeline
+- Follow established project structure and naming conventions
+- Include proper `__init__.py` files and import statements
+- Add dependencies to `requirements.txt` with version constraints
+
+### Testing Requirements
+
+- Use existing test datasets for validation
+- All histograms must pass validation (1152 dimensions, L1 normalization)
+- Performance targets: ~200ms per image, 100% validation success rate
+- Use testing tools for validating new implementations
+
+## Web Interface Standards
+
+### Visualization Tools
+
+- **6 Advanced Tools**: Color Palette Analyzer, Search Results Analyzer, Interactive Color Explorer, Histogram Analysis Tool, Distance Debugger Tool, Query Visualizer Tool
+- **Expandable panels** with comprehensive configuration options
+- **Quick Test functionality** using actual datasets from `datasets/quick-test/`
+- **Real execution** with dynamic results, not hardcoded placeholders
+
+### Theme Implementation
+
+- **Catppuccin Mocha**: Complete 25-color palette implementation
+- **CSS Variables**: Centralized color management
+- **Responsive Design**: Mobile-optimized with accessibility compliance
+- **Typography**: JetBrains Mono Nerd Font Mono + Segoe UI fonts
+
+## Error Handling and Logging
+
+### Logging Standards
+
+- Use standard `logging` module in all scripts and API endpoints
+- Log key events, errors, and performance metrics
+- Appropriate levels: DEBUG, INFO, WARNING, ERROR
+- Descriptive and actionable error messages
+
+### Troubleshooting
+
+- Systematic use of logs and debugging tools
+- Document resolutions in `docs/troubleshooting.md`
+- Include command to run scripts in file headers or instructions
+
+## Documentation Lifecycle
+
+### Mandatory Updates
+
+- **New Features**: Every new feature, module, class, or function
+- **Bug Fixes**: All bug fixes and error resolutions
+- **Enhancements**: Performance improvements and optimizations
+- **API Changes**: Endpoint modifications and model updates
+- **Configuration Changes**: New constants and environment variables
+
+### Documentation Structure
+
+```
+docs/
+├── api/                    # API endpoint documentation
+├── guides/                 # User and developer guides
+├── modules/                # Module-specific documentation
+├── tools/                  # Tool documentation
+├── troubleshooting/        # Problem resolution guides
+├── progress.md            # Project progress tracking
+└── README.md              # Project overview
+```
+
+## Success Metrics
+
+### Quality Indicators
+
+- **Completeness**: 100% of functionality documented
+- **Accuracy**: 0% documentation errors or outdated information
+- **Performance**: Meet all specified latency and throughput targets
+- **Validation**: 100% success rate for histogram validation
+- **Integration**: Seamless integration with existing components
+
+### Compliance Requirements
+
+- **Mandatory**: No code changes without documentation updates
+- **Timing**: Documentation updated before or simultaneously with code
+- **Quality**: All documentation meets established standards
+- **Testing**: All examples and procedures verified and tested

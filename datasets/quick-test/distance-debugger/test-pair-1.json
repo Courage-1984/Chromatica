@@ -1,0 +1,25 @@
+{
+  "test_pair": {
+    "name": "Similar Histograms",
+    "description": "Two histograms with similar color distributions for testing distance calculations",
+    "histogram_1": {
+      "id": "hist_001",
+      "file_path": "datasets/quick-test/histogram-analysis/sample-histogram-1.npy",
+      "description": "Red-dominated histogram with balanced L* distribution",
+      "expected_distance": 0.15,
+      "distance_type": "Sinkhorn-EMD"
+    },
+    "histogram_2": {
+      "id": "hist_002", 
+      "file_path": "datasets/quick-test/histogram-analysis/sample-histogram-2.npy",
+      "description": "Similar red-dominated histogram with slight variations",
+      "expected_distance": 0.15,
+      "distance_type": "Sinkhorn-EMD"
+    },
+    "analysis": {
+      "similarity_score": 0.85,
+      "common_features": ["Red dominance", "Balanced lightness", "Similar a* distribution"],
+      "differences": ["Minor variations in b* values", "Slight differences in peak positions"]
+    }
+  }
+}

@@ -55,8 +55,9 @@ RERANK_K = 200
 # =============================================================================
 
 # Sinkhorn regularization parameter for Earth Mover's Distance approximation
-# Lower values provide more accurate EMD but may be less stable
-SINKHORN_EPSILON = 0.1
+# Higher values provide more stable EMD but may be less accurate
+# Increased from 0.1 to 1.0 for better numerical stability
+SINKHORN_EPSILON = 1.0
 
 # FAISS HNSW index parameters
 # M=32 specifies the number of neighbors in the HNSW graph

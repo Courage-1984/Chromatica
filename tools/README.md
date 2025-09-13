@@ -271,6 +271,95 @@ python tools/demo_search.py --dataset datasets/test-dataset-50
 python tools/test_search_system.py --performance --verbose
 ```
 
+## Advanced Visualization Tools
+
+The Chromatica project now includes three comprehensive visualization tools that provide rich analysis capabilities for color palettes, search results, and interactive color exploration.
+
+### Color Palette Visualizer (`visualize_color_palettes.py`)
+
+**Purpose**: Extract and visualize dominant colors from images, analyze color distributions, and compare color palettes across multiple images.
+
+**Features**:
+
+- **Dominant Color Extraction**: Uses K-means clustering to identify primary colors
+- **Palette Visualization**: Create color swatches with percentage distributions
+- **Histogram Analysis**: Visualize CIE Lab color space distributions
+- **Batch Processing**: Analyze multiple images simultaneously
+- **Export Capabilities**: Save visualizations and reports
+
+**Usage**:
+
+```bash
+# Analyze a single image
+python tools/visualize_color_palettes.py --image datasets/test-dataset-20/7349035.jpg
+
+# Compare multiple images
+python tools/visualize_color_palettes.py --compare image1.jpg image2.jpg image3.jpg
+
+# Batch analysis with save
+python tools/visualize_color_palettes.py --batch datasets/test-dataset-20 --save
+```
+
+### Search Results Visualizer (`visualize_search_results.py`)
+
+**Purpose**: Comprehensive visualization and analysis of search results, including ranking analysis, performance metrics, and result galleries.
+
+**Features**:
+
+- **Ranking Analysis**: Visualize search result rankings and distances
+- **Performance Metrics**: Analyze search timing and performance breakdown
+- **Color Similarity Mapping**: Heatmaps showing color relationships
+- **Result Galleries**: Interactive display of search results
+- **API Integration**: Direct querying of the Chromatica API
+- **Export Capabilities**: Save all visualizations and reports
+
+**Usage**:
+
+```bash
+# Query API and visualize results
+python tools/visualize_search_results.py --api-query "FF0000" --k 10
+
+# Load results from file
+python tools/visualize_search_results.py --results search_results.json
+
+# Save visualizations
+python tools/visualize_search_results.py --api-query "FF0000,00FF00" --save
+```
+
+### Interactive Color Explorer (`color_explorer.py`)
+
+**Purpose**: Interactive tool for exploring color combinations, generating color harmonies, and experimenting with different color schemes in real-time.
+
+**Features**:
+
+- **Interactive Color Picker**: Add colors by hex codes with weights
+- **Color Harmony Generation**: Automatic generation of complementary, analogous, triadic, and other color schemes
+- **Real-time Preview**: Live visualization of color combinations
+- **API Integration**: Test color combinations with live search
+- **Palette Export**: Save color palettes for later use
+
+**Usage**:
+
+```bash
+# Start the interactive explorer
+python tools/color_explorer.py
+
+# Connect to specific API instance
+python tools/color_explorer.py --api-url http://localhost:8000
+```
+
+### Installation and Dependencies
+
+The visualization tools require additional dependencies:
+
+```bash
+pip install matplotlib seaborn requests
+```
+
+For detailed documentation on all visualization tools, see `docs/visualization_tools_guide.md`.
+
+---
+
 ## Troubleshooting
 
 ### Common Issues
@@ -279,6 +368,7 @@ python tools/test_search_system.py --performance --verbose
 2. **Missing Dependencies**: Install required packages with `pip install -r tools/requirements.txt`
 3. **Dataset Not Found**: Verify dataset paths exist and contain image files
 4. **Memory Issues**: Reduce batch sizes or image limits for large datasets
+5. **Matplotlib Backend Issues**: Set `export MPLBACKEND=TkAgg` for interactive tools
 
 ### Getting Help
 
@@ -286,6 +376,7 @@ python tools/test_search_system.py --performance --verbose
 - Enable verbose logging with `--verbose` flag for more detailed output
 - Review the progress report in `docs/progress.md` for implementation status
 - Check the troubleshooting guide in `docs/troubleshooting.md` for common solutions
+- For visualization tools, see `docs/visualization_tools_guide.md` for detailed usage
   Flattened format suitable for analysis in spreadsheet applications:
 
 - One row per image
@@ -390,6 +481,63 @@ Planned improvements include:
 - **Export Options**: Additional output formats (HDF5, Parquet)
 - **Web Interface**: Browser-based visualization and analysis
 - **Integration Tests**: End-to-end testing with FAISS and EMD components
+
+---
+
+---
+
+## Output Cleanup Tool
+
+The `cleanup_outputs.py` tool provides comprehensive cleanup functionality for managing output files generated during development, testing, and production operations. This tool helps maintain a clean development environment by providing selective or complete removal of generated files.
+
+### Features
+
+- **Selective Cleanup**: Choose specific output types to clean
+- **Interactive Mode**: User-friendly interface for guided cleanup
+- **Batch Operations**: Clean multiple output types simultaneously
+- **Safety Features**: Confirmation prompts and dry-run mode
+- **Size Reporting**: Shows disk space usage and freed space
+- **Script Generation**: Create standalone cleanup scripts
+
+### Supported Output Types
+
+- **Histograms**: Generated histogram files (`.npy`) from dataset processing
+- **Reports**: Analysis reports, logs, and documentation files
+- **Logs**: Application and build log files
+- **Test Index**: FAISS index and DuckDB metadata files
+- **Cache**: Python bytecode cache files (`__pycache__`)
+- **Temp**: Temporary files and system artifacts
+
+### Usage
+
+```bash
+# Interactive mode - guided cleanup selection
+python tools/cleanup_outputs.py
+
+# Clean all outputs with confirmation
+python tools/cleanup_outputs.py --all --confirm
+
+# Clean specific output types
+python tools/cleanup_outputs.py --histograms --reports --logs
+
+# Dry run to preview what would be deleted
+python tools/cleanup_outputs.py --all --dry-run
+
+# Clean dataset outputs only
+python tools/cleanup_outputs.py --datasets
+
+# Create standalone cleanup script
+python tools/cleanup_outputs.py --datasets --create-script
+```
+
+### Safety Features
+
+- **Confirmation Prompts**: Interactive mode requires explicit confirmation
+- **Dry Run Mode**: Preview what would be deleted without making changes
+- **Error Handling**: Graceful handling of permission errors
+- **Logging**: All operations logged to `logs/cleanup.log`
+
+For detailed documentation, see `docs/tools_cleanup_outputs.md`.
 
 ---
 

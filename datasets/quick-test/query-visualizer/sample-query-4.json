@@ -1,0 +1,89 @@
+{
+    "query": {
+        "name": "Complex Weight Distribution",
+        "description": "Query with five colors and complex weight distribution",
+        "colors": [
+            "FF0000",
+            "00FF00",
+            "0000FF",
+            "FFFF00",
+            "FF00FF"
+        ],
+        "weights": [
+            0.35,
+            0.25,
+            0.20,
+            0.15,
+            0.05
+        ],
+        "query_id": "complex-weights-004",
+        "visualization_type": "complex_color_bar"
+    },
+    "expected_output": {
+        "color_bar": {
+            "width": 800,
+            "height": 200,
+            "colors": [
+                "#FF0000",
+                "#00FF00",
+                "#0000FF",
+                "#FFFF00",
+                "#FF00FF"
+            ],
+            "weights": [
+                0.35,
+                0.25,
+                0.20,
+                0.15,
+                0.05
+            ],
+            "labels": [
+                "Red (35%)",
+                "Green (25%)",
+                "Blue (20%)",
+                "Yellow (15%)",
+                "Magenta (5%)"
+            ],
+            "bar_widths": [
+                280,
+                200,
+                160,
+                120,
+                40
+            ]
+        },
+        "palette": {
+            "width": 400,
+            "height": 300,
+            "colors": [
+                "#FF0000",
+                "#00FF00",
+                "#0000FF",
+                "#FFFF00",
+                "#FF00FF"
+            ],
+            "weights": [
+                0.35,
+                0.25,
+                0.20,
+                0.15,
+                0.05
+            ],
+            "circle_sizes": [
+                35,
+                25,
+                20,
+                15,
+                5
+            ]
+        },
+        "summary": {
+            "total_colors": 5,
+            "dominant_color": "#FF0000",
+            "weight_distribution": "Red (35%), Green (25%), Blue (20%), Yellow (15%), Magenta (5%)",
+            "balance_score": 0.6,
+            "color_harmony": "Complex",
+            "notes": "Shows clear hierarchy with red dominance and gradual falloff"
+        }
+    }
+}

@@ -1,0 +1,391 @@
+---
+description: Development environment setup, workflow standards, and operational procedures
+globs: ["requirements.txt", "venv311/**/*", "scripts/**/*", "*.py"]
+alwaysApply: false
+---
+
+# Development Workflow and Environment Standards
+
+## Overview
+
+This rule establishes standards for development environment setup, workflow procedures, and operational practices for the Chromatica project. It covers virtual environment management, dependency handling, development tools, and deployment procedures.
+
+## Virtual Environment Management
+
+### Environment Setup
+
+- **Python Version**: Python 3.11+ (using venv311)
+- **Virtual Environment**: Always use virtual environment for development
+- **Activation**: Always activate virtual environment before running commands
+- **Isolation**: Maintain separate environments for different purposes
+
+### Environment Activation
+
+```bash
+# Windows
+venv311\Scripts\activate
+
+# Linux/macOS
+source venv311/bin/activate
+```
+
+### Environment Requirements
+
+- **Dependencies**: All dependencies specified in `requirements.txt`
+- **Version Pinning**: Pin dependency versions for reproducibility
+- **Security**: Regular security updates for dependencies
+- **Compatibility**: Ensure compatibility across development environments
+
+## Dependency Management
+
+### Requirements File Structure
+
+```txt
+# Core image processing and computer vision
+opencv-python>=4.8.0
+scikit-image>=0.22.0
+numpy>=1.24.0
+
+# Vector similarity search and machine learning
+faiss-cpu>=1.7.4
+scikit-learn>=1.3.0
+
+# Optimal transport for Earth Mover's Distance
+POT>=0.9.0
+
+# Database for metadata and histogram storage
+duckdb>=0.9.0
+
+# Web API framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Testing framework
+pytest>=7.4.0
+```
+
+### Dependency Management Practices
+
+- **Version Constraints**: Use appropriate version constraints (>=, ==, ~=)
+- **Security Updates**: Regularly update dependencies for security patches
+- **Compatibility Testing**: Test dependency updates for compatibility
+- **Documentation**: Document any dependency changes and their impact
+
+### Dependency Installation
+
+```bash
+# Install all dependencies
+pip install -r requirements.txt
+
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Update specific dependency
+pip install --upgrade package-name
+
+# Check for outdated packages
+pip list --outdated
+```
+
+## Development Tools and Configuration
+
+### Code Quality Tools
+
+- **Linting**: Use flake8 or pylint for code linting
+- **Formatting**: Use black for code formatting
+- **Type Checking**: Use mypy for type checking
+- **Import Sorting**: Use isort for import organization
+
+### IDE Configuration
+
+- **VS Code**: Use Python extension with proper configuration
+- **PyCharm**: Configure for Python 3.11+ with virtual environment
+- **Vim/Neovim**: Use appropriate Python plugins and configuration
+- **Cursor**: Use with proper Python environment setup
+
+### Git Configuration
+
+```bash
+# Git hooks for code quality
+pre-commit install
+
+# Git configuration for the project
+git config user.name "Your Name"
+git config user.email "your.email@example.com"
+
+# Git ignore patterns
+echo "venv311/" >> .gitignore
+echo "__pycache__/" >> .gitignore
+echo "*.pyc" >> .gitignore
+```
+
+## Development Workflow
+
+### Pre-Development Setup
+
+1. **Activate Virtual Environment**: Always activate venv311
+2. **Install Dependencies**: Ensure all dependencies are installed
+3. **Run Tests**: Verify existing tests pass
+4. **Check Configuration**: Validate configuration settings
+
+### Development Process
+
+1. **Create Feature Branch**: Create branch for new feature
+2. **Write Tests**: Write tests for new functionality
+3. **Implement Feature**: Implement feature with proper documentation
+4. **Run Tests**: Ensure all tests pass
+5. **Code Review**: Submit for code review
+6. **Merge**: Merge after approval
+
+### Code Quality Checks
+
+```bash
+# Run linting
+flake8 src/ tests/ tools/
+
+# Run type checking
+mypy src/
+
+# Run formatting check
+black --check src/ tests/ tools/
+
+# Run all tests
+pytest tests/ -v
+
+# Run specific test
+pytest tests/test_histogram.py::TestHistogramGeneration -v
+```
+
+## Logging and Monitoring
+
+### Logging Standards
+
+- **Standard Library**: Use Python's standard logging module
+- **Log Levels**: Use appropriate log levels (DEBUG, INFO, WARNING, ERROR)
+- **Structured Logging**: Use structured logging for better analysis
+- **Performance Logging**: Log performance metrics and timing
+
+### Logging Configuration
+
+```python
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("logs/chromatica.log"),
+        logging.StreamHandler()
+    ]
+)
+
+# Module-specific logger
+logger = logging.getLogger(__name__)
+```
+
+### Performance Monitoring
+
+- **Timing**: Log execution time for critical operations
+- **Memory Usage**: Monitor memory usage for large operations
+- **Error Rates**: Track error rates and types
+- **Throughput**: Monitor processing throughput
+
+## Testing Workflow
+
+### Test Execution
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Run tests with coverage
+pytest tests/ --cov=src/chromatica --cov-report=html
+
+# Run specific test file
+pytest tests/test_histogram.py -v
+
+# Run tests with performance monitoring
+pytest tests/ --durations=10
+
+# Run tests in parallel
+pytest tests/ -n auto
+```
+
+### Test Data Management
+
+- **Test Datasets**: Use structured test datasets
+- **Test Isolation**: Ensure tests don't interfere with each other
+- **Test Cleanup**: Clean up test data after execution
+- **Test Performance**: Monitor test execution performance
+
+### Continuous Integration
+
+- **Automated Testing**: Run tests on every commit
+- **Performance Testing**: Run performance tests on CI
+- **Security Scanning**: Run security scans on dependencies
+- **Code Quality**: Run code quality checks on CI
+
+## Build and Deployment
+
+### Build Process
+
+```bash
+# Build index
+python scripts/build_index.py
+
+# Run sanity checks
+python scripts/run_sanity_checks.py
+
+# Test API
+python tools/test_api.py
+
+# Run comprehensive tests
+python tools/test_histogram_generation.py
+```
+
+### Deployment Preparation
+
+1. **Environment Setup**: Set up production environment
+2. **Dependency Installation**: Install production dependencies
+3. **Configuration**: Configure production settings
+4. **Index Building**: Build and populate index
+5. **Testing**: Run comprehensive tests
+6. **Monitoring**: Set up monitoring and logging
+
+### Production Deployment
+
+```bash
+# Start API server
+uvicorn src.chromatica.api.main:app --host 0.0.0.0 --port 8000
+
+# Start with production settings
+uvicorn src.chromatica.api.main:app --host 0.0.0.0 --port 8000 --workers 4
+```
+
+## Error Handling and Debugging
+
+### Error Handling Standards
+
+- **Comprehensive Error Handling**: Handle all possible error conditions
+- **Descriptive Error Messages**: Provide clear and actionable error messages
+- **Error Logging**: Log all errors with appropriate context
+- **Error Recovery**: Implement graceful error recovery where possible
+
+### Debugging Practices
+
+- **Logging**: Use comprehensive logging for debugging
+- **Debug Tools**: Use appropriate debugging tools and techniques
+- **Error Analysis**: Analyze error patterns and root causes
+- **Documentation**: Document common errors and their resolutions
+
+### Troubleshooting Procedures
+
+1. **Check Logs**: Review application logs for error information
+2. **Verify Configuration**: Check configuration settings
+3. **Test Components**: Test individual components in isolation
+4. **Check Dependencies**: Verify all dependencies are properly installed
+5. **Document Resolution**: Document error resolution for future reference
+
+## Performance Optimization
+
+### Development Performance
+
+- **Code Profiling**: Use profiling tools to identify bottlenecks
+- **Memory Profiling**: Monitor memory usage and identify leaks
+- **Performance Testing**: Regular performance testing and benchmarking
+- **Optimization**: Optimize code based on profiling results
+
+### Production Performance
+
+- **Monitoring**: Monitor production performance metrics
+- **Scaling**: Implement appropriate scaling strategies
+- **Caching**: Use caching where appropriate
+- **Resource Management**: Efficient resource utilization
+
+## Security Practices
+
+### Development Security
+
+- **Dependency Security**: Regularly update dependencies for security patches
+- **Code Security**: Follow secure coding practices
+- **Input Validation**: Validate all inputs thoroughly
+- **Error Handling**: Don't expose sensitive information in errors
+
+### Production Security
+
+- **Access Control**: Implement appropriate access controls
+- **Data Protection**: Protect sensitive data
+- **Network Security**: Implement network security measures
+- **Monitoring**: Monitor for security issues
+
+## Documentation and Maintenance
+
+### Development Documentation
+
+- **Code Documentation**: Maintain comprehensive code documentation
+- **API Documentation**: Keep API documentation up to date
+- **User Documentation**: Maintain user guides and tutorials
+- **Troubleshooting**: Document common issues and resolutions
+
+### Maintenance Procedures
+
+- **Regular Updates**: Regular updates of dependencies and tools
+- **Performance Monitoring**: Continuous performance monitoring
+- **Security Updates**: Regular security updates and patches
+- **Backup Procedures**: Regular backup of important data
+
+## Environment-Specific Configurations
+
+### Development Environment
+
+```python
+# Development configuration
+DEBUG = True
+LOG_LEVEL = "DEBUG"
+DATABASE_URL = "sqlite:///dev.db"
+INDEX_PATH = "test_index/"
+```
+
+### Production Environment
+
+```python
+# Production configuration
+DEBUG = False
+LOG_LEVEL = "INFO"
+DATABASE_URL = "postgresql://user:pass@host:port/db"
+INDEX_PATH = "/var/lib/chromatica/index/"
+```
+
+### Testing Environment
+
+```python
+# Testing configuration
+DEBUG = True
+LOG_LEVEL = "WARNING"
+DATABASE_URL = "sqlite:///:memory:"
+INDEX_PATH = "test_index/"
+```
+
+## Best Practices
+
+### Code Organization
+
+- **Modular Design**: Organize code into logical modules
+- **Separation of Concerns**: Separate different concerns into different modules
+- **Dependency Injection**: Use dependency injection for better testability
+- **Configuration Management**: Centralize configuration management
+
+### Development Practices
+
+- **Version Control**: Use proper version control practices
+- **Code Review**: Implement code review processes
+- **Testing**: Maintain comprehensive test coverage
+- **Documentation**: Keep documentation up to date
+
+### Operational Practices
+
+- **Monitoring**: Implement comprehensive monitoring
+- **Logging**: Use structured logging for better analysis
+- **Error Handling**: Implement robust error handling
+- **Performance**: Monitor and optimize performance continuously

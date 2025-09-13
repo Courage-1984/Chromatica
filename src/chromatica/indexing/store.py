@@ -477,6 +477,65 @@ class MetadataStore:
         Returns:
             Total count of image records in the database.
         """
+        
+    def get_image_info(self, image_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve image information including file path and metadata.
+
+        Args:
+            image_id: Unique identifier for the image.
+
+        Returns:
+            Dictionary containing image information (image_id, file_path, file_size)
+            or None if the image is not found.
+
+        Raises:
+            RuntimeError: If database query fails.
+        """
+        query_sql = f"""
+        SELECT image_id, file_path, file_size
+        FROM {self.table_name}
+        WHERE image_id = ?
+        """
+
+        try:
+            result = self.connection.execute(query_sql, [image_id]).fetchone()
+            
+            if result:
+                return {
+                    "image_id": result[0],
+                    "file_path": result[1],
+                    "file_size": result[2]
+                }
+            else:
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve image info for {image_id}: {e}")
+            raise RuntimeError(f"Database query failed: {e}")
+
+    def get_image_metadata(self, image_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve image metadata by image ID.
+        
+        This method is an alias for get_image_info to maintain compatibility
+        with the API interface.
+        
+        Args:
+            image_id: Unique identifier for the image.
+            
+        Returns:
+            Dictionary containing image metadata or None if not found.
+        """
+        return self.get_image_info(image_id)
+
+    def get_image_count(self) -> int:
+        """
+        Get the total number of images in the metadata store.
+
+        Returns:
+            Total count of image records in the database.
+        """
         try:
             result = self.connection.execute(
                 f"SELECT COUNT(*) FROM {self.table_name}"

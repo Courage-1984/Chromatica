@@ -1,0 +1,270 @@
+---
+description: Rules for API module development (FastAPI endpoints, web interface, visualization)
+globs: ["src/chromatica/api/**/*"]
+alwaysApply: false
+---
+
+# API Module Development Rules
+
+## Module Overview
+
+The API module (`src/chromatica/api/`) provides the web interface and REST API for the Chromatica color search engine. This includes FastAPI endpoints, static web interface, and visualization tools.
+
+## Key Components
+
+### FastAPI Application (`main.py`)
+
+- **GET /search endpoint** with color and weight query parameters
+- **Automatic index loading** on startup
+- **Performance timing** and comprehensive logging
+- **JSON response structure** as specified in critical instructions
+- **Visualization endpoints** for query and result visualization
+
+### Web Interface (`static/index.html`)
+
+- **Catppuccin Mocha theme** with 25-color palette
+- **JetBrains Mono Nerd Font Mono** typography system
+- **6 Advanced Visualization Tools** with expandable panels
+- **Responsive design** with WCAG accessibility compliance
+- **Interactive color picking** and query building
+
+### Static Assets (`static/`)
+
+- **Font files**: JetBrains Mono Nerd Font Mono variants
+- **CSS styling**: Catppuccin Mocha theme implementation
+- **JavaScript**: Tool execution and result visualization
+
+## Development Standards
+
+### FastAPI Implementation
+
+- **Pydantic models** for request/response validation
+- **Comprehensive error handling** with HTTP status codes
+- **Performance monitoring** with timing measurements
+- **Logging integration** for all operations
+- **Type hints** for all function parameters
+
+### Web Interface Standards
+
+- **Semantic HTML** with proper accessibility attributes
+- **CSS variables** for theme management
+- **Responsive design** with mobile-first approach
+- **Progressive enhancement** for JavaScript functionality
+- **Cross-browser compatibility** with graceful fallbacks
+
+### Visualization Tools
+
+- **Expandable panels** with comprehensive configuration
+- **Real execution** using actual datasets from `datasets/quick-test/`
+- **Dynamic results** generated from tool execution
+- **Export functionality** for multiple output formats
+- **Error handling** with user-friendly feedback
+
+## API Endpoint Specifications
+
+### GET /search
+
+```python
+@router.get("/search")
+async def search_images(
+    colors: str = Query(..., description="Comma-separated hex colors"),
+    weights: str = Query(..., description="Comma-separated weights"),
+    k: int = Query(50, description="Number of results"),
+    fuzz: float = Query(1.0, description="Query fuzziness multiplier")
+) -> JSONResponse:
+    """
+    Search for images matching color query.
+
+    Returns JSON response with exact structure from critical instructions.
+    """
+```
+
+### Response Format
+
+```json
+{
+  "query_id": "uuid",
+  "query": {
+    "colors": ["#ea6a81", "#f6d727"],
+    "weights": [0.49, 0.51]
+  },
+  "results_count": 20,
+  "results": [
+    {
+      "image_id": "img_abc123",
+      "distance": 0.087,
+      "dominant_colors": ["#e96d80", "#f5d52b", "#ffffff"]
+    }
+  ],
+  "metadata": {
+    "ann_time_ms": 110,
+    "rerank_time_ms": 285,
+    "total_time_ms": 395
+  }
+}
+```
+
+## Web Interface Components
+
+### Theme Implementation
+
+- **CSS Variables**: Centralized color management
+- **25-Color Palette**: Complete Catppuccin Mocha implementation
+- **Accessibility**: WCAG-compliant contrast ratios
+- **Responsive Breakpoints**: Mobile-first design
+
+### Typography System
+
+- **Primary Font**: JetBrains Mono Nerd Font Mono
+- **Emoji Font**: Segoe UI Emoji for crisp rendering
+- **Symbol Font**: Segoe UI Symbol for comprehensive coverage
+- **Font Loading**: Optimized with `font-display: swap`
+
+### Visualization Tools
+
+1. **Color Palette Analyzer**: Image color extraction and analysis
+2. **Search Results Analyzer**: Search result visualization and metrics
+3. **Interactive Color Explorer**: Color harmony generation and exploration
+4. **Histogram Analysis Tool**: Histogram generation testing and validation
+5. **Distance Debugger Tool**: Sinkhorn-EMD distance calculation debugging
+6. **Query Visualizer Tool**: Color query visualization with weighted bars
+
+## Development Guidelines
+
+### FastAPI Best Practices
+
+- **Dependency injection** for index and store management
+- **Background tasks** for long-running operations
+- **Middleware** for logging and error handling
+- **CORS configuration** for cross-origin requests
+- **Static file serving** for web interface assets
+
+### Error Handling
+
+- **HTTP status codes** appropriate for error types
+- **Structured error responses** with error codes and messages
+- **Logging** of all errors with context information
+- **User-friendly messages** for client-side error handling
+
+### Performance Optimization
+
+- **Async/await** for I/O operations
+- **Connection pooling** for database operations
+- **Caching** for frequently accessed data
+- **Response compression** for large payloads
+- **Lazy loading** for static assets
+
+## Testing Requirements
+
+### API Testing
+
+- **Unit tests** for all endpoints
+- **Integration tests** with actual index and store
+- **Performance tests** for latency requirements
+- **Error handling tests** for edge cases
+
+### Web Interface Testing
+
+- **Cross-browser testing** for compatibility
+- **Responsive design testing** on different screen sizes
+- **Accessibility testing** with screen readers
+- **Performance testing** for loading times
+
+### Tool Testing
+
+- **Functionality testing** for all visualization tools
+- **Quick test execution** with actual datasets
+- **Export functionality testing** for all formats
+- **Error handling testing** for invalid inputs
+
+## Security Considerations
+
+### Input Validation
+
+- **Sanitize all inputs** to prevent injection attacks
+- **Validate file uploads** for type and size limits
+- **Rate limiting** for API endpoints
+- **CORS configuration** for cross-origin security
+
+### Data Protection
+
+- **No sensitive data** in client-side code
+- **Secure file handling** for uploaded images
+- **Error message sanitization** to prevent information leakage
+
+## Documentation Requirements
+
+### API Documentation
+
+- **OpenAPI/Swagger** documentation for all endpoints
+- **Request/response examples** with sample data
+- **Error code documentation** with resolution steps
+- **Performance characteristics** and limitations
+
+### Web Interface Documentation
+
+- **User guides** for all visualization tools
+- **Theme customization** documentation
+- **Accessibility features** and compliance information
+- **Browser compatibility** requirements
+
+## Integration Points
+
+### Core Module Integration
+
+```python
+from ..core.query import create_query_histogram
+from ..search import find_similar
+from ..indexing.store import AnnIndex, MetadataStore
+```
+
+### Visualization Integration
+
+```python
+from ..visualization import create_query_visualization, create_results_collage
+```
+
+### Configuration Integration
+
+```python
+from ..utils.config import TOTAL_BINS, RERANK_K
+```
+
+## Performance Targets
+
+### API Response Times
+
+- **Total latency (P95)**: <450ms
+- **ANN search**: <150ms
+- **Reranking**: <300ms
+- **Static file serving**: <100ms
+
+### Web Interface Performance
+
+- **Initial page load**: <2 seconds
+- **Tool execution**: <5 seconds for complex operations
+- **Font loading**: Optimized with font-display: swap
+- **Asset optimization**: Minified CSS and JavaScript
+
+## Maintenance Guidelines
+
+### Code Updates
+
+- **Preserve API compatibility** for existing clients
+- **Update OpenAPI documentation** for endpoint changes
+- **Test all visualization tools** after updates
+- **Validate theme consistency** across all components
+
+### Performance Monitoring
+
+- **Track response times** for all endpoints
+- **Monitor error rates** and types
+- **Measure user engagement** with visualization tools
+- **Optimize based on usage patterns**
+
+### Security Updates
+
+- **Regular dependency updates** for security patches
+- **Input validation improvements** based on new threats
+- **CORS policy updates** as needed
+- **Rate limiting adjustments** based on usage patterns

@@ -1,0 +1,34 @@
+{
+  "query": {
+    "name": "Multi-Color Query",
+    "description": "Query with three colors and balanced weights",
+    "colors": ["FF0000", "00FF00", "0000FF"],
+    "weights": [0.4, 0.3, 0.3],
+    "query_id": "multi-color-003",
+    "visualization_type": "multi_color_bar"
+  },
+  "expected_output": {
+    "color_bar": {
+      "width": 800,
+      "height": 200,
+      "colors": ["#FF0000", "#00FF00", "#0000FF"],
+      "weights": [0.4, 0.3, 0.3],
+      "labels": ["Red (40%)", "Green (30%)", "Blue (30%)"],
+      "bar_widths": [320, 240, 240]
+    },
+    "palette": {
+      "width": 400,
+      "height": 300,
+      "colors": ["#FF0000", "#00FF00", "#0000FF"],
+      "weights": [0.4, 0.3, 0.3],
+      "circle_sizes": [40, 30, 30]
+    },
+    "summary": {
+      "total_colors": 3,
+      "dominant_color": "#FF0000",
+      "weight_distribution": "Red (40%), Green (30%), Blue (30%)",
+      "balance_score": 0.8,
+      "color_harmony": "Triadic"
+    }
+  }
+}

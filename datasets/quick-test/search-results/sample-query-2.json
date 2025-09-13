@@ -1,0 +1,51 @@
+{
+  "query_id": "quick-test-blue-green-002",
+  "query": {
+    "colors": ["0000FF", "00FF00"],
+    "weights": [0.6, 0.4]
+  },
+  "results_count": 5,
+  "results": [
+    {
+      "image_id": "blue_green_001",
+      "file_path": "datasets/quick-test/color-palette/sample-image-3.jpg",
+      "distance": 0.12,
+      "rank": 1,
+      "dominant_colors": ["#0000FF", "#0066FF", "#00CCFF", "#00FF00", "#66FF00"]
+    },
+    {
+      "image_id": "blue_green_002",
+      "file_path": "datasets/quick-test/color-palette/sample-image-5.jpg",
+      "distance": 0.25,
+      "rank": 2,
+      "dominant_colors": ["#0033CC", "#0066CC", "#0099CC", "#00CC00", "#33CC00"]
+    },
+    {
+      "image_id": "blue_green_003",
+      "file_path": "datasets/quick-test/color-palette/sample-image-1.jpg",
+      "distance": 0.38,
+      "rank": 3,
+      "dominant_colors": ["#006699", "#009999", "#00CC99", "#009900", "#339900"]
+    },
+    {
+      "image_id": "blue_green_004",
+      "file_path": "datasets/quick-test/color-palette/sample-image-2.png",
+      "distance": 0.51,
+      "rank": 4,
+      "dominant_colors": ["#009966", "#00CC66", "#00FF66", "#006600", "#336600"]
+    },
+    {
+      "image_id": "blue_green_005",
+      "file_path": "datasets/quick-test/color-palette/sample-image-4.png",
+      "distance": 0.64,
+      "rank": 5,
+      "dominant_colors": ["#00CC33", "#00FF33", "#33FF33", "#003300", "#333300"]
+    }
+  ],
+  "metadata": {
+    "ann_time_ms": 52,
+    "rerank_time_ms": 31,
+    "total_time_ms": 83,
+    "index_size": 5000
+  }
+}

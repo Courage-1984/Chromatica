@@ -44,8 +44,10 @@ file-layout:
     description: "Project documentation, including progress reports and troubleshooting guides."
   - path: docs/.cursor/critical_instructions.md
     description: "The primary project plan. This is the source of truth."
+  - path: COMMANDS.md
+    description: "Essential commands and usage examples reference. MUST be kept updated when new commands, scripts, or usage patterns are added."
   - path: tools/
-    description: "Testing and development tools, including histogram generation testing tool."
+    description: "Testing and development tools, including histogram generation testing tool and comprehensive output cleanup tool."
   - path: datasets/
     description: "Comprehensive test datasets for development and validation across all phases: test-dataset-20 (20 images), test-dataset-50 (50 images), test-dataset-200 (200 images), test-dataset-5000 (5,000 images, renamed from test-dataset-999, recommended expansion to 7,500 for production-scale testing)."
 
@@ -99,6 +101,8 @@ rules:
   - rule: "Use the 'POT' (Python Optimal Transport) library for the Sinkhorn-EMD reranking stage."
   - rule: "Use 'DuckDB' for storing metadata and raw histograms. Do not use other databases unless specified."
   - rule: "The web API must be built using 'FastAPI'."
+  - rule: "Web interface must use Catppuccin Mocha theme with JetBrains Mono Nerd Font Mono typography."
+  - rule: "All web interface components must be responsive and accessible with WCAG compliance."
 
   # Algorithmic Specification Rules
   - rule: "The color space for all processing MUST be CIE Lab (D65 illuminant)."
@@ -131,8 +135,10 @@ rules:
   - rule: "The histogram generation module (src/chromatica/core/histogram.py) is production-ready with comprehensive validation."
   - rule: "Configuration management (src/chromatica/utils/config.py) is fully implemented with all required constants."
   - rule: "Testing infrastructure (tools/test_histogram_generation.py) is comprehensive and handles batch processing."
-  - rule: "Current focus is Week 2: Implementing FAISS HNSW index and DuckDB metadata store."
-  - rule: "All new code must integrate with existing histogram generation and configuration modules."
+  - rule: "Week 2 is COMPLETED: FAISS HNSW index and DuckDB metadata store are fully implemented and operational."
+  - rule: "Web interface is COMPLETED with Catppuccin Mocha theme, custom typography, and comprehensive visualization tools."
+  - rule: "Advanced Visualization Tools are COMPLETED with expandable tool panels and real quick test functionality."
+  - rule: "All new code must integrate with existing histogram generation, configuration, and web interface modules."
 
   # Testing and Validation Rules
   - rule: "Use the existing test datasets in datasets/ for development and validation across all phases: test-dataset-20 (quick testing), test-dataset-50 (validation), test-dataset-200 (performance), test-dataset-5000 (production-scale testing, renamed from test-dataset-999, recommended expansion to 7,500 images)."
@@ -156,9 +162,36 @@ rules:
   - rule: "All new code must follow the established project structure and naming conventions."
   - rule: "Dependencies must be added to requirements.txt with appropriate version constraints."
 
+  # Advanced Visualization Tools Rules
+  - rule: "All visualization tools must have expandable tool panels with comprehensive configuration options."
+  - rule: "Quick Test functionality must use actual quick test datasets from datasets/quick-test/ directory."
+  - rule: "Tool execution must show real results, not hardcoded placeholder text."
+  - rule: "Each tool must have Info, Run Tool, and Quick Test buttons with consistent functionality."
+  - rule: "Tool panels must include proper form validation, error handling, and user feedback."
+  - rule: "All visualization tools must support multiple output formats and export functionality."
+
+  # Output Cleanup Tool Rules
+  - rule: "The cleanup tool must support selective deletion of specific output types (histograms, reports, logs, test_index, cache, temp)."
+  - rule: "All cleanup operations must include safety features: confirmation prompts, dry-run mode, and comprehensive error handling."
+  - rule: "Interactive mode must provide user-friendly interface with numbered options and clear feedback."
+  - rule: "Cleanup tool must log all operations to logs/cleanup.log with appropriate detail levels."
+  - rule: "Size reporting must be accurate and formatted appropriately (B, KB, MB, GB)."
+  - rule: "Cleanup tool must integrate with project configuration system and validate all inputs."
+  - rule: "Script generation feature must create standalone, portable cleanup scripts for specific operations."
+  - rule: "All cleanup operations must handle permission errors gracefully and continue with remaining files."
+  - rule: "Cleanup tool must support both command-line and interactive modes with consistent functionality."
+  - rule: "Documentation for cleanup tool must include comprehensive usage examples and troubleshooting guides."
+
   # Documentation Enforcement Rules
   - rule: "NO code changes should be committed without corresponding documentation updates."
   - rule: "Documentation updates are part of the definition of 'done' for any feature or fix."
   - rule: "When reviewing code, always verify that documentation has been updated accordingly."
   - rule: "Documentation debt is treated with the same priority as technical debt."
   - rule: "All documentation must be version-controlled and tracked alongside code changes."
+
+  # Commands Reference Maintenance Rules
+  - rule: "COMMANDS.md MUST be updated whenever new scripts, commands, or usage patterns are added to the project."
+  - rule: "When creating new tools, scripts, or utilities, immediately add their usage examples to COMMANDS.md."
+  - rule: "When modifying existing commands or adding new command-line options, update COMMANDS.md accordingly."
+  - rule: "COMMANDS.md serves as the single source of truth for all project commands and should be comprehensive and accurate."
+  - rule: "All new developers should be directed to COMMANDS.md for quick reference and onboarding."

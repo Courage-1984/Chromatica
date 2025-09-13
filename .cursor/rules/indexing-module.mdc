@@ -1,0 +1,289 @@
+---
+description: Rules for indexing module development (FAISS, DuckDB, pipeline, batch processing)
+globs: ["src/chromatica/indexing/**/*"]
+alwaysApply: false
+---
+
+# Indexing Module Development Rules
+
+## Module Overview
+
+The indexing module (`src/chromatica/indexing/`) manages the FAISS HNSW index and DuckDB metadata store for efficient image retrieval. This includes vector indexing, metadata storage, and batch processing pipelines.
+
+## Key Components
+
+### FAISS Index Management (`store.py`)
+
+- **AnnIndex class**: Wraps `faiss.IndexHNSWFlat` with Hellinger transform
+- **HNSW parameters**: M=32 for optimal performance/accuracy balance
+- **Automatic Hellinger transformation**: Element-wise square root for L2 compatibility
+- **Batch operations**: Efficient vector addition and search
+
+### DuckDB Metadata Store (`store.py`)
+
+- **MetadataStore class**: Manages image metadata and raw histograms
+- **Table schema**: Image IDs, paths, and histogram storage
+- **Batch operations**: Efficient bulk insert and retrieval
+- **Connection management**: Proper resource handling and cleanup
+
+### Processing Pipeline (`pipeline.py`)
+
+- **Image processing**: End-to-end pipeline from image to indexed vector
+- **Batch processing**: Efficient handling of multiple images
+- **Error handling**: Robust processing with failure recovery
+- **Progress tracking**: Monitoring and logging for long-running operations
+
+## Development Standards
+
+### FAISS Implementation
+
+- **IndexHNSWFlat**: Use specified HNSW index type
+- **Hellinger transform**: Apply element-wise square root before indexing
+- **Dimension validation**: Ensure 1152 dimensions for Lab histograms
+- **Memory management**: Proper index lifecycle management
+
+### DuckDB Implementation
+
+- **Schema design**: Optimized for fast lookups and batch operations
+- **Data types**: Appropriate types for metadata and histogram storage
+- **Indexing**: Proper indexes for efficient queries
+- **Connection pooling**: Efficient resource utilization
+
+### Pipeline Design
+
+- **Modular architecture**: Separate concerns for different processing stages
+- **Error recovery**: Graceful handling of processing failures
+- **Progress reporting**: Clear feedback for long-running operations
+- **Resource management**: Efficient memory and CPU usage
+
+## FAISS Index Specifications
+
+### Index Configuration
+
+```python
+class AnnIndex:
+    def __init__(self, dimension: int = TOTAL_BINS):
+        # M=32 for HNSW graph connectivity
+        self.index = faiss.IndexHNSWFlat(dimension, HNSW_M)
+        self.dimension = dimension
+        self.total_vectors = 0
+```
+
+### Hellinger Transform
+
+```python
+def add_vectors(self, vectors: np.ndarray) -> None:
+    """
+    Add vectors to index with automatic Hellinger transformation.
+
+    The Hellinger transform (element-wise square root) converts normalized
+    histograms into vectors compatible with L2 distance metrics.
+    """
+    # Apply Hellinger transform: sqrt(histogram)
+    vectors_hellinger = np.sqrt(vectors.astype(np.float32))
+    self.index.add(vectors_hellinger)
+```
+
+### Search Operations
+
+```python
+def search(self, query_vector: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Search for k nearest neighbors using Hellinger-transformed query.
+
+    Returns:
+        distances: L2 distances to nearest neighbors
+        indices: Indices of nearest neighbors in the index
+    """
+    query_hellinger = np.sqrt(query_vector.reshape(1, -1).astype(np.float32))
+    return self.index.search(query_hellinger, k)
+```
+
+## DuckDB Schema Design
+
+### Metadata Table
+
+```sql
+CREATE TABLE IF NOT EXISTS image_metadata (
+    image_id TEXT PRIMARY KEY,
+    file_path TEXT NOT NULL,
+    file_size INTEGER,
+    width INTEGER,
+    height INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+### Histogram Storage
+
+```sql
+CREATE TABLE IF NOT EXISTS histograms (
+    image_id TEXT PRIMARY KEY,
+    histogram BLOB NOT NULL,  -- Raw histogram as binary data
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (image_id) REFERENCES image_metadata(image_id)
+);
+```
+
+### Indexes for Performance
+
+```sql
+CREATE INDEX IF NOT EXISTS idx_image_path ON image_metadata(file_path);
+CREATE INDEX IF NOT EXISTS idx_created_at ON image_metadata(created_at);
+```
+
+## Batch Processing Pipeline
+
+### Image Processing Workflow
+
+1. **Image Loading**: Load and validate image files
+2. **Preprocessing**: Resize to max 256px dimension
+3. **Color Conversion**: Convert to CIE Lab color space
+4. **Histogram Generation**: Create normalized histogram
+5. **Indexing**: Add to FAISS index with Hellinger transform
+6. **Storage**: Store metadata and raw histogram in DuckDB
+
+### Error Handling
+
+- **File validation**: Check image format and corruption
+- **Processing failures**: Skip invalid images with logging
+- **Database errors**: Rollback transactions on failures
+- **Index errors**: Handle FAISS index corruption gracefully
+
+### Progress Tracking
+
+- **Batch progress**: Report progress for large datasets
+- **Performance metrics**: Track processing speed and memory usage
+- **Error reporting**: Log and summarize processing errors
+- **Completion status**: Clear indication of processing completion
+
+## Performance Requirements
+
+### Indexing Performance
+
+- **Vector addition**: Efficient batch operations
+- **Memory usage**: Optimized for large datasets
+- **Search speed**: <150ms for ANN search (P95)
+- **Index size**: ~1.5-2x overhead over raw vectors
+
+### Database Performance
+
+- **Batch inserts**: Efficient bulk operations
+- **Query speed**: <10ms for metadata lookups
+- **Storage efficiency**: Compressed histogram storage
+- **Connection management**: Minimal connection overhead
+
+### Pipeline Performance
+
+- **Throughput**: Process multiple images concurrently
+- **Memory efficiency**: Stream processing for large datasets
+- **Error recovery**: Minimal impact on overall processing time
+- **Resource utilization**: Efficient CPU and memory usage
+
+## Integration Points
+
+### Core Module Integration
+
+```python
+from ..core.histogram import build_histogram
+from ..utils.config import TOTAL_BINS, HNSW_M, MAX_IMAGE_DIMENSION
+```
+
+### External Libraries
+
+- **FAISS**: Vector similarity search
+- **DuckDB**: Metadata and histogram storage
+- **OpenCV**: Image loading and preprocessing
+- **NumPy**: Array operations and data handling
+
+## Testing Requirements
+
+### Unit Tests
+
+- **Index operations**: Test vector addition and search
+- **Database operations**: Test metadata and histogram storage
+- **Pipeline stages**: Test individual processing steps
+- **Error handling**: Test failure scenarios and recovery
+
+### Integration Tests
+
+- **End-to-end pipeline**: Test complete indexing workflow
+- **Performance tests**: Validate speed and memory requirements
+- **Data consistency**: Ensure index and database consistency
+- **Concurrent operations**: Test thread safety and resource sharing
+
+### Test Data
+
+- **Use test datasets**: `datasets/test-dataset-*` for validation
+- **Synthetic data**: Generate test vectors for edge cases
+- **Large datasets**: Test with production-scale data volumes
+- **Corrupted data**: Test error handling with invalid inputs
+
+## Error Handling
+
+### Index Errors
+
+- **Dimension mismatches**: Validate vector dimensions
+- **Memory errors**: Handle out-of-memory conditions
+- **Index corruption**: Detect and handle index corruption
+- **Search errors**: Handle invalid query vectors
+
+### Database Errors
+
+- **Connection failures**: Handle database connection issues
+- **Transaction errors**: Proper rollback on failures
+- **Schema errors**: Handle schema version mismatches
+- **Data corruption**: Detect and handle data corruption
+
+### Pipeline Errors
+
+- **File errors**: Handle missing or corrupted image files
+- **Processing errors**: Skip invalid images with logging
+- **Resource errors**: Handle memory and CPU limitations
+- **Timeout errors**: Handle long-running operations
+
+## Documentation Requirements
+
+### Class Documentation
+
+- **Purpose**: Clear explanation of class responsibilities
+- **Usage examples**: Practical examples of class usage
+- **Performance characteristics**: Expected performance metrics
+- **Error handling**: Description of error scenarios and handling
+
+### Method Documentation
+
+- **Parameters**: Detailed description of all inputs
+- **Returns**: Description of output format and meaning
+- **Side effects**: Description of any state changes
+- **Performance**: Expected execution time and memory usage
+
+### Pipeline Documentation
+
+- **Workflow**: Step-by-step description of processing pipeline
+- **Configuration**: Description of configurable parameters
+- **Error scenarios**: Common error conditions and resolutions
+- **Performance tuning**: Guidelines for optimizing performance
+
+## Maintenance Guidelines
+
+### Index Maintenance
+
+- **Regular validation**: Check index integrity and consistency
+- **Performance monitoring**: Track search speed and accuracy
+- **Memory usage**: Monitor and optimize memory consumption
+- **Backup procedures**: Regular index backup and recovery
+
+### Database Maintenance
+
+- **Schema updates**: Handle schema versioning and migrations
+- **Data cleanup**: Remove orphaned or invalid data
+- **Performance optimization**: Monitor and optimize query performance
+- **Backup procedures**: Regular database backup and recovery
+
+### Pipeline Maintenance
+
+- **Error monitoring**: Track and analyze processing errors
+- **Performance optimization**: Improve processing speed and efficiency
+- **Resource monitoring**: Monitor CPU and memory usage
+- **Update procedures**: Handle updates to processing algorithms

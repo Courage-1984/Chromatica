@@ -14,7 +14,7 @@ This plan details a production-ready, two-stage color search engine that retriev
 
 For efficient retrieval, we employ a two-stage process. First, a fast Approximate Nearest Neighbor (ANN) search is performed using a **FAISS HNSW index**. To make the histograms compatible with the index's L2 distance metric, we apply a **Hellinger transformation (element-wise square root)**. This stage retrieves a broad set of candidates (e.g., top 200). Second, these candidates are re-ranked using a high-fidelity, perceptually accurate metric: the **Sinkhorn-approximated Earth Mover's Distance (EMD)**. This principled approach correctly models the "work" required to transform one color palette into another, properly accounting for both color differences and their relative weights. Evaluation on the COCO and Unsplash Lite datasets will target a P95 total latency of under 450ms while achieving high relevance scores (Precision@10 \> 0.7).
 
-**Current Status**: Week 1 implementation is complete with a fully functional histogram generation pipeline, comprehensive testing infrastructure, and production-ready code quality. The system is ready for Week 2 development focusing on FAISS index and DuckDB metadata store implementation.
+**Current Status**: Week 1 implementation is complete with a fully functional histogram generation pipeline, comprehensive testing infrastructure, and production-ready code quality. Week 2 implementation is complete with fully operational FAISS HNSW index and DuckDB metadata store. The web interface has been enhanced with a complete Catppuccin Mocha theme, custom JetBrains Mono Nerd Font Mono typography system, and comprehensive Advanced Visualization Tools with expandable tool panels and real quick test functionality.
 
 ---
 
@@ -732,6 +732,10 @@ docs/
 │   ├── test_reranking.md
 │   ├── test_faiss_duckdb.md
 │   └── tools_test_image_pipeline.md
+├── interface/                    # Web interface documentation (COMPLETED)
+│   ├── catppuccin_mocha_theme.md
+│   ├── catppuccin_mocha_quick_reference.md
+│   └── font_setup_guide.md
 ├── troubleshooting/               # Problem resolution guides
 │   ├── common_issues.md          # Frequently encountered problems
 │   ├── error_codes.md            # Error code explanations
@@ -800,6 +804,483 @@ docs/
 
 ---
 
+## Web Interface Enhancements (COMPLETED)
+
+### Catppuccin Mocha Theme Implementation
+
+The Chromatica web interface has been completely redesigned with the Catppuccin Mocha theme, providing a soothing, dark pastel aesthetic that enhances user experience while maintaining excellent readability and accessibility.
+
+#### Theme Features
+
+- **25-Color Palette**: Complete implementation of the official Catppuccin Mocha color scheme
+- **CSS Variables**: Centralized color management using CSS custom properties
+- **Accessibility**: WCAG-compliant contrast ratios for all text and interactive elements
+- **Responsive Design**: Mobile-optimized layouts with consistent theming across screen sizes
+- **Hover Effects**: Subtle mauve accents and smooth transitions for interactive elements
+
+#### Color Application Strategy
+
+- **Base Colors**: `#1e1e2e` (base), `#181825` (mantle), `#11111b` (crust)
+- **Surface Colors**: `#313244`, `#45475a`, `#585b70` for cards and sections
+- **Text Colors**: `#cdd6f4` (primary), `#a6adc8` (secondary), `#bac2de` (tertiary)
+- **Accent Colors**: `#89b4fa` (blue), `#a6e3a1` (green), `#cba6f7` (mauve), `#f38ba8` (red)
+
+### Custom Typography System
+
+The interface now uses a sophisticated typography system combining JetBrains Mono Nerd Font Mono for text content and Segoe UI fonts for emojis and symbols.
+
+#### Font Implementation
+
+- **Primary Font**: JetBrains Mono Nerd Font Mono with multiple weights (Regular, Medium, SemiBold, Bold)
+- **Emoji Font**: Segoe UI Emoji for crisp, high-quality emoji rendering
+- **Symbol Font**: Segoe UI Symbol for comprehensive symbol coverage
+- **Fallback Strategy**: Comprehensive fallback chain for cross-platform compatibility
+
+#### Typography Features
+
+- **Monospace Design**: Perfect for technical content and developer interfaces
+- **Nerd Font Support**: Includes programming icons and symbols
+- **Multiple Weights**: Visual hierarchy with appropriate font weights
+- **Font Optimization**: `font-display: swap` for optimal loading performance
+
+### Implementation Status
+
+#### Completed Components
+
+- ✅ **Theme Implementation**: Complete Catppuccin Mocha color scheme
+- ✅ **Typography System**: JetBrains Mono Nerd Font Mono + Segoe UI fonts
+- ✅ **CSS Architecture**: CSS variables and responsive design
+- ✅ **Accessibility**: WCAG compliance and screen reader support
+- ✅ **Documentation**: Comprehensive guides and quick references
+
+#### Technical Specifications
+
+- **File Location**: `src/chromatica/api/static/index.html`
+- **Font Directory**: `src/chromatica/api/static/fonts/`
+- **CSS Variables**: 25 color variables with semantic naming
+- **Responsive Breakpoints**: Mobile-first design with 768px breakpoint
+- **Browser Support**: Modern browsers with graceful fallbacks
+
+#### Documentation Coverage
+
+- **Theme Documentation**: Complete implementation guide and color reference
+- **Developer Guide**: Quick reference for theme and font usage
+- **Font Setup Guide**: Step-by-step font installation and configuration
+- **Integration Guide**: How to extend and customize the theme system
+
+---
+
+## Advanced Visualization Tools (COMPLETED)
+
+### Overview
+
+The Chromatica web interface now includes a comprehensive suite of Advanced Visualization Tools that provide users with powerful analysis and visualization capabilities for color data, search results, and system performance metrics.
+
+### Tool Architecture
+
+#### Expandable Tool Panels
+
+Each visualization tool features an expandable interface that transforms the tool card into a full-featured configuration and execution environment:
+
+- **Panel Header**: Tool title and close button for easy navigation
+- **Configuration Sections**: Organized input sections for different aspects of tool operation
+- **Action Buttons**: Run Tool, Reset, and Help buttons for tool control
+- **Results Area**: Dynamic display area for tool outputs and analysis results
+
+#### Three-Button Interface
+
+Every tool implements a consistent three-button interface:
+
+1. **Run Tool**: Expands the tool panel and provides full configuration options
+2. **Info**: Displays comprehensive tool information including Quick Test details
+3. **Quick Test**: Executes the tool with predefined quick test datasets
+
+### Implemented Tools
+
+#### 1. Color Palette Analyzer
+
+**Purpose**: Comprehensive analysis and visualization of color palettes extracted from images
+
+**Features**:
+
+- Image upload and directory selection
+- Configurable color extraction parameters (K-means clustering, color spaces)
+- Multiple output formats (PNG, PDF, JSON, CSV)
+- Performance benchmarking and validation
+- Export functionality for results and visualizations
+
+**Quick Test Dataset**: `datasets/quick-test/color-palette/`
+
+#### 2. Search Results Analyzer
+
+**Purpose**: Advanced visualization and analysis of search results with comprehensive metrics
+
+**Features**:
+
+- Query input and analysis type selection
+- Weighted analysis with customizable parameters
+- Multiple visualization styles (charts, heatmaps, 3D projections)
+- Performance metrics and ranking analysis
+- Export capabilities for analysis results
+
+**Quick Test Dataset**: `datasets/quick-test/search-results/`
+
+#### 3. Interactive Color Explorer
+
+**Purpose**: Interactive interface for exploring color combinations and harmonies
+
+**Features**:
+
+- Base color selection with real-time preview
+- Color harmony generation (complementary, analogous, triadic, split-complementary, tetradic)
+- Saturation and brightness adjustments
+- Live search integration with Chromatica API
+- Palette export and scheme saving
+
+**Quick Test Dataset**: `datasets/quick-test/color-explorer/`
+
+#### 4. Histogram Analysis Tool
+
+**Purpose**: Comprehensive testing and visualization of histogram generation
+
+**Features**:
+
+- Single image and batch directory processing
+- Histogram validation and quality checks
+- Performance benchmarking and timing analysis
+- Multiple visualization types (charts, heatmaps, 3D projections)
+- Comprehensive reporting and export options
+
+**Quick Test Dataset**: `datasets/quick-test/histogram-analysis/`
+
+#### 5. Distance Debugger Tool
+
+**Purpose**: Debug and analyze Sinkhorn-EMD distance calculations
+
+**Features**:
+
+- Multiple test types (stability, accuracy, performance)
+- Dataset selection and custom path support
+- Epsilon and iteration configuration
+- Comprehensive debugging options
+- Detailed analysis reports and recommendations
+
+**Quick Test Dataset**: `datasets/quick-test/distance-debugger/`
+
+#### 6. Query Visualizer Tool
+
+**Purpose**: Create visual representations of color queries with weighted color bars
+
+**Features**:
+
+- Color query input with weight configuration
+- Multiple visualization styles (bars, circles, squares, hexagons, gradients)
+- Layout options (horizontal, vertical, radial, grid, flow)
+- Customizable dimensions and output formats
+- Accessibility features and color harmony analysis
+
+**Quick Test Dataset**: `datasets/quick-test/query-visualizer/`
+
+### Quick Test System
+
+#### Dataset Structure
+
+The quick test system uses specially curated datasets for each tool:
+
+```
+datasets/quick-test/
+├── color-palette/          # Sample images with known color characteristics
+├── search-results/         # Sample search queries and results
+├── color-explorer/         # Color harmonies and palette templates
+├── histogram-analysis/     # Sample histogram data for validation
+├── distance-debugger/      # Histogram pairs for stability testing
+└── query-visualizer/       # Sample color queries for visualization
+```
+
+#### Quick Test Execution
+
+- **Real Tool Execution**: Each Quick Test button executes the actual tool with the appropriate dataset
+- **Dynamic Results**: Results are generated based on actual tool execution, not hardcoded text
+- **Consistent Placement**: Results appear in the tool panel area, not as disappearing blocks
+- **Integration**: Quick Test results include "Run Full Tool" button for expanded functionality
+
+### Technical Implementation
+
+#### Frontend Architecture
+
+- **HTML Structure**: Semantic HTML with proper accessibility attributes
+- **CSS Framework**: Catppuccin Mocha theme with responsive design
+- **JavaScript**: Modular functions for tool execution and result generation
+- **Form Handling**: Comprehensive input validation and user feedback
+
+#### Backend Integration
+
+- **Tool Execution**: Real Python tool execution with quick test datasets
+- **Data Processing**: Dynamic result generation based on actual tool outputs
+- **Error Handling**: Comprehensive error handling and user feedback
+- **Performance**: Optimized execution with loading indicators and progress feedback
+
+### User Experience Features
+
+#### Responsive Design
+
+- **Mobile-First**: Optimized for mobile devices with responsive breakpoints
+- **Accessibility**: WCAG-compliant design with proper contrast ratios
+- **Performance**: Fast loading and smooth interactions
+- **Cross-Browser**: Compatible with modern browsers
+
+#### Interactive Elements
+
+- **Hover Effects**: Subtle visual feedback for interactive elements
+- **Loading States**: Clear indication of tool execution progress
+- **Error Handling**: User-friendly error messages and recovery options
+- **Help System**: Comprehensive help and documentation for each tool
+
+### Implementation Status
+
+#### Completed Components
+
+- ✅ **All Six Tools**: Fully implemented with expandable panels
+- ✅ **Quick Test System**: Real execution with quick test datasets
+- ✅ **User Interface**: Catppuccin Mocha theme with custom typography
+- ✅ **Documentation**: Comprehensive tool information and help systems
+- ✅ **Integration**: Seamless integration with existing web interface
+
+#### Technical Specifications
+
+- **File Location**: `src/chromatica/api/static/index.html`
+- **Tool Count**: 6 comprehensive visualization tools
+- **Panel Types**: Expandable configuration panels for each tool
+- **Dataset Integration**: Real quick test datasets for each tool
+- **Export Support**: Multiple output formats for all tools
+
+### Maintenance Requirements
+
+#### Tool Updates
+
+- **Configuration**: Maintain tool configuration options and validation
+- **Datasets**: Keep quick test datasets updated and relevant
+- **Documentation**: Update tool information and help content
+- **Testing**: Regular testing of tool functionality and integration
+
+#### Performance Monitoring
+
+- **Execution Time**: Monitor tool execution performance
+- **User Experience**: Track user interaction patterns and feedback
+- **Error Rates**: Monitor and address any tool execution errors
+- **Integration**: Ensure seamless integration with core system components
+
+### Maintenance Requirements
+
+#### Theme Updates
+
+- **Color Palette**: Keep synchronized with official Catppuccin releases
+- **Accessibility**: Regular contrast ratio testing and validation
+- **Browser Compatibility**: Test with new browser versions
+- **Performance**: Monitor font loading and rendering performance
+
+#### Font Management
+
+- **Font Files**: Include in project repository for consistent deployment
+- **Version Control**: Track font updates and modifications
+- **Testing**: Verify font rendering across different devices and browsers
+- **Performance**: Monitor font loading impact on page performance
+
+#### Documentation Maintenance
+
+- **Theme Changes**: Update all theme-related documentation
+- **Font Updates**: Document any font modifications or additions
+- **Integration Examples**: Provide examples for new theme features
+- **Troubleshooting**: Maintain troubleshooting guides for common issues
+
+---
+
+## M. Output Cleanup Tool
+
+### Overview
+
+The Chromatica Output Cleanup Tool (`tools/cleanup_outputs.py`) is a comprehensive utility for managing and cleaning up output files generated during development, testing, and production operations. This tool helps maintain a clean development environment by providing selective or complete removal of generated files.
+
+### Core Functionality
+
+#### Selective Cleanup
+
+- **Targeted Deletion**: Choose specific output types to clean (histograms, reports, logs, index files, cache, temp)
+- **Batch Operations**: Clean multiple output types simultaneously
+- **Size Reporting**: Shows disk space usage and freed space for informed decisions
+
+#### Safety Features
+
+- **Confirmation Prompts**: Interactive mode requires explicit confirmation for destructive operations
+- **Dry Run Mode**: Preview what would be deleted without making changes
+- **Error Handling**: Graceful handling of permission errors and file system issues
+- **Comprehensive Logging**: All operations logged to `logs/cleanup.log`
+
+#### Interactive Mode
+
+- **User-Friendly Interface**: Guided cleanup selection with numbered options
+- **Real-Time Feedback**: Shows file counts and sizes for each output type
+- **Safe Defaults**: Requires explicit confirmation before deletion
+
+### Supported Output Types
+
+#### Histograms
+
+- **Location**: `datasets/*/histograms/`
+- **Files**: `*.npy` files containing color histograms
+- **Purpose**: Generated during dataset processing for color analysis
+
+#### Reports
+
+- **Location**: `datasets/*/reports/`
+- **Files**: Analysis reports, JSON summaries, CSV data
+- **Purpose**: Generated analysis and validation reports
+
+#### Logs
+
+- **Location**: `logs/`
+- **Files**: `*.log` files from application runs
+- **Purpose**: Application logging and debugging information
+
+#### Test Index
+
+- **Location**: `test_index/`
+- **Files**: `*.faiss` (FAISS index) and `*.db` (DuckDB metadata)
+- **Purpose**: Search index and metadata storage
+
+#### Cache Files
+
+- **Location**: `**/__pycache__/`
+- **Files**: `*.pyc`, `*.pyo` bytecode files
+- **Purpose**: Python bytecode cache for faster imports
+
+#### Temporary Files
+
+- **Location**: Various locations
+- **Files**: `*.tmp`, `*.temp`, `.DS_Store`, `Thumbs.db`
+- **Purpose**: System and application temporary files
+
+### Usage Examples
+
+#### Interactive Mode
+
+```bash
+# Launch interactive cleanup with guided selection
+python tools/cleanup_outputs.py
+```
+
+#### Command Line Options
+
+```bash
+# Clean specific output types
+python tools/cleanup_outputs.py --logs --reports --histograms
+
+# Clean all outputs with confirmation
+python tools/cleanup_outputs.py --all --confirm
+
+# Preview what would be deleted (safe)
+python tools/cleanup_outputs.py --datasets --dry-run
+
+# Clean dataset outputs (histograms + reports)
+python tools/cleanup_outputs.py --datasets
+
+# Create standalone cleanup script
+python tools/cleanup_outputs.py --datasets --create-script
+```
+
+### Integration with Development Workflow
+
+#### Pre-Development Cleanup
+
+- Clean all outputs before starting fresh development
+- Remove old test artifacts for clean testing environment
+- Clear cache files for consistent development state
+
+#### Post-Testing Cleanup
+
+- Clean test outputs after validation
+- Remove temporary files generated during testing
+- Maintain clean project state between test runs
+
+#### Maintenance Operations
+
+- Regular cleanup of log files to prevent disk space issues
+- Remove old index files before building new ones
+- Clear cache files for performance optimization
+
+### Technical Implementation
+
+#### Architecture
+
+- **Modular Design**: Separate classes for scanning, display, and cleanup operations
+- **Error Handling**: Comprehensive error handling with graceful failure recovery
+- **Logging**: Detailed logging for debugging and audit trails
+- **Configuration**: Integration with project configuration system
+
+#### Performance Considerations
+
+- **Efficient Scanning**: Uses glob patterns for fast file discovery
+- **Size Calculation**: Optimized file size calculation with proper formatting
+- **Memory Management**: Handles large file sets without memory issues
+- **Progress Feedback**: Real-time progress indication for long operations
+
+### Safety and Reliability
+
+#### Confirmation System
+
+- **Interactive Confirmation**: Requires explicit user confirmation for destructive operations
+- **Size Display**: Shows total items and disk space to be freed
+- **Clear Prompts**: Unambiguous yes/no confirmation prompts
+
+#### Error Recovery
+
+- **Graceful Failures**: Continues cleanup even if individual files fail
+- **Permission Handling**: Proper handling of permission errors
+- **Logging**: Detailed error logging for troubleshooting
+
+#### Validation
+
+- **Input Validation**: Comprehensive validation of command line arguments
+- **Path Validation**: Ensures all paths are within project boundaries
+- **Type Checking**: Validates output types and file patterns
+
+### Documentation and Maintenance
+
+#### Comprehensive Documentation
+
+- **Usage Guide**: Complete usage documentation in `docs/tools_cleanup_outputs.md`
+- **Examples**: Practical examples for common use cases
+- **Troubleshooting**: Common issues and resolution steps
+- **Integration**: Integration examples with development workflow
+
+#### Maintenance Requirements
+
+- **Regular Updates**: Keep tool updated with new output types
+- **Testing**: Regular testing with different file scenarios
+- **Documentation**: Maintain documentation for new features
+- **Performance**: Monitor and optimize performance for large file sets
+
+### Implementation Status
+
+#### Completed Features
+
+- ✅ **Core Cleanup Functionality**: Selective and batch cleanup operations
+- ✅ **Interactive Mode**: User-friendly guided cleanup interface
+- ✅ **Safety Features**: Confirmation prompts and dry-run mode
+- ✅ **Comprehensive Logging**: Detailed operation logging and error tracking
+- ✅ **Documentation**: Complete usage guide and integration examples
+- ✅ **Testing**: Thoroughly tested with multiple scenarios and file types
+
+#### Technical Specifications
+
+- **File Location**: `tools/cleanup_outputs.py`
+- **Dependencies**: Standard library only (no external dependencies)
+- **Integration**: Seamless integration with project configuration system
+- **Logging**: Comprehensive logging to `logs/cleanup.log`
+- **Documentation**: Complete documentation in `docs/tools_cleanup_outputs.md`
+
+---
+
 ```json
 {
   "chosen_color_space": "CIE Lab (D65)",
@@ -809,8 +1290,15 @@ docs/
   "rerank_metric": "Sinkhorn-EMD (ε=0.1)",
   "topK_rerank": 200,
   "estimated_index_size_per_M": "12.7 GB",
-  "implementation_status": "Week 1 Complete - Core Pipeline Ready",
-  "next_milestone": "Week 2 - FAISS Index and DuckDB Store",
-  "documentation_requirement": "MANDATORY for ALL changes - No exceptions"
+  "implementation_status": "Week 1 & 2 Complete - Core Pipeline + FAISS Index + DuckDB Store + Web Interface + Advanced Visualization Tools + Output Cleanup Tool",
+  "next_milestone": "Week 3 - Performance Optimization and Production Deployment",
+  "documentation_requirement": "MANDATORY for ALL changes - No exceptions",
+  "web_interface_status": "Catppuccin Mocha Theme + Custom Typography + 6 Advanced Visualization Tools Complete",
+  "theme_colors": 25,
+  "font_system": "JetBrains Mono Nerd Font Mono + Segoe UI Emoji/Symbol",
+  "visualization_tools": 6,
+  "tool_panels": "Expandable with Real Quick Test Execution",
+  "quick_test_datasets": "6 specialized datasets for comprehensive testing",
+  "cleanup_tool": "Comprehensive output cleanup tool with selective deletion, safety features, and interactive mode"
 }
 ```

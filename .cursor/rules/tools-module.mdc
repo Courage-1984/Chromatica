@@ -1,0 +1,350 @@
+---
+description: Rules for tools and scripts development (testing, demos, utilities, visualization)
+globs: ["tools/**/*", "scripts/**/*"]
+alwaysApply: false
+---
+
+# Tools and Scripts Development Rules
+
+## Module Overview
+
+The tools and scripts directories contain testing utilities, demonstration scripts, and development tools for the Chromatica color search engine. These tools support development, testing, debugging, and demonstration of the system.
+
+## Key Components
+
+### Testing Tools (`tools/`)
+
+- **test_histogram_generation.py**: Comprehensive histogram testing and validation
+- **test_api.py**: API endpoint testing and validation
+- **test_faiss_duckdb.py**: Index and database testing
+- **test_search_system.py**: End-to-end search system testing
+- **test_reranking.py**: Sinkhorn-EMD reranking testing
+- **test_query_processor.py**: Query processing testing
+
+### Demonstration Tools (`tools/`)
+
+- **demo_search.py**: Interactive search demonstration
+- **demo_query_processor.py**: Query processing demonstration
+- **demo_visualization.py**: Visualization tool demonstration
+- **demo.py**: Main demonstration script
+
+### Visualization Tools (`tools/`)
+
+- **visualize_color_palettes.py**: Color palette visualization
+- **visualize_search_results.py**: Search result visualization
+- **color_explorer.py**: Interactive color exploration
+- **debug_distances.py**: Distance calculation debugging
+
+### Build Scripts (`scripts/`)
+
+- **build_index.py**: Index building and population
+- **run_sanity_checks.py**: System sanity checks and validation
+
+## Development Standards
+
+### Tool Architecture
+
+- **Modular design**: Separate concerns for different tool types
+- **Command-line interface**: Consistent CLI with argparse
+- **Configuration support**: Use project configuration constants
+- **Error handling**: Comprehensive error handling and reporting
+- **Logging integration**: Use standard logging module
+
+### Testing Tool Standards
+
+- **Comprehensive validation**: Test all aspects of functionality
+- **Performance benchmarking**: Measure execution time and memory usage
+- **Report generation**: Generate detailed test reports
+- **Visualization**: Include charts and graphs for analysis
+- **Batch processing**: Support for processing multiple test cases
+
+### Demonstration Tool Standards
+
+- **Interactive interfaces**: User-friendly command-line interfaces
+- **Example data**: Include sample data and test cases
+- **Progress feedback**: Clear indication of operation progress
+- **Result visualization**: Show results in meaningful formats
+- **Error recovery**: Graceful handling of user errors
+
+## Testing Tool Specifications
+
+### Histogram Generation Testing
+
+```python
+def test_histogram_generation():
+    """
+    Comprehensive testing of histogram generation functionality.
+
+    Features:
+    - Single image and batch processing
+    - Validation of histogram properties
+    - Performance benchmarking
+    - Visualization of results
+    - Report generation (6 different report types)
+    """
+    # Implementation with comprehensive testing
+```
+
+### API Testing
+
+```python
+def test_api_endpoints():
+    """
+    Test all API endpoints with various input scenarios.
+
+    Features:
+    - Endpoint availability testing
+    - Request/response validation
+    - Performance testing
+    - Error handling testing
+    - Authentication testing (if applicable)
+    """
+    # Implementation with comprehensive API testing
+```
+
+### System Testing
+
+```python
+def test_search_system():
+    """
+    End-to-end testing of the complete search system.
+
+    Features:
+    - Query processing testing
+    - Index search testing
+    - Reranking testing
+    - Result validation
+    - Performance benchmarking
+    """
+    # Implementation with end-to-end testing
+```
+
+## Demonstration Tool Specifications
+
+### Search Demonstration
+
+```python
+def demo_search():
+    """
+    Interactive demonstration of the search functionality.
+
+    Features:
+    - Interactive query building
+    - Real-time search execution
+    - Result visualization
+    - Performance metrics display
+    - Export functionality
+    """
+    # Implementation with interactive interface
+```
+
+### Visualization Demonstration
+
+```python
+def demo_visualization():
+    """
+    Demonstration of visualization tools and capabilities.
+
+    Features:
+    - Color palette visualization
+    - Search result visualization
+    - Interactive color exploration
+    - Export to various formats
+    - Performance analysis
+    """
+    # Implementation with visualization features
+```
+
+## Build Script Specifications
+
+### Index Building
+
+```python
+def build_index():
+    """
+    Build and populate the FAISS index and DuckDB store.
+
+    Features:
+    - Batch image processing
+    - Progress tracking
+    - Error handling and recovery
+    - Performance monitoring
+    - Validation of built index
+    """
+    # Implementation with comprehensive index building
+```
+
+### Sanity Checks
+
+```python
+def run_sanity_checks():
+    """
+    Run comprehensive sanity checks on the system.
+
+    Features:
+    - Configuration validation
+    - Index integrity checking
+    - Database consistency checking
+    - Performance validation
+    - Error detection and reporting
+    """
+    # Implementation with comprehensive validation
+```
+
+## Tool Integration
+
+### Configuration Integration
+
+```python
+from src.chromatica.utils.config import (
+    L_BINS, A_BINS, B_BINS, TOTAL_BINS,
+    LAB_RANGES, RERANK_K, SINKHORN_EPSILON
+)
+```
+
+### Core Module Integration
+
+```python
+from src.chromatica.core.histogram import build_histogram
+from src.chromatica.core.query import create_query_histogram
+from src.chromatica.core.rerank import rerank_candidates
+```
+
+### Indexing Module Integration
+
+```python
+from src.chromatica.indexing.store import AnnIndex, MetadataStore
+from src.chromatica.indexing.pipeline import process_image
+```
+
+## Performance Requirements
+
+### Testing Tools
+
+- **Execution time**: Complete test suites in reasonable time
+- **Memory usage**: Efficient memory usage for large datasets
+- **Report generation**: Fast report generation and export
+- **Visualization**: Responsive visualization rendering
+
+### Demonstration Tools
+
+- **Interactive response**: Fast response to user input
+- **Search execution**: Meet performance targets for search operations
+- **Visualization**: Smooth visualization rendering
+- **Export functionality**: Fast export to various formats
+
+### Build Scripts
+
+- **Batch processing**: Efficient processing of large datasets
+- **Progress tracking**: Real-time progress updates
+- **Error recovery**: Minimal impact on overall processing time
+- **Resource utilization**: Efficient CPU and memory usage
+
+## Error Handling
+
+### Input Validation
+
+- **File validation**: Check file existence and format
+- **Parameter validation**: Validate command-line parameters
+- **Data validation**: Validate input data formats
+- **Configuration validation**: Check configuration consistency
+
+### Error Reporting
+
+- **Descriptive messages**: Clear explanation of errors
+- **Error codes**: Consistent error code system
+- **Logging**: Comprehensive error logging
+- **Recovery suggestions**: Actionable error resolution steps
+
+### Graceful Degradation
+
+- **Partial results**: Continue processing when possible
+- **Error isolation**: Isolate errors to prevent system failure
+- **Fallback options**: Provide alternative execution paths
+- **User feedback**: Clear indication of error conditions
+
+## Documentation Requirements
+
+### Tool Documentation
+
+- **Purpose**: Clear explanation of tool functionality
+- **Usage**: Command-line usage examples
+- **Parameters**: Description of all command-line options
+- **Examples**: Practical usage examples
+- **Output**: Description of output formats and files
+
+### Script Documentation
+
+- **Workflow**: Step-by-step description of script execution
+- **Dependencies**: Required dependencies and setup
+- **Configuration**: Configuration options and requirements
+- **Troubleshooting**: Common issues and resolution steps
+
+### Report Documentation
+
+- **Report types**: Description of different report formats
+- **Metrics**: Explanation of performance metrics
+- **Visualization**: Description of charts and graphs
+- **Interpretation**: Guidelines for interpreting results
+
+## Testing Requirements
+
+### Tool Testing
+
+- **Functionality testing**: Test all tool features
+- **Integration testing**: Test tool integration with core modules
+- **Performance testing**: Validate performance requirements
+- **Error handling testing**: Test error scenarios and recovery
+
+### Script Testing
+
+- **End-to-end testing**: Test complete script execution
+- **Batch processing testing**: Test with large datasets
+- **Error scenario testing**: Test error handling and recovery
+- **Performance testing**: Validate execution time and resource usage
+
+### Report Testing
+
+- **Report generation**: Test all report types
+- **Data accuracy**: Validate report data accuracy
+- **Visualization testing**: Test chart and graph generation
+- **Export testing**: Test export to various formats
+
+## Maintenance Guidelines
+
+### Tool Updates
+
+- **Version compatibility**: Maintain compatibility with core modules
+- **Configuration updates**: Update tools for configuration changes
+- **Performance optimization**: Improve tool performance as needed
+- **Feature additions**: Add new features based on user needs
+
+### Script Maintenance
+
+- **Dependency updates**: Keep dependencies up to date
+- **Error handling improvements**: Enhance error handling based on usage
+- **Performance optimization**: Optimize script performance
+- **Documentation updates**: Keep documentation current
+
+### Report Maintenance
+
+- **Format updates**: Update report formats as needed
+- **Metric additions**: Add new metrics based on requirements
+- **Visualization improvements**: Enhance visualization capabilities
+- **Export format additions**: Add new export formats as needed
+
+## Quick Test Integration
+
+### Quick Test Datasets
+
+- **datasets/quick-test/**: Specialized datasets for each tool
+- **Real execution**: Tools execute with actual quick test data
+- **Dynamic results**: Results generated from actual tool execution
+- **Consistent placement**: Results appear in tool panel areas
+
+### Tool Panel Integration
+
+- **Expandable panels**: Tools integrate with web interface panels
+- **Configuration options**: Tools support panel configuration
+- **Result display**: Tools display results in panel areas
+- **Export functionality**: Tools support export from panels

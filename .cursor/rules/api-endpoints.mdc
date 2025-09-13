@@ -1,0 +1,233 @@
+---
+description: API endpoint specifications and implementation requirements
+globs: ["src/chromatica/api/**/*"]
+alwaysApply: false
+---
+
+# API Endpoint Specifications and Implementation Requirements
+
+## REST API Architecture
+
+### FastAPI Framework
+
+- **Framework**: FastAPI for high-performance web API
+- **Documentation**: Auto-generated OpenAPI/Swagger documentation
+- **Validation**: Pydantic models for request/response validation
+- **Async Support**: Async/await for improved performance
+
+### API Design Principles
+
+- **RESTful Design**: Follow REST conventions
+- **Consistent Responses**: Standardized response format
+- **Error Handling**: Comprehensive error responses
+- **Performance**: Optimized for low latency
+
+## Search Endpoint Specification
+
+### GET /search
+
+**Purpose**: Search for images with similar color palettes
+
+**Query Parameters**:
+
+- `colors` (string, required): Comma-separated hex color codes without `#`
+- `weights` (string, required): Comma-separated float weights (must sum to 1.0)
+- `k` (integer, optional, default=50): Number of results to return
+- `fuzz` (float, optional, default=1.0): Search fuzziness multiplier
+
+**Example Request**:
+
+```
+GET /search?colors=ea6a81,f6d727&weights=0.49,0.51&k=20
+```
+
+**Response Format**:
+
+```json
+{
+  "query_id": "a1b2c3d4-e5f6-7890-g1h2-i3j4k5l6m7n8",
+  "query": {
+    "colors": ["#ea6a81", "#f6d727"],
+    "weights": [0.49, 0.51]
+  },
+  "results_count": 20,
+  "results": [
+    {
+      "image_id": "img_abc123",
+      "distance": 0.087,
+      "dominant_colors": ["#e96d80", "#f5d52b", "#ffffff"]
+    }
+  ],
+  "metadata": {
+    "ann_time_ms": 110,
+    "rerank_time_ms": 285,
+    "total_time_ms": 395
+  }
+}
+```
+
+## Request/Response Models
+
+### Query Model
+
+```python
+class ColorQuery(BaseModel):
+    colors: List[str] = Field(..., description="Hex color codes")
+    weights: List[float] = Field(..., description="Color weights (must sum to 1.0)")
+    k: int = Field(50, ge=1, le=1000, description="Number of results")
+    fuzz: float = Field(1.0, ge=0.1, le=5.0, description="Search fuzziness")
+```
+
+### Response Models
+
+```python
+class SearchResult(BaseModel):
+    image_id: str
+    distance: float
+    dominant_colors: List[str]
+
+class SearchResponse(BaseModel):
+    query_id: str
+    query: ColorQuery
+    results_count: int
+    results: List[SearchResult]
+    metadata: Dict[str, Any]
+```
+
+## Error Handling
+
+### HTTP Status Codes
+
+- **200 OK**: Successful search
+- **400 Bad Request**: Invalid query parameters
+- **422 Unprocessable Entity**: Validation errors
+- **500 Internal Server Error**: Server errors
+
+### Error Response Format
+
+```json
+{
+  "error": {
+    "code": "INVALID_COLORS",
+    "message": "Invalid hex color format",
+    "details": {
+      "field": "colors",
+      "value": "invalid_color"
+    }
+  }
+}
+```
+
+### Common Error Codes
+
+- `INVALID_COLORS`: Invalid hex color format
+- `INVALID_WEIGHTS`: Weights don't sum to 1.0
+- `INVALID_K`: K parameter out of range
+- `INDEX_NOT_READY`: Search index not initialized
+- `QUERY_PROCESSING_ERROR`: Error processing query
+
+## Performance Requirements
+
+### Latency Targets
+
+- **P95 Response Time**: <450ms
+- **P99 Response Time**: <600ms
+- **Average Response Time**: <300ms
+
+### Throughput Requirements
+
+- **Concurrent Requests**: Support 100+ concurrent requests
+- **Requests per Second**: Handle 1000+ RPS
+- **Memory Usage**: <2GB RAM for API server
+
+### Monitoring and Metrics
+
+- **Response Time**: Track P50, P95, P99 latencies
+- **Error Rate**: Monitor error rates and types
+- **Throughput**: Track requests per second
+- **Resource Usage**: Monitor CPU and memory usage
+
+## API Documentation
+
+### OpenAPI Specification
+
+- **Auto-generated**: FastAPI generates OpenAPI spec
+- **Interactive Docs**: Swagger UI at `/docs`
+- **ReDoc**: Alternative docs at `/redoc`
+- **Schema Validation**: Request/response validation
+
+### Documentation Requirements
+
+- **Endpoint Descriptions**: Clear descriptions for all endpoints
+- **Parameter Documentation**: Detailed parameter descriptions
+- **Example Requests**: Practical usage examples
+- **Error Documentation**: Complete error code reference
+
+## Security Considerations
+
+### Input Validation
+
+- **Parameter Validation**: Validate all input parameters
+- **Type Checking**: Ensure correct data types
+- **Range Validation**: Validate parameter ranges
+- **Format Validation**: Validate hex color formats
+
+### Rate Limiting
+
+- **Request Limiting**: Implement rate limiting
+- **IP-based Limiting**: Limit requests per IP
+- **User-based Limiting**: Limit requests per user
+- **Graceful Degradation**: Handle rate limit exceeded
+
+### Error Information
+
+- **Information Disclosure**: Don't expose sensitive information
+- **Stack Traces**: Don't expose stack traces in production
+- **Database Errors**: Sanitize database error messages
+- **System Information**: Don't expose system details
+
+## Testing Requirements
+
+### Unit Tests
+
+- **Endpoint Tests**: Test individual endpoints
+- **Validation Tests**: Test parameter validation
+- **Error Tests**: Test error handling
+- **Response Tests**: Test response format
+
+### Integration Tests
+
+- **End-to-End Tests**: Test complete search pipeline
+- **Performance Tests**: Test latency and throughput
+- **Load Tests**: Test under high load
+- **Error Tests**: Test error scenarios
+
+### API Testing Tools
+
+- **FastAPI TestClient**: Use FastAPI testing utilities
+- **Pytest**: Use pytest for test framework
+- **Coverage**: Measure test coverage
+- **Mocking**: Mock external dependencies
+
+## Deployment Considerations
+
+### Production Configuration
+
+- **Environment Variables**: Use environment variables for config
+- **Logging**: Configure production logging
+- **Monitoring**: Set up application monitoring
+- **Health Checks**: Implement health check endpoints
+
+### Scaling Considerations
+
+- **Horizontal Scaling**: Support multiple instances
+- **Load Balancing**: Use load balancer for distribution
+- **Caching**: Implement response caching where appropriate
+- **Database Connection**: Manage database connections efficiently
+
+### Health Monitoring
+
+- **Health Endpoint**: `/health` endpoint for monitoring
+- **Readiness Check**: Check if service is ready
+- **Liveness Check**: Check if service is alive
+- **Metrics Endpoint**: `/metrics` for monitoring data

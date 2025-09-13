@@ -1,0 +1,87 @@
+{
+    "query_id": "quick-test-low-contrast-005",
+    "query": {
+        "colors": [
+            "808080",
+            "A0A0A0"
+        ],
+        "weights": [
+            0.6,
+            0.4
+        ]
+    },
+    "results_count": 5,
+    "results": [
+        {
+            "image_id": "low_contrast_001",
+            "file_path": "datasets/quick-test/color-palette/sample-image-1.jpg",
+            "distance": 0.11,
+            "rank": 1,
+            "dominant_colors": [
+                "#808080",
+                "#A0A0A0",
+                "#909090",
+                "#B0B0B0",
+                "#707070"
+            ]
+        },
+        {
+            "image_id": "low_contrast_002",
+            "file_path": "datasets/quick-test/color-palette/sample-image-2.png",
+            "distance": 0.24,
+            "rank": 2,
+            "dominant_colors": [
+                "#858585",
+                "#A5A5A5",
+                "#959595",
+                "#B5B5B5",
+                "#757575"
+            ]
+        },
+        {
+            "image_id": "low_contrast_003",
+            "file_path": "datasets/quick-test/color-palette/sample-image-3.jpg",
+            "distance": 0.37,
+            "rank": 3,
+            "dominant_colors": [
+                "#8A8A8A",
+                "#AAAAAA",
+                "#9A9A9A",
+                "#BABABA",
+                "#7A7A7A"
+            ]
+        },
+        {
+            "image_id": "low_contrast_004",
+            "file_path": "datasets/quick-test/color-palette/sample-image-4.png",
+            "distance": 0.50,
+            "rank": 4,
+            "dominant_colors": [
+                "#8F8F8F",
+                "#AFAFAF",
+                "#9F9F9F",
+                "#BFBFBF",
+                "#7F7F7F"
+            ]
+        },
+        {
+            "image_id": "low_contrast_005",
+            "file_path": "datasets/quick-test/color-palette/sample-image-5.jpg",
+            "distance": 0.63,
+            "rank": 5,
+            "dominant_colors": [
+                "#949494",
+                "#B4B4B4",
+                "#A4A4A4",
+                "#C4C4C4",
+                "#848484"
+            ]
+        }
+    ],
+    "metadata": {
+        "ann_time_ms": 55,
+        "rerank_time_ms": 27,
+        "total_time_ms": 82,
+        "index_size": 5000
+    }
+}

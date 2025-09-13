@@ -287,13 +287,17 @@ def find_similar(
 
             # Get file path from metadata store
             try:
-                # For now, we'll use the image_id as file_path since we don't have
-                # a direct mapping method. In a full implementation, this would
-                # come from the metadata store's get_image_info method
-                file_path = str(rerank_result.candidate_id)
-            except Exception:
+                metadata = store.get_image_info(rerank_result.candidate_id)
+                if metadata and metadata.get('file_path'):
+                    file_path = metadata['file_path']
+                else:
+                    logger.warning(
+                        f"No file path found for {rerank_result.candidate_id}"
+                    )
+                    file_path = "unknown"
+            except Exception as e:
                 logger.warning(
-                    f"Could not retrieve file path for {rerank_result.candidate_id}"
+                    f"Could not retrieve file path for {rerank_result.candidate_id}: {e}"
                 )
                 file_path = "unknown"
 
