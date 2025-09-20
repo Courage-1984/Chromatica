@@ -18,7 +18,7 @@ Usage:
 Requirements:
     - Virtual environment activated (venv311\Scripts\activate)
     - All dependencies installed (pip install -r requirements.txt)
-    - Test index available in test_index/ directory
+    - Test index available in index/ directory
     - Test datasets available in datasets/ directory
 """
 
@@ -33,7 +33,6 @@ import numpy as np
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from chromatica.indexing.pipeline import process_image
 from chromatica.core.query import create_query_histogram
 from chromatica.indexing.store import AnnIndex, MetadataStore
 from chromatica.search import find_similar, SearchResult
@@ -67,8 +66,8 @@ def load_test_index() -> Tuple[AnnIndex, MetadataStore]:
     logger = logging.getLogger(__name__)
 
     # Check if test index exists
-    index_path = Path("test_index/chromatica_index.faiss")
-    metadata_path = Path("test_index/chromatica_metadata.db")
+    index_path = Path("index/chromatica_index.faiss")
+    metadata_path = Path("index/chromatica_metadata.db")
 
     if not index_path.exists():
         raise FileNotFoundError(f"Test index not found: {index_path}")

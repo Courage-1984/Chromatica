@@ -18,3 +18,8 @@ logs/
 
 test_index/
 
+/index/
+
+datasets/*.json
+datasets/**/*.json
+

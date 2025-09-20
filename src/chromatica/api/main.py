@@ -174,20 +174,20 @@ async def startup_event():
 
     try:
         # Load the FAISS index
-        index_path = Path("test_index/chromatica_index.faiss")
+        index_path = Path("index/chromatica_index.faiss")
         if not index_path.exists():
             logger.warning(f"FAISS index not found at {index_path}")
             logger.info(
-                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir test_index"
+                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir index"
             )
             return
 
         # Load the DuckDB metadata store
-        db_path = Path("test_index/chromatica_metadata.db")
+        db_path = Path("index/chromatica_metadata.db")
         if not db_path.exists():
             logger.warning(f"Metadata store not found at {db_path}")
             logger.info(
-                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir test_index"
+                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir index"
             )
             return
 
@@ -722,13 +722,17 @@ async def execute_command(request: CommandRequest):
             if os.name == "nt":  # Windows
                 python_path = str(project_root / "venv311" / "Scripts" / "python.exe")
                 # Convert relative script paths to absolute paths
-                script_path = str(project_root / request.args[0]) if request.args else ""
+                script_path = (
+                    str(project_root / request.args[0]) if request.args else ""
+                )
                 script_args = request.args[1:] if len(request.args) > 1 else []
                 full_command = [python_path, script_path] + script_args
             else:  # Unix/Linux
                 python_path = str(project_root / "venv311" / "bin" / "python")
                 # Convert relative script paths to absolute paths
-                script_path = str(project_root / request.args[0]) if request.args else ""
+                script_path = (
+                    str(project_root / request.args[0]) if request.args else ""
+                )
                 script_args = request.args[1:] if len(request.args) > 1 else []
                 full_command = [python_path, script_path] + script_args
         else:

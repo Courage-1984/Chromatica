@@ -1,19 +1,20 @@
 """
 FAISS and DuckDB wrapper classes for the Chromatica color search engine.
 
-This module provides high-level abstractions for managing the FAISS HNSW index
+This module provides high-level abstractions for managing the FAISS IndexIVFPQ index
 and DuckDB metadata store. The AnnIndex class handles vector indexing with
-automatic Hellinger transformation, while the MetadataStore class manages
-image metadata and raw histogram storage for the reranking stage.
+automatic Hellinger transformation and Product Quantization compression, while the
+MetadataStore class manages image metadata and raw histogram storage for the reranking stage.
 
 Key Components:
-- AnnIndex: Wraps faiss.IndexHNSWFlat with Hellinger transform
+- AnnIndex: Wraps faiss.IndexIVFPQ with Hellinger transform and Product Quantization
 - MetadataStore: Manages DuckDB connection and operations
 - Batch operations for efficient indexing and retrieval
 
 The Hellinger transform is applied automatically to make histograms compatible
 with the L2-based FAISS index, while raw histograms are preserved in DuckDB
-for high-fidelity Sinkhorn-EMD reranking.
+for high-fidelity Sinkhorn-EMD reranking. Product Quantization significantly
+reduces memory usage by compressing vectors into compact codes.
 """
 
 import logging
@@ -23,7 +24,7 @@ import duckdb
 from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 
-from ..utils.config import TOTAL_BINS, HNSW_M
+from ..utils.config import TOTAL_BINS, IVFPQ_NLIST, IVFPQ_M, IVFPQ_NBITS, IVFPQ_NPROBE
 
 # Configure logging for this module
 logger = logging.getLogger(__name__)
@@ -31,49 +32,149 @@ logger = logging.getLogger(__name__)
 
 class AnnIndex:
     """
-    Wrapper class for FAISS HNSW index with automatic Hellinger transformation.
+    Wrapper class for FAISS IndexIVFPQ with automatic Hellinger transformation.
 
-    This class manages a FAISS Hierarchical Navigable Small World (HNSW) index
-    that stores color histograms transformed using the Hellinger transform.
-    The Hellinger transform (element-wise square root) converts normalized
-    histograms into vectors compatible with L2 distance metrics used by FAISS.
+    This class manages a FAISS Inverted File with Product Quantization (IndexIVFPQ)
+    that stores color histograms transformed using the Hellinger transform and
+    compressed using Product Quantization (PQ). The Hellinger transform (element-wise
+    square root) converts normalized histograms into vectors compatible with L2
+    distance metrics used by FAISS, while PQ dramatically reduces memory usage.
 
-    The HNSW index provides fast approximate nearest neighbor search with
-    excellent accuracy-to-speed trade-offs, making it ideal for the first
-    stage of our two-stage search pipeline.
+    Product Quantization (PQ) is a compression technique that:
+    1. Divides each vector into M subvectors (subquantizers)
+    2. Quantizes each subvector independently using k-means clustering
+    3. Stores only the cluster indices (codes) instead of full vectors
+    4. Reduces memory from O(d) to O(M * log2(k)) per vector
+
+    For our 1152-dimensional histograms with M=8 and nbits=8:
+    - Memory per vector: 8 * 8 = 64 bits = 8 bytes (vs 4608 bytes for full vectors)
+    - Compression ratio: ~576x reduction in memory usage
+    - Trade-off: Slight accuracy loss due to quantization
+
+    The IndexIVFPQ provides excellent memory efficiency while maintaining
+    good search quality, making it ideal for large-scale color search applications.
 
     Attributes:
-        index: The underlying FAISS HNSW index
+        index: The underlying FAISS IndexIVFPQ index
         dimension: The dimensionality of the indexed vectors (1152 for Lab histograms)
         total_vectors: The total number of vectors currently indexed
-        is_trained: Whether the index has been trained (HNSW doesn't require training)
+        is_trained: Whether the index has been trained (required for IVFPQ)
+        nlist: Number of Voronoi cells for coarse quantization
+        M: Number of subquantizers for Product Quantization
+        nbits: Number of bits per subquantizer
+        nprobe: Number of clusters to probe during search
     """
 
     def __init__(self, dimension: int = TOTAL_BINS):
         """
-        Initialize the FAISS HNSW index.
+        Initialize the FAISS IndexIVFPQ index.
 
         Args:
             dimension: The dimensionality of the vectors to be indexed.
                       Defaults to TOTAL_BINS (1152) for Lab color histograms.
 
         Raises:
-            ValueError: If dimension is not positive.
+            ValueError: If dimension is not positive or not divisible by M.
         """
         if dimension <= 0:
             raise ValueError(f"Dimension must be positive, got {dimension}")
 
+        if dimension % IVFPQ_M != 0:
+            raise ValueError(
+                f"Dimension {dimension} must be divisible by IVFPQ_M {IVFPQ_M}"
+            )
+
         self.dimension = dimension
         self.total_vectors = 0
+        self.is_trained = False
 
-        # Create HNSW index with M=32 neighbors for optimal performance
-        # HNSW doesn't require training, so is_trained is always True
-        self.index = faiss.IndexHNSWFlat(dimension, HNSW_M)
-        self.is_trained = True
+        # Store IVFPQ parameters for reference
+        self.nlist = IVFPQ_NLIST
+        self.M = IVFPQ_M
+        self.nbits = IVFPQ_NBITS
+        self.nprobe = IVFPQ_NPROBE
+
+        # Create coarse quantizer (used for first-level clustering)
+        # IndexFlatL2 provides exact L2 distance for coarse quantization
+        self.quantizer = faiss.IndexFlatL2(dimension)
+
+        # Create IndexIVFPQ with Product Quantization
+        # Parameters:
+        # - quantizer: Coarse quantizer for first-level clustering
+        # - dimension: Vector dimensionality (1152)
+        # - nlist: Number of Voronoi cells (100)
+        # - M: Number of subquantizers (8)
+        # - nbits: Bits per subquantizer (8)
+        self.index = faiss.IndexIVFPQ(
+            self.quantizer, dimension, self.nlist, self.M, self.nbits
+        )
+
+        # Set the number of clusters to probe during search
+        # Higher nprobe = better recall but slower search
+        self.index.nprobe = self.nprobe
 
         logger.info(
-            f"Initialized FAISS HNSW index with dimension {dimension}, M={HNSW_M}"
+            f"Initialized FAISS IndexIVFPQ with dimension {dimension}, "
+            f"nlist={self.nlist}, M={self.M}, nbits={self.nbits}, nprobe={self.nprobe}"
         )
+
+    def train(self, training_vectors: np.ndarray) -> None:
+        """
+        Train the IndexIVFPQ with representative data.
+
+        This method is REQUIRED before adding vectors to the index. The training
+        process performs two key operations:
+        1. Coarse quantization: Clusters the training data into nlist Voronoi cells
+        2. Product quantization: Learns M subquantizers for compressing vectors
+
+        The training data should be representative of the full dataset to ensure
+        good quantization quality. Typically, 10-20% of the dataset is sufficient.
+
+        Args:
+            training_vectors: Array of shape (n_training, dimension) containing
+                            representative histograms for training. Must be float32
+                            or float64 and already Hellinger-transformed.
+
+        Raises:
+            ValueError: If training_vectors have incorrect shape or dtype.
+            RuntimeError: If FAISS training fails.
+        """
+        if not isinstance(training_vectors, np.ndarray):
+            raise ValueError(
+                f"Training vectors must be numpy array, got {type(training_vectors)}"
+            )
+
+        if training_vectors.ndim != 2:
+            raise ValueError(
+                f"Training vectors must be 2D array, got shape {training_vectors.shape}"
+            )
+
+        if training_vectors.shape[1] != self.dimension:
+            raise ValueError(
+                f"Training vector dimension {training_vectors.shape[1]} doesn't match "
+                f"index dimension {self.dimension}"
+            )
+
+        # Ensure vectors are float32 for optimal FAISS performance
+        training_vectors_float32 = training_vectors.astype(np.float32)
+
+        # Train the index
+        try:
+            logger.info(
+                f"Training IndexIVFPQ with {training_vectors.shape[0]} vectors..."
+            )
+            self.index.train(training_vectors_float32)
+            self.is_trained = True
+
+            logger.info(
+                f"IndexIVFPQ training completed successfully. "
+                f"Memory usage per vector: ~{self.M * self.nbits / 8} bytes "
+                f"(vs {self.dimension * 4} bytes for full vectors)"
+            )
+
+        except Exception as e:
+            logger.error(f"Failed to train IndexIVFPQ: {e}")
+            raise RuntimeError(f"IndexIVFPQ training failed: {e}")
 
     def add(self, vectors: np.ndarray) -> int:
         """
@@ -84,6 +185,9 @@ class AnnIndex:
         transform ensures compatibility with the L2 distance metric used by
         the index while preserving the relative relationships between histograms.
 
+        The vectors are then compressed using Product Quantization, dramatically
+        reducing memory usage while maintaining good search quality.
+
         Args:
             vectors: Array of shape (n_vectors, dimension) containing normalized
                     histograms to be indexed. Must be float32 or float64.
@@ -92,9 +196,14 @@ class AnnIndex:
             The number of vectors successfully added to the index.
 
         Raises:
-            ValueError: If vectors have incorrect shape or dtype.
+            ValueError: If vectors have incorrect shape or dtype, or index not trained.
             RuntimeError: If FAISS index addition fails.
         """
+        if not self.is_trained:
+            raise ValueError(
+                "Index must be trained before adding vectors. Call train() first."
+            )
+
         if not isinstance(vectors, np.ndarray):
             raise ValueError(f"Vectors must be numpy array, got {type(vectors)}")
 
@@ -120,13 +229,13 @@ class AnnIndex:
             self.total_vectors += added_count
 
             logger.info(
-                f"Added {added_count} vectors to FAISS index (total: {self.total_vectors})"
+                f"Added {added_count} vectors to IndexIVFPQ (total: {self.total_vectors})"
             )
             return added_count
 
         except Exception as e:
-            logger.error(f"Failed to add vectors to FAISS index: {e}")
-            raise RuntimeError(f"FAISS index addition failed: {e}")
+            logger.error(f"Failed to add vectors to IndexIVFPQ: {e}")
+            raise RuntimeError(f"IndexIVFPQ addition failed: {e}")
 
     def search(self, query_vector: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -178,13 +287,13 @@ class AnnIndex:
             distances, indices = self.index.search(query_hellinger, k)
 
             logger.debug(
-                f"FAISS search completed: k={k}, min_distance={distances.min():.4f}, max_distance={distances.max():.4f}"
+                f"IndexIVFPQ search completed: k={k}, min_distance={distances.min():.4f}, max_distance={distances.max():.4f}"
             )
             return distances, indices
 
         except Exception as e:
-            logger.error(f"FAISS search failed: {e}")
-            raise RuntimeError(f"FAISS search failed: {e}")
+            logger.error(f"IndexIVFPQ search failed: {e}")
+            raise RuntimeError(f"IndexIVFPQ search failed: {e}")
 
     def get_total_vectors(self) -> int:
         """
@@ -194,6 +303,35 @@ class AnnIndex:
             The total number of vectors in the index.
         """
         return self.total_vectors
+
+    def get_memory_usage_estimate(self) -> Dict[str, float]:
+        """
+        Estimate memory usage of the IndexIVFPQ.
+
+        Returns:
+            Dictionary containing memory usage estimates in bytes:
+            - total_vectors: Number of vectors
+            - memory_per_vector: Estimated memory per vector in bytes
+            - total_memory: Estimated total memory usage
+            - compression_ratio: Compression ratio vs full vectors
+        """
+        # Memory per vector: M * nbits / 8 bytes (PQ codes)
+        memory_per_vector = self.M * self.nbits / 8
+
+        # Total memory estimate
+        total_memory = self.total_vectors * memory_per_vector
+
+        # Compression ratio vs full vectors (float32)
+        full_vector_memory = self.dimension * 4  # 4 bytes per float32
+        compression_ratio = full_vector_memory / memory_per_vector
+
+        return {
+            "total_vectors": self.total_vectors,
+            "memory_per_vector": memory_per_vector,
+            "total_memory": total_memory,
+            "compression_ratio": compression_ratio,
+            "full_vector_memory": full_vector_memory,
+        }
 
     def save(self, filepath: str) -> None:
         """
@@ -207,10 +345,10 @@ class AnnIndex:
         """
         try:
             faiss.write_index(self.index, filepath)
-            logger.info(f"FAISS index saved to {filepath}")
+            logger.info(f"IndexIVFPQ saved to {filepath}")
         except Exception as e:
-            logger.error(f"Failed to save FAISS index to {filepath}: {e}")
-            raise RuntimeError(f"Failed to save FAISS index: {e}")
+            logger.error(f"Failed to save IndexIVFPQ to {filepath}: {e}")
+            raise RuntimeError(f"Failed to save IndexIVFPQ: {e}")
 
     def load(self, filepath: str) -> None:
         """
@@ -224,7 +362,7 @@ class AnnIndex:
             RuntimeError: If loading fails.
         """
         if not Path(filepath).exists():
-            raise FileNotFoundError(f"FAISS index file not found: {filepath}")
+            raise FileNotFoundError(f"IndexIVFPQ file not found: {filepath}")
 
         try:
             self.index = faiss.read_index(filepath)
@@ -232,12 +370,21 @@ class AnnIndex:
             self.total_vectors = self.index.ntotal
             self.is_trained = True
 
+            # Extract IVFPQ parameters from loaded index
+            if hasattr(self.index, "nlist"):
+                self.nlist = self.index.nlist
+            if hasattr(self.index, "pq"):
+                self.M = self.index.pq.M
+                self.nbits = self.index.pq.nbits
+            if hasattr(self.index, "nprobe"):
+                self.nprobe = self.index.nprobe
+
             logger.info(
-                f"FAISS index loaded from {filepath} with {self.total_vectors} vectors"
+                f"IndexIVFPQ loaded from {filepath} with {self.total_vectors} vectors"
             )
         except Exception as e:
-            logger.error(f"Failed to load FAISS index from {filepath}: {e}")
-            raise RuntimeError(f"Failed to load FAISS index: {e}")
+            logger.error(f"Failed to load IndexIVFPQ from {filepath}: {e}")
+            raise RuntimeError(f"Failed to load IndexIVFPQ: {e}")
 
 
 class MetadataStore:
@@ -477,7 +624,7 @@ class MetadataStore:
         Returns:
             Total count of image records in the database.
         """
-        
+
     def get_image_info(self, image_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve image information including file path and metadata.
@@ -500,12 +647,12 @@ class MetadataStore:
 
         try:
             result = self.connection.execute(query_sql, [image_id]).fetchone()
-            
+
             if result:
                 return {
                     "image_id": result[0],
                     "file_path": result[1],
-                    "file_size": result[2]
+                    "file_size": result[2],
                 }
             else:
                 return None
@@ -517,13 +664,13 @@ class MetadataStore:
     def get_image_metadata(self, image_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve image metadata by image ID.
-        
+
         This method is an alias for get_image_info to maintain compatibility
         with the API interface.
-        
+
         Args:
             image_id: Unique identifier for the image.
-            
+
         Returns:
             Dictionary containing image metadata or None if not found.
         """

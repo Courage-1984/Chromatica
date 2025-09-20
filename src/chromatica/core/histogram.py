@@ -19,10 +19,9 @@ after applying the Hellinger transform, and with the Sinkhorn-EMD reranking stag
 import numpy as np
 from typing import Tuple
 import logging
+import cv2
 
-from ..utils.config import (
-    L_BINS, A_BINS, B_BINS, TOTAL_BINS, LAB_RANGES
-)
+from ..utils.config import L_BINS, A_BINS, B_BINS, TOTAL_BINS, LAB_RANGES
 
 # Set up logging for this module
 logger = logging.getLogger(__name__)
@@ -31,38 +30,38 @@ logger = logging.getLogger(__name__)
 def build_histogram(lab_pixels: np.ndarray) -> np.ndarray:
     """
     Converts Lab pixels into a normalized, soft-assigned histogram.
-    
+
     This function implements tri-linear soft assignment to distribute pixel counts
     across neighboring bins, creating a robust representation that is less sensitive
     to minor color variations. The final histogram is L1-normalized to create a
     probability distribution suitable for distance calculations.
-    
+
     The function follows the algorithmic specification from Section E of the critical
     instructions, using the 8x12x12 binning grid over the CIE Lab color space.
-    
+
     Mathematical Process:
     1. Convert Lab coordinates to continuous bin indices
     2. Calculate the fractional parts for tri-linear interpolation
     3. Distribute pixel counts to the 8 nearest bin centers using weights
     4. Flatten the 3D histogram to a 1D vector
     5. L1-normalize to create a probability distribution
-    
+
     Args:
         lab_pixels: NumPy array of shape (N, 3) containing Lab color values.
                     Each row should contain [L*, a*, b*] values.
                     L* should be in range [0, 100]
-                    a* should be in range [-86, 98]  
+                    a* should be in range [-86, 98]
                     b* should be in range [-108, 95]
-    
+
     Returns:
         np.ndarray: A flattened, L1-normalized histogram of shape (1152,).
                    The histogram represents the color distribution in the image
                    and sums to 1.0 (probability distribution).
-    
+
     Raises:
         ValueError: If lab_pixels has incorrect shape or contains invalid Lab values.
         RuntimeError: If histogram normalization fails (e.g., all-zero histogram).
-    
+
     Example:
         >>> # Assuming you have Lab pixels from an image
         >>> lab_pixels = np.array([[50.0, 10.0, -20.0], [80.0, -5.0, 15.0]])
@@ -77,83 +76,89 @@ def build_histogram(lab_pixels: np.ndarray) -> np.ndarray:
         raise ValueError(
             f"lab_pixels must be a 2D array with shape (N, 3), got {lab_pixels.shape}"
         )
-    
+
     if lab_pixels.size == 0:
         raise ValueError("lab_pixels cannot be empty")
-    
+
     # Validate Lab value ranges
     l_vals, a_vals, b_vals = lab_pixels[:, 0], lab_pixels[:, 1], lab_pixels[:, 2]
-    
+
     if np.any(l_vals < LAB_RANGES[0][0]) or np.any(l_vals > LAB_RANGES[0][1]):
         raise ValueError(
             f"L* values must be in range [{LAB_RANGES[0][0]}, {LAB_RANGES[0][1]}], "
             f"got range [{l_vals.min():.2f}, {l_vals.max():.2f}]"
         )
-    
+
     if np.any(a_vals < LAB_RANGES[1][0]) or np.any(a_vals > LAB_RANGES[1][1]):
         raise ValueError(
             f"a* values must be in range [{LAB_RANGES[1][0]}, {LAB_RANGES[1][1]}], "
             f"got range [{a_vals.min():.2f}, {a_vals.max():.2f}]"
         )
-    
+
     if np.any(b_vals < LAB_RANGES[2][0]) or np.any(b_vals > LAB_RANGES[2][1]):
         raise ValueError(
             f"b* values must be in range [{LAB_RANGES[2][0]}, {LAB_RANGES[2][1]}], "
             f"got range [{b_vals.min():.2f}, {b_vals.max():.2f}]"
         )
-    
+
     logger.debug(f"Processing {lab_pixels.shape[0]} pixels for histogram generation")
-    
+
     # Initialize the 3D histogram array
     hist = np.zeros((L_BINS, A_BINS, B_BINS), dtype=np.float32)
-    
+
     # Calculate continuous bin indices for each pixel
     # This maps Lab values to continuous bin coordinates
-    l_coords = (l_vals - LAB_RANGES[0][0]) / (LAB_RANGES[0][1] - LAB_RANGES[0][0]) * L_BINS
-    a_coords = (a_vals - LAB_RANGES[1][0]) / (LAB_RANGES[1][1] - LAB_RANGES[1][0]) * A_BINS
-    b_coords = (b_vals - LAB_RANGES[2][0]) / (LAB_RANGES[2][1] - LAB_RANGES[2][0]) * B_BINS
-    
+    l_coords = (
+        (l_vals - LAB_RANGES[0][0]) / (LAB_RANGES[0][1] - LAB_RANGES[0][0]) * L_BINS
+    )
+    a_coords = (
+        (a_vals - LAB_RANGES[1][0]) / (LAB_RANGES[1][1] - LAB_RANGES[1][0]) * A_BINS
+    )
+    b_coords = (
+        (b_vals - LAB_RANGES[2][0]) / (LAB_RANGES[2][1] - LAB_RANGES[2][0]) * B_BINS
+    )
+
     # Get the integer bin indices (floor operation)
     # These represent the "lower-left" corner of the 8-neighbor cube
     l_idx = np.floor(l_coords).astype(int)
     a_idx = np.floor(a_coords).astype(int)
     b_idx = np.floor(b_coords).astype(int)
-    
+
     # Calculate fractional parts for tri-linear interpolation
     # These represent the position within each bin (0.0 to 1.0)
     l_frac = l_coords - l_idx
     a_frac = a_coords - a_idx
     b_frac = b_coords - b_idx
-    
+
     # Ensure indices are within valid bounds
     # This handles edge cases where values might be exactly at the boundary
     l_idx = np.clip(l_idx, 0, L_BINS - 2)
     a_idx = np.clip(a_idx, 0, A_BINS - 2)
     b_idx = np.clip(b_idx, 0, B_BINS - 2)
-    
+
     # Tri-linear soft assignment: distribute each pixel to the 8 nearest bin centers
     # This creates a smooth histogram that's robust to minor color variations
-    
+
     # For each pixel, we distribute its count (1.0) across 8 neighboring bins
     # using tri-linear interpolation weights
     for i in range(lab_pixels.shape[0]):
         # Get the base indices for this pixel
         l_base, a_base, b_base = l_idx[i], a_idx[i], b_idx[i]
-        
+
         # Get the fractional parts for this pixel
         l_f, a_f, b_f = l_frac[i], a_frac[i], b_frac[i]
-        
+
         # Calculate the 8 tri-linear weights
         # Each weight represents the contribution to one of the 8 neighboring bins
         w000 = (1 - l_f) * (1 - a_f) * (1 - b_f)  # Weight for (l_base, a_base, b_base)
-        w001 = (1 - l_f) * (1 - a_f) * b_f        # Weight for (l_base, a_base, b_base + 1)
-        w010 = (1 - l_f) * a_f * (1 - b_f)        # Weight for (l_base, a_base + 1, b_base)
-        w011 = (1 - l_f) * a_f * b_f              # Weight for (l_base, a_base + 1, b_base + 1)
-        w100 = l_f * (1 - a_f) * (1 - b_f)        # Weight for (l_base + 1, a_base, b_base)
-        w101 = l_f * (1 - a_f) * b_f              # Weight for (l_base + 1, a_base, b_base + 1)
-        w110 = l_f * a_f * (1 - b_f)              # Weight for (l_base + 1, a_base + 1, b_base)
-        w111 = l_f * a_f * b_f                    # Weight for (l_base + 1, a_base + 1, b_base + 1)
-        
+        w001 = (1 - l_f) * (1 - a_f) * b_f  # Weight for (l_base, a_base, b_base + 1)
+        w010 = (1 - l_f) * a_f * (1 - b_f)  # Weight for (l_base, a_base + 1, b_base)
+        w011 = (1 - l_f) * a_f * b_f  # Weight for (l_base, a_base + 1, b_base + 1)
+        w100 = l_f * (1 - a_f) * (1 - b_f)  # Weight for (l_base + 1, a_base, b_base)
+        w101 = l_f * (1 - a_f) * b_f  # Weight for (l_base + 1, a_base, b_base + 1)
+        w110 = l_f * a_f * (1 - b_f)  # Weight for (l_base + 1, a_base + 1, b_base)
+        w111 = l_f * a_f * b_f  # Weight for (l_base + 1, a_base + 1, b_base + 1)
+
         # Distribute the pixel count to the 8 neighboring bins
         # Each bin receives a fractional count based on the tri-linear weights
         hist[l_base, a_base, b_base] += w000
@@ -164,60 +169,60 @@ def build_histogram(lab_pixels: np.ndarray) -> np.ndarray:
         hist[l_base + 1, a_base, b_base + 1] += w101
         hist[l_base + 1, a_base + 1, b_base] += w110
         hist[l_base + 1, a_base + 1, b_base + 1] += w111
-    
+
     # Flatten the 3D histogram to a 1D vector
     # This creates the 1,152-dimensional feature vector
     flat_hist = hist.flatten()
-    
+
     # L1 normalization to create a probability distribution
     # This ensures the histogram sums to 1.0, making it suitable for distance calculations
     hist_sum = flat_hist.sum()
-    
+
     if hist_sum == 0:
         raise RuntimeError(
             "Generated histogram is all zeros. This may indicate an issue with "
             "the input Lab values or the binning process."
         )
-    
+
     # Normalize the histogram
     normalized_hist = flat_hist / hist_sum
-    
+
     # Verify normalization
     if not np.isclose(normalized_hist.sum(), 1.0, atol=1e-6):
         logger.warning(
             f"Histogram normalization may have precision issues. "
             f"Sum: {normalized_hist.sum():.8f}, expected: 1.0"
         )
-    
+
     logger.debug(
         f"Generated histogram with shape {normalized_hist.shape}, "
         f"sum: {normalized_hist.sum():.6f}, "
         f"min: {normalized_hist.min():.6f}, "
         f"max: {normalized_hist.max():.6f}"
     )
-    
+
     return normalized_hist.astype(np.float32)
 
 
 def build_histogram_fast(lab_pixels: np.ndarray) -> np.ndarray:
     """
     Fast approximation of histogram generation using simplified soft assignment.
-    
+
     This is an alternative implementation that provides faster processing at the
     cost of some accuracy. It uses a simplified approach that assigns pixels
     to their nearest bin center rather than using full tri-linear interpolation.
-    
+
     This function is useful for:
     - Quick prototyping and testing
     - Processing large datasets where speed is critical
     - Situations where the full tri-linear accuracy is not required
-    
+
     Args:
         lab_pixels: NumPy array of shape (N, 3) containing Lab color values.
-    
+
     Returns:
         np.ndarray: A flattened, L1-normalized histogram of shape (1152,).
-    
+
     Note:
         This function uses the same validation and normalization as build_histogram
         but with simplified binning logic. For production use, prefer build_histogram.
@@ -227,73 +232,87 @@ def build_histogram_fast(lab_pixels: np.ndarray) -> np.ndarray:
         raise ValueError(
             f"lab_pixels must be a 2D array with shape (N, 3), got {lab_pixels.shape}"
         )
-    
+
     if lab_pixels.size == 0:
         raise ValueError("lab_pixels cannot be empty")
-    
+
     # Validate Lab value ranges
     l_vals, a_vals, b_vals = lab_pixels[:, 0], lab_pixels[:, 1], lab_pixels[:, 2]
-    
+
     if np.any(l_vals < LAB_RANGES[0][0]) or np.any(l_vals > LAB_RANGES[0][1]):
-        raise ValueError(f"L* values out of range [{LAB_RANGES[0][0]}, {LAB_RANGES[0][1]}]")
-    
+        raise ValueError(
+            f"L* values out of range [{LAB_RANGES[0][0]}, {LAB_RANGES[0][1]}]"
+        )
+
     if np.any(a_vals < LAB_RANGES[1][0]) or np.any(a_vals > LAB_RANGES[1][1]):
-        raise ValueError(f"a* values out of range [{LAB_RANGES[1][0]}, {LAB_RANGES[1][1]}]")
-    
+        raise ValueError(
+            f"a* values out of range [{LAB_RANGES[1][0]}, {LAB_RANGES[1][1]}]"
+        )
+
     if np.any(b_vals < LAB_RANGES[2][0]) or np.any(b_vals > LAB_RANGES[2][1]):
-        raise ValueError(f"b* values out of range [{LAB_RANGES[2][0]}, {LAB_RANGES[2][1]}]")
-    
-    logger.debug(f"Processing {lab_pixels.shape[0]} pixels using fast histogram generation")
-    
+        raise ValueError(
+            f"b* values out of range [{LAB_RANGES[2][0]}, {LAB_RANGES[2][1]}]"
+        )
+
+    logger.debug(
+        f"Processing {lab_pixels.shape[0]} pixels using fast histogram generation"
+    )
+
     # Initialize the 3D histogram array
     hist = np.zeros((L_BINS, A_BINS, B_BINS), dtype=np.float32)
-    
+
     # Calculate continuous bin indices
-    l_coords = (l_vals - LAB_RANGES[0][0]) / (LAB_RANGES[0][1] - LAB_RANGES[0][0]) * L_BINS
-    a_coords = (a_vals - LAB_RANGES[1][0]) / (LAB_RANGES[1][1] - LAB_RANGES[1][0]) * A_BINS
-    b_coords = (b_vals - LAB_RANGES[2][0]) / (LAB_RANGES[2][1] - LAB_RANGES[2][0]) * B_BINS
-    
+    l_coords = (
+        (l_vals - LAB_RANGES[0][0]) / (LAB_RANGES[0][1] - LAB_RANGES[0][0]) * L_BINS
+    )
+    a_coords = (
+        (a_vals - LAB_RANGES[1][0]) / (LAB_RANGES[1][1] - LAB_RANGES[1][0]) * A_BINS
+    )
+    b_coords = (
+        (b_vals - LAB_RANGES[2][0]) / (LAB_RANGES[2][1] - LAB_RANGES[2][0]) * B_BINS
+    )
+
     # Round to nearest bin center (simplified approach)
     l_idx = np.clip(np.round(l_coords).astype(int), 0, L_BINS - 1)
     a_idx = np.clip(np.round(a_coords).astype(int), 0, A_BINS - 1)
     b_idx = np.clip(np.round(b_coords).astype(int), 0, B_BINS - 1)
-    
+
     # Use numpy's add.at for efficient histogram building
     # This avoids potential issues with duplicate indices
     np.add.at(hist, (l_idx, a_idx, b_idx), 1)
-    
+
     # Flatten and normalize
     flat_hist = hist.flatten()
     hist_sum = flat_hist.sum()
-    
+
     if hist_sum == 0:
         raise RuntimeError("Generated histogram is all zeros")
-    
+
     normalized_hist = flat_hist / hist_sum
-    
+
     logger.debug(
         f"Generated fast histogram with shape {normalized_hist.shape}, "
         f"sum: {normalized_hist.sum():.6f}"
     )
-    
+
     return normalized_hist.astype(np.float32)
 
 
 def get_bin_centers() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Get the center coordinates of each bin in the Lab color space.
-    
+
     This function is useful for:
     - Visualizing the binning grid
     - Computing distance matrices for EMD calculations
     - Understanding the spatial distribution of bins
-    
+
     Returns:
-        Tuple[np.ndarray, np.ndarray, np.ndarray]: 
+        Tuple[np.ndarray, np.ndarray, np.ndarray]:
             - l_centers: Array of L* bin centers
-            - a_centers: Array of a* bin centers  
+            - a_centers: Array of a* bin centers
             - b_centers: Array of b* bin centers
-    
+
     Example:
         >>> l_centers, a_centers, b_centers = get_bin_centers()
         >>> print(f"L* centers: {l_centers}")
@@ -303,32 +322,361 @@ def get_bin_centers() -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     l_centers = np.linspace(LAB_RANGES[0][0], LAB_RANGES[0][1], L_BINS)
     a_centers = np.linspace(LAB_RANGES[1][0], LAB_RANGES[1][1], A_BINS)
     b_centers = np.linspace(LAB_RANGES[2][0], LAB_RANGES[2][1], B_BINS)
-    
+
     return l_centers, a_centers, b_centers
 
 
 def get_bin_grid() -> np.ndarray:
     """
     Get the complete 3D grid of bin centers as a coordinate array.
-    
+
     This function creates a meshgrid of all bin centers, which is useful for:
     - Computing cost matrices for EMD calculations
     - Visualizing the complete binning structure
     - Distance calculations between bins
-    
+
     Returns:
         np.ndarray: Array of shape (1152, 3) where each row contains [L*, a*, b*]
                    coordinates of a bin center.
-    
+
     Example:
         >>> bin_grid = get_bin_grid()
         >>> print(f"Bin grid shape: {bin_grid.shape}")
         >>> print(f"First few bin centers: {bin_grid[:5]}")
     """
     l_centers, a_centers, b_centers = get_bin_centers()
-    
+
     # Create a 3D meshgrid and reshape to (1152, 3)
-    grid = np.array(np.meshgrid(l_centers, a_centers, b_centers, indexing='ij'))
+    grid = np.array(np.meshgrid(l_centers, a_centers, b_centers, indexing="ij"))
     bin_grid = grid.T.reshape(-1, 3)
-    
+
     return bin_grid
+
+
+def build_saliency_weighted_histogram(rgb_image: np.ndarray) -> np.ndarray:
+    """
+    Generate a saliency-weighted histogram to mitigate background dominance.
+
+    This function addresses Risk 3 from Section I of the critical instructions:
+    "Background Dominance" - where large, uniform backgrounds can overwhelm
+    the histogram and reduce search quality. By using saliency detection to
+    identify visually important regions, we weight foreground pixels more
+    heavily during histogram generation.
+
+    The implementation uses OpenCV's StaticSaliencySpectralResidual algorithm,
+    which is computationally efficient and effective at identifying salient
+    regions without requiring motion or temporal information.
+
+    Background Dominance Mitigation Strategy:
+    =======================================
+
+    1. **Problem**: Large uniform backgrounds (sky, walls, floors) can dominate
+       histogram generation, making images with similar backgrounds appear
+       similar even when their foreground content differs significantly.
+
+    2. **Solution**: Use saliency detection to identify visually important
+       regions and weight their contribution more heavily in histogram generation.
+
+    3. **Algorithm**:
+       - Generate saliency map using spectral residual method
+       - Normalize saliency values to create pixel weights
+       - Apply weights during tri-linear soft assignment
+       - Maintain L1 normalization for probability distribution
+
+    4. **Benefits**:
+       - Reduces impact of uniform backgrounds
+       - Emphasizes visually interesting foreground content
+       - Maintains compatibility with existing search pipeline
+       - Preserves perceptual color relationships
+
+    Mathematical Process:
+    ====================
+
+    1. Convert RGB image to grayscale for saliency computation
+    2. Generate saliency map using StaticSaliencySpectralResidual
+    3. Normalize saliency map to create pixel weights (0.0 to 1.0)
+    4. Convert RGB image to Lab color space
+    5. Apply saliency weights during histogram generation:
+       - Each pixel contributes: weight * tri_linear_weights
+       - Foreground pixels (high saliency) contribute more
+       - Background pixels (low saliency) contribute less
+    6. L1-normalize final histogram to maintain probability distribution
+
+    Args:
+        rgb_image: NumPy array of shape (H, W, 3) containing RGB image data.
+                   Values should be in range [0, 255] (uint8 format).
+
+    Returns:
+        np.ndarray: A flattened, L1-normalized histogram of shape (1152,).
+                   The histogram represents the saliency-weighted color distribution
+                   and sums to 1.0 (probability distribution).
+
+    Raises:
+        ValueError: If rgb_image has incorrect shape or invalid data.
+        RuntimeError: If saliency detection or histogram generation fails.
+
+    Example:
+        >>> import cv2
+        >>> # Load an RGB image
+        >>> rgb_image = cv2.imread('example.jpg')
+        >>> rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+        >>> # Generate saliency-weighted histogram
+        >>> histogram = build_saliency_weighted_histogram(rgb_image)
+        >>> print(f"Histogram shape: {histogram.shape}")
+        >>> print(f"Sum of histogram: {histogram.sum():.6f}")
+        Histogram shape: (1152,)
+        Sum of histogram: 1.000000
+
+    Note:
+        This function requires OpenCV's saliency module. If saliency detection
+        fails, it falls back to standard histogram generation with a warning.
+    """
+    # Input validation
+    if rgb_image.ndim != 3 or rgb_image.shape[2] != 3:
+        raise ValueError(
+            f"rgb_image must be a 3D array with shape (H, W, 3), got {rgb_image.shape}"
+        )
+
+    if rgb_image.size == 0:
+        raise ValueError("rgb_image cannot be empty")
+
+    # Ensure image is in uint8 format
+    if rgb_image.dtype != np.uint8:
+        logger.warning(f"Converting image from {rgb_image.dtype} to uint8")
+        rgb_image = rgb_image.astype(np.uint8)
+
+    logger.debug(
+        f"Processing RGB image with shape {rgb_image.shape} for saliency-weighted histogram"
+    )
+
+    try:
+        # Step 1: Generate saliency map using StaticSaliencySpectralResidual
+        # This algorithm is computationally efficient and effective for static images
+        if hasattr(cv2, "saliency"):
+            saliency_detector = cv2.saliency.StaticSaliencySpectralResidual_create()
+
+            # Convert RGB to grayscale for saliency computation
+            # Saliency algorithms typically work on grayscale images
+            gray_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)
+
+            # Compute saliency map
+            success, saliency_map = saliency_detector.computeSaliency(gray_image)
+
+            if not success:
+                raise RuntimeError("Failed to compute saliency map")
+        else:
+            # Fallback: Use a simple edge-based saliency approximation
+            logger.info(
+                "OpenCV saliency module not available, using edge-based saliency approximation"
+            )
+            gray_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2GRAY)
+
+            # Use Sobel edge detection as a simple saliency approximation
+            sobel_x = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
+            sobel_y = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+            saliency_map = np.sqrt(sobel_x**2 + sobel_y**2)
+
+        # Step 2: Normalize saliency map to create pixel weights
+        # Saliency values are typically in range [0, 1], but we ensure proper normalization
+        saliency_min = saliency_map.min()
+        saliency_max = saliency_map.max()
+
+        if saliency_max > saliency_min:
+            # Normalize to [0, 1] range
+            saliency_weights = (saliency_map - saliency_min) / (
+                saliency_max - saliency_min
+            )
+        else:
+            # Handle edge case where all pixels have same saliency
+            logger.warning("All pixels have identical saliency - using uniform weights")
+            saliency_weights = np.ones_like(saliency_map) * 0.5
+
+        # Apply minimum weight to avoid completely ignoring any pixels
+        # This ensures we don't lose important color information entirely
+        min_weight = 0.1
+        saliency_weights = np.maximum(saliency_weights, min_weight)
+
+        logger.debug(
+            f"Saliency map statistics - min: {saliency_weights.min():.3f}, "
+            f"max: {saliency_weights.max():.3f}, mean: {saliency_weights.mean():.3f}"
+        )
+
+    except Exception as e:
+        logger.warning(
+            f"Saliency detection failed: {e}. Falling back to standard histogram generation."
+        )
+        # Fall back to standard histogram generation
+        return build_histogram_from_rgb(rgb_image)
+
+    # Step 3: Convert RGB image to Lab color space
+    # This follows the same process as the standard histogram generation
+    # Note: OpenCV's RGB2LAB produces L in [0, 100], a in [-127, 127], b in [-127, 127]
+    # We need to convert to the expected ranges: L in [0, 100], a in [-86, 98], b in [-108, 95]
+    lab_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2LAB)
+
+    # Convert OpenCV Lab values to the expected ranges
+    # OpenCV uses different scaling than the standard Lab ranges
+    lab_image = lab_image.astype(np.float32)
+    lab_image[:, :, 0] = lab_image[:, :, 0] * 100.0 / 255.0  # L: [0, 255] -> [0, 100]
+    lab_image[:, :, 1] = lab_image[:, :, 1] - 128.0  # a: [0, 255] -> [-128, 127]
+    lab_image[:, :, 2] = lab_image[:, :, 2] - 128.0  # b: [0, 255] -> [-128, 127]
+
+    # Clamp to expected ranges
+    lab_image[:, :, 0] = np.clip(lab_image[:, :, 0], LAB_RANGES[0][0], LAB_RANGES[0][1])
+    lab_image[:, :, 1] = np.clip(lab_image[:, :, 1], LAB_RANGES[1][0], LAB_RANGES[1][1])
+    lab_image[:, :, 2] = np.clip(lab_image[:, :, 2], LAB_RANGES[2][0], LAB_RANGES[2][1])
+
+    # Reshape to (N, 3) for histogram processing
+    lab_pixels = lab_image.reshape(-1, 3)
+    saliency_weights_flat = saliency_weights.flatten()
+
+    # Step 4: Generate saliency-weighted histogram using modified tri-linear assignment
+    # This is similar to build_histogram but with saliency weights applied
+
+    # Input validation for Lab values
+    l_vals, a_vals, b_vals = lab_pixels[:, 0], lab_pixels[:, 1], lab_pixels[:, 2]
+
+    # Validate Lab value ranges
+    if np.any(l_vals < LAB_RANGES[0][0]) or np.any(l_vals > LAB_RANGES[0][1]):
+        raise ValueError(
+            f"L* values must be in range [{LAB_RANGES[0][0]}, {LAB_RANGES[0][1]}], "
+            f"got range [{l_vals.min():.2f}, {l_vals.max():.2f}]"
+        )
+
+    if np.any(a_vals < LAB_RANGES[1][0]) or np.any(a_vals > LAB_RANGES[1][1]):
+        raise ValueError(
+            f"a* values must be in range [{LAB_RANGES[1][0]}, {LAB_RANGES[1][1]}], "
+            f"got range [{a_vals.min():.2f}, {a_vals.max():.2f}]"
+        )
+
+    if np.any(b_vals < LAB_RANGES[2][0]) or np.any(b_vals > LAB_RANGES[2][1]):
+        raise ValueError(
+            f"b* values must be in range [{LAB_RANGES[2][0]}, {LAB_RANGES[2][1]}], "
+            f"got range [{b_vals.min():.2f}, {b_vals.max():.2f}]"
+        )
+
+    # Initialize the 3D histogram array
+    hist = np.zeros((L_BINS, A_BINS, B_BINS), dtype=np.float32)
+
+    # Calculate continuous bin indices for each pixel
+    l_coords = (
+        (l_vals - LAB_RANGES[0][0]) / (LAB_RANGES[0][1] - LAB_RANGES[0][0]) * L_BINS
+    )
+    a_coords = (
+        (a_vals - LAB_RANGES[1][0]) / (LAB_RANGES[1][1] - LAB_RANGES[1][0]) * A_BINS
+    )
+    b_coords = (
+        (b_vals - LAB_RANGES[2][0]) / (LAB_RANGES[2][1] - LAB_RANGES[2][0]) * B_BINS
+    )
+
+    # Get the integer bin indices (floor operation)
+    l_idx = np.floor(l_coords).astype(int)
+    a_idx = np.floor(a_coords).astype(int)
+    b_idx = np.floor(b_coords).astype(int)
+
+    # Calculate fractional parts for tri-linear interpolation
+    l_frac = l_coords - l_idx
+    a_frac = a_coords - a_idx
+    b_frac = b_coords - b_idx
+
+    # Ensure indices are within valid bounds
+    l_idx = np.clip(l_idx, 0, L_BINS - 2)
+    a_idx = np.clip(a_idx, 0, A_BINS - 2)
+    b_idx = np.clip(b_idx, 0, B_BINS - 2)
+
+    # Step 5: Saliency-weighted tri-linear soft assignment
+    # Each pixel contributes weight * tri_linear_weights to neighboring bins
+    for i in range(lab_pixels.shape[0]):
+        # Get the base indices and fractional parts for this pixel
+        l_base, a_base, b_base = l_idx[i], a_idx[i], b_idx[i]
+        l_f, a_f, b_f = l_frac[i], a_frac[i], b_frac[i]
+
+        # Get the saliency weight for this pixel
+        pixel_weight = saliency_weights_flat[i]
+
+        # Calculate the 8 tri-linear weights (same as standard histogram)
+        w000 = (1 - l_f) * (1 - a_f) * (1 - b_f)
+        w001 = (1 - l_f) * (1 - a_f) * b_f
+        w010 = (1 - l_f) * a_f * (1 - b_f)
+        w011 = (1 - l_f) * a_f * b_f
+        w100 = l_f * (1 - a_f) * (1 - b_f)
+        w101 = l_f * (1 - a_f) * b_f
+        w110 = l_f * a_f * (1 - b_f)
+        w111 = l_f * a_f * b_f
+
+        # Apply saliency weighting: each bin receives pixel_weight * tri_linear_weight
+        # This means foreground pixels (high saliency) contribute more to the histogram
+        hist[l_base, a_base, b_base] += pixel_weight * w000
+        hist[l_base, a_base, b_base + 1] += pixel_weight * w001
+        hist[l_base, a_base + 1, b_base] += pixel_weight * w010
+        hist[l_base, a_base + 1, b_base + 1] += pixel_weight * w011
+        hist[l_base + 1, a_base, b_base] += pixel_weight * w100
+        hist[l_base + 1, a_base, b_base + 1] += pixel_weight * w101
+        hist[l_base + 1, a_base + 1, b_base] += pixel_weight * w110
+        hist[l_base + 1, a_base + 1, b_base + 1] += pixel_weight * w111
+
+    # Step 6: Flatten and L1-normalize the histogram
+    flat_hist = hist.flatten()
+    hist_sum = flat_hist.sum()
+
+    if hist_sum == 0:
+        raise RuntimeError(
+            "Generated saliency-weighted histogram is all zeros. This may indicate "
+            "an issue with the saliency detection or the input image."
+        )
+
+    # Normalize the histogram to create a probability distribution
+    normalized_hist = flat_hist / hist_sum
+
+    # Verify normalization
+    if not np.isclose(normalized_hist.sum(), 1.0, atol=1e-6):
+        logger.warning(
+            f"Saliency-weighted histogram normalization may have precision issues. "
+            f"Sum: {normalized_hist.sum():.8f}, expected: 1.0"
+        )
+
+    logger.debug(
+        f"Generated saliency-weighted histogram with shape {normalized_hist.shape}, "
+        f"sum: {normalized_hist.sum():.6f}, "
+        f"min: {normalized_hist.min():.6f}, "
+        f"max: {normalized_hist.max():.6f}"
+    )
+
+    return normalized_hist.astype(np.float32)
+
+
+def build_histogram_from_rgb(rgb_image: np.ndarray) -> np.ndarray:
+    """
+    Generate a standard histogram from an RGB image.
+
+    This is a helper function that converts RGB to Lab and calls the standard
+    histogram generation function. It's used as a fallback when saliency
+    detection fails.
+
+    Args:
+        rgb_image: NumPy array of shape (H, W, 3) containing RGB image data.
+
+    Returns:
+        np.ndarray: A flattened, L1-normalized histogram of shape (1152,).
+    """
+    # Convert RGB to Lab color space
+    # Note: OpenCV's RGB2LAB produces L in [0, 100], a in [-127, 127], b in [-127, 127]
+    # We need to convert to the expected ranges: L in [0, 100], a in [-86, 98], b in [-108, 95]
+    lab_image = cv2.cvtColor(rgb_image, cv2.COLOR_RGB2LAB)
+
+    # Convert OpenCV Lab values to the expected ranges
+    lab_image = lab_image.astype(np.float32)
+    lab_image[:, :, 0] = lab_image[:, :, 0] * 100.0 / 255.0  # L: [0, 255] -> [0, 100]
+    lab_image[:, :, 1] = lab_image[:, :, 1] - 128.0  # a: [0, 255] -> [-128, 127]
+    lab_image[:, :, 2] = lab_image[:, :, 2] - 128.0  # b: [0, 255] -> [-128, 127]
+
+    # Clamp to expected ranges
+    lab_image[:, :, 0] = np.clip(lab_image[:, :, 0], LAB_RANGES[0][0], LAB_RANGES[0][1])
+    lab_image[:, :, 1] = np.clip(lab_image[:, :, 1], LAB_RANGES[1][0], LAB_RANGES[1][1])
+    lab_image[:, :, 2] = np.clip(lab_image[:, :, 2], LAB_RANGES[2][0], LAB_RANGES[2][1])
+
+    # Reshape to (N, 3) for histogram processing
+    lab_pixels = lab_image.reshape(-1, 3)
+
+    # Generate standard histogram
+    return build_histogram(lab_pixels)

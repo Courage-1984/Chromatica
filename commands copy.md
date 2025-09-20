@@ -37,7 +37,9 @@ python main.py
 
 # Basic usage
 
-python scripts/build_index.py datasets/test-dataset-20
+python scripts/build_index.py datasets/test-dataset-200
+
+python scripts/build_index.py C:\Users\anon\ai\train\_1_2_combined_both\hq
 
 # Advanced usage with custom settings
 
@@ -46,4 +48,5 @@ python scripts/build_index.py datasets/test-dataset-5000 --output-dir ./producti
 # Help and options
 
 python scripts/build_index.py --help
+
 

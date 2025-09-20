@@ -27,7 +27,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from chromatica.core.histogram import generate_histogram
+from chromatica.indexing.pipeline import process_image
 from chromatica.indexing.store import AnnIndex, MetadataStore
 from chromatica.search import find_similar, validate_search_system, SearchResult
 
@@ -86,7 +86,7 @@ def create_test_index_and_store(
     for i, image_file in enumerate(image_files):
         try:
             # Generate histogram
-            histogram = generate_histogram(str(image_file))
+            histogram = process_image(str(image_file))
 
             # Validate histogram
             if histogram.shape != (1152,) or not np.isclose(
@@ -157,6 +157,7 @@ def test_basic_search_functionality(index: AnnIndex, store: MetadataStore) -> bo
     Returns:
         bool: True if test passes, False otherwise
     """
+    logger = logging.getLogger(__name__)
     logger.info("Testing basic search functionality...")
 
     try:
@@ -215,11 +216,12 @@ def test_search_with_real_image(
     Returns:
         bool: True if test passes, False otherwise
     """
+    logger = logging.getLogger(__name__)
     logger.info(f"Testing search with real image: {test_image_path}")
 
     try:
         # Generate histogram from real image
-        query_hist = generate_histogram(test_image_path)
+        query_hist = process_image(test_image_path)
 
         # Validate histogram
         if query_hist.shape != (1152,) or not np.isclose(
@@ -333,6 +335,7 @@ def test_error_handling(index: AnnIndex, store: MetadataStore) -> bool:
     Returns:
         bool: True if test passes, False otherwise
     """
+    logger = logging.getLogger(__name__)
     logger.info("Testing error handling and edge cases...")
 
     try:
@@ -411,7 +414,7 @@ def main():
     setup_logging(args.verbose)
     logger = logging.getLogger(__name__)
 
-    logger.info("🔍 Chromatica Search System Test Suite")
+    logger.info("Chromatica Search System Test Suite")
     logger.info("=" * 60)
 
     try:
@@ -455,11 +458,11 @@ def main():
         store.close()
 
         logger.info("=" * 60)
-        logger.info("✅ All tests PASSED! Search system is working correctly.")
+        logger.info("All tests PASSED! Search system is working correctly.")
         return 0
 
     except Exception as e:
-        logger.error(f"❌ Test suite failed with error: {e}")
+        logger.error(f"Test suite failed with error: {e}")
         return 1
 
 

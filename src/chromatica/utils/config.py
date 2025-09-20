@@ -59,10 +59,27 @@ RERANK_K = 200
 # Increased from 0.1 to 1.0 for better numerical stability
 SINKHORN_EPSILON = 1.0
 
-# FAISS HNSW index parameters
-# M=32 specifies the number of neighbors in the HNSW graph
-# This balances search speed with index quality
-HNSW_M = 32
+# FAISS IndexIVFPQ parameters for memory-efficient indexing
+# These parameters control the Product Quantization (PQ) compression
+# Higher values generally provide better accuracy but use more memory
+
+# Number of Voronoi cells (clusters) for coarse quantization
+# More clusters = better accuracy but more memory usage
+# Note: FAISS recommends at least nlist * 39 training points
+IVFPQ_NLIST = 50  # Reduced from 100 for better training efficiency
+
+# Number of subquantizers for Product Quantization
+# Each subquantizer handles dimension/M components
+# Must divide the total dimension evenly (1152 / M must be integer)
+IVFPQ_M = 8  # 1152 / 8 = 144 dimensions per subquantizer
+
+# Number of bits per subquantizer (2^nbits centroids per subquantizer)
+# Higher values = better accuracy but more memory
+IVFPQ_NBITS = 8  # 2^8 = 256 centroids per subquantizer
+
+# Number of clusters to probe during search
+# Higher values = better recall but slower search
+IVFPQ_NPROBE = 10
 
 # =============================================================================
 # IMAGE PROCESSING CONSTANTS
@@ -99,6 +116,26 @@ def validate_config():
     if MAX_IMAGE_DIMENSION <= 0:
         raise ValueError(
             f"MAX_IMAGE_DIMENSION must be positive, got {MAX_IMAGE_DIMENSION}"
+        )
+
+    # Validate IVFPQ parameters
+    if IVFPQ_NLIST <= 0:
+        raise ValueError(f"IVFPQ_NLIST must be positive, got {IVFPQ_NLIST}")
+
+    if IVFPQ_M <= 0:
+        raise ValueError(f"IVFPQ_M must be positive, got {IVFPQ_M}")
+
+    if TOTAL_BINS % IVFPQ_M != 0:
+        raise ValueError(
+            f"TOTAL_BINS ({TOTAL_BINS}) must be divisible by IVFPQ_M ({IVFPQ_M})"
+        )
+
+    if IVFPQ_NBITS <= 0 or IVFPQ_NBITS > 16:
+        raise ValueError(f"IVFPQ_NBITS must be between 1 and 16, got {IVFPQ_NBITS}")
+
+    if IVFPQ_NPROBE <= 0 or IVFPQ_NPROBE > IVFPQ_NLIST:
+        raise ValueError(
+            f"IVFPQ_NPROBE must be between 1 and {IVFPQ_NLIST}, got {IVFPQ_NPROBE}"
         )
 
     # Validate LAB ranges

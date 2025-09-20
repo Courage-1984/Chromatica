@@ -51,6 +51,7 @@ python -c "from src.chromatica.utils.config import validate_config; validate_con
 
 ```bash
 # Build index from small test dataset
+# Note: IndexIVFPQ requires training step - handled automatically by build script
 python scripts/build_index.py datasets/test-dataset-20
 
 # Build index from medium dataset
@@ -58,6 +59,72 @@ python scripts/build_index.py datasets/test-dataset-200
 
 # Build index from large dataset
 python scripts/build_index.py datasets/test-dataset-5000
+```
+
+### IndexIVFPQ Parameters
+
+```bash
+# Check current IndexIVFPQ configuration
+python -c "
+from src.chromatica.utils.config import IVFPQ_NLIST, IVFPQ_M, IVFPQ_NBITS, IVFPQ_NPROBE
+print(f'nlist (Voronoi cells): {IVFPQ_NLIST}')
+print(f'M (subquantizers): {IVFPQ_M}')
+print(f'nbits (bits per subquantizer): {IVFPQ_NBITS}')
+print(f'nprobe (clusters to probe): {IVFPQ_NPROBE}')
+print(f'Memory per vector: {IVFPQ_M * IVFPQ_NBITS / 8} bytes')
+print(f'Compression ratio: {(1152 * 4) / (IVFPQ_M * IVFPQ_NBITS / 8):.1f}x')
+"
+```
+
+### Memory Scaling Demonstration
+
+```bash
+# Demonstrate IndexIVFPQ memory benefits
+python tools/demo_memory_scaling.py
+
+# This script shows:
+# - Memory usage comparison (HNSW vs IVFPQ)
+# - Compression ratios and scaling benefits
+# - Training requirement demonstration
+# - Search functionality validation
+```
+
+### Evaluation and Testing
+
+```bash
+# Run comprehensive evaluation with test queries
+python scripts/evaluate.py
+
+# Run evaluation with custom query file
+python scripts/evaluate.py --queries datasets/test-queries.json
+
+# Run evaluation with ground truth for quality metrics
+python scripts/evaluate.py --queries datasets/test-queries.json --ground-truth datasets/ground-truth.json
+
+# Create sample test queries
+python scripts/evaluate.py --create-sample-queries
+
+# Run evaluation with custom parameters
+python scripts/evaluate.py --k 20 --log-level DEBUG
+
+# Help and all options
+python scripts/evaluate.py --help
+```
+
+### Performance Metrics
+
+```bash
+# The evaluation harness measures:
+# - P95 latency (target: <450ms)
+# - Mean/median latency
+# - Precision@10 and Recall@10 (with ground truth)
+# - Memory usage during evaluation
+# - Search quality metrics
+
+# Results are saved to:
+# - Console output with formatted results
+# - logs/evaluation.log for detailed logs
+# - logs/evaluation_results.json for raw data
 ```
 
 ### Advanced Index Building
@@ -143,11 +210,65 @@ python scripts/run_sanity_checks.py
 # Test histogram generation
 python tools/test_histogram_generation.py
 
+# Test saliency weighting functionality
+python tools/test_saliency_weighting.py
+
 # Test FAISS and DuckDB components
 python tools/test_faiss_duckdb.py
 
 # Test complete search system
 python tools/test_search_system.py
+```
+
+### Performance Evaluation
+
+```bash
+# Run comprehensive evaluation with test queries
+python scripts/evaluate.py
+
+# Run evaluation with ground truth for quality metrics
+python scripts/evaluate.py --queries datasets/test-queries.json --ground-truth datasets/ground-truth.json
+
+# Create sample test queries
+python scripts/evaluate.py --create-sample-queries
+
+# Run evaluation with custom parameters
+python scripts/evaluate.py --k 20 --log-level DEBUG
+
+# Help and all options
+python scripts/evaluate.py --help
+```
+
+### Sinkhorn Reranking System
+
+```bash
+# Validate reranking system
+python -c "from src.chromatica.core.rerank import validate_reranking_system; print('Validation:', validate_reranking_system())"
+
+# Test cost matrix generation
+python -c "from src.chromatica.core.rerank import build_cost_matrix; cm = build_cost_matrix(); print(f'Cost matrix shape: {cm.shape}, Memory: {cm.nbytes/1024/1024:.1f}MB')"
+
+# Test Sinkhorn distance computation
+python -c "
+import numpy as np
+from src.chromatica.core.rerank import compute_sinkhorn_distance
+h1 = np.random.random(1152); h1 = h1 / h1.sum()
+h2 = np.random.random(1152); h2 = h2 / h2.sum()
+dist = compute_sinkhorn_distance(h1, h2)
+print(f'Sinkhorn distance: {dist:.6f}')
+"
+
+# Test candidate reranking
+python -c "
+import numpy as np
+from src.chromatica.core.rerank import rerank_candidates
+query = np.random.random(1152); query = query / query.sum()
+candidates = [np.random.random(1152) for _ in range(5)]
+candidates = [h / h.sum() for h in candidates]
+ids = [f'img_{i}' for i in range(5)]
+results = rerank_candidates(query, candidates, ids)
+for r in results[:3]: print(f'Rank {r.rank}: {r.candidate_id} (dist: {r.distance:.6f})')
+"
 ```
 
 ### API Testing
@@ -415,6 +536,7 @@ python scripts/run_sanity_checks.py && echo "✅ System OK" || echo "❌ System 
 - **API Reference**: `docs/api_reference.md`
 - **Troubleshooting**: `docs/troubleshooting.md`
 - **Project Architecture**: `docs/project_architecture.md`
+- **Sinkhorn Reranking**: `docs/sinkhorn_reranking_logic.md`
 
 ### Help Commands
 
