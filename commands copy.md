@@ -50,3 +50,17 @@ python scripts/build_index.py datasets/test-dataset-5000 --output-dir ./producti
 python scripts/build_index.py --help
 
 
+python scripts/build_index.py datasets/test-dataset-200 --output-dir ./index
+
+
+python scripts/build_index.py datasets/test-dataset-200 --output-dir ./index
+
+python -m src.chromatica.api.main
+
+python scripts/build_index.py C:\Users\anon\ai\train\_1_2_combined_both\hq --output-dir ./85k/
+
+set CHROMATICA_INDEX_DIR=C:\Users\anon\github\Chromatica\85k
+
+python -m src.chromatica.api.main
+
+

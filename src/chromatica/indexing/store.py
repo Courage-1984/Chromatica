@@ -23,6 +23,8 @@ import faiss
 import duckdb
 from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
+from functools import lru_cache
+import threading
 
 from ..utils.config import TOTAL_BINS, IVFPQ_NLIST, IVFPQ_M, IVFPQ_NBITS, IVFPQ_NPROBE
 
@@ -65,13 +67,15 @@ class AnnIndex:
         nprobe: Number of clusters to probe during search
     """
 
-    def __init__(self, dimension: int = TOTAL_BINS):
+    def __init__(self, dimension: int = TOTAL_BINS, use_simple_index: bool = False):
         """
-        Initialize the FAISS IndexIVFPQ index.
+        Initialize the FAISS index.
 
         Args:
             dimension: The dimensionality of the vectors to be indexed.
                       Defaults to TOTAL_BINS (1152) for Lab color histograms.
+            use_simple_index: If True, use IndexFlatL2 instead of IndexIVFPQ.
+                             Useful for small datasets that don't meet training requirements.
 
         Raises:
             ValueError: If dimension is not positive or not divisible by M.
@@ -79,56 +83,63 @@ class AnnIndex:
         if dimension <= 0:
             raise ValueError(f"Dimension must be positive, got {dimension}")
 
-        if dimension % IVFPQ_M != 0:
-            raise ValueError(
-                f"Dimension {dimension} must be divisible by IVFPQ_M {IVFPQ_M}"
-            )
-
         self.dimension = dimension
         self.total_vectors = 0
         self.is_trained = False
+        self.use_simple_index = use_simple_index
 
-        # Store IVFPQ parameters for reference
-        self.nlist = IVFPQ_NLIST
-        self.M = IVFPQ_M
-        self.nbits = IVFPQ_NBITS
-        self.nprobe = IVFPQ_NPROBE
+        if use_simple_index:
+            # Use simple IndexFlatL2 for small datasets
+            self.index = faiss.IndexFlatL2(dimension)
+            self.nlist = 0
+            self.M = 0
+            self.nbits = 0
+            self.nprobe = 0
 
-        # Create coarse quantizer (used for first-level clustering)
-        # IndexFlatL2 provides exact L2 distance for coarse quantization
-        self.quantizer = faiss.IndexFlatL2(dimension)
+            logger.info(f"Initialized FAISS IndexFlatL2 with dimension {dimension}")
+        else:
+            # Use IndexIVFPQ for larger datasets
+            if dimension % IVFPQ_M != 0:
+                raise ValueError(
+                    f"Dimension {dimension} must be divisible by IVFPQ_M {IVFPQ_M}"
+                )
 
-        # Create IndexIVFPQ with Product Quantization
-        # Parameters:
-        # - quantizer: Coarse quantizer for first-level clustering
-        # - dimension: Vector dimensionality (1152)
-        # - nlist: Number of Voronoi cells (100)
-        # - M: Number of subquantizers (8)
-        # - nbits: Bits per subquantizer (8)
-        self.index = faiss.IndexIVFPQ(
-            self.quantizer, dimension, self.nlist, self.M, self.nbits
-        )
+            # Store IVFPQ parameters for reference
+            self.nlist = IVFPQ_NLIST
+            self.M = IVFPQ_M
+            self.nbits = IVFPQ_NBITS
+            self.nprobe = IVFPQ_NPROBE
 
-        # Set the number of clusters to probe during search
-        # Higher nprobe = better recall but slower search
-        self.index.nprobe = self.nprobe
+            # Create coarse quantizer (used for first-level clustering)
+            # IndexFlatL2 provides exact L2 distance for coarse quantization
+            self.quantizer = faiss.IndexFlatL2(dimension)
 
-        logger.info(
-            f"Initialized FAISS IndexIVFPQ with dimension {dimension}, "
-            f"nlist={self.nlist}, M={self.M}, nbits={self.nbits}, nprobe={self.nprobe}"
-        )
+            # Create IndexIVFPQ with Product Quantization
+            # Parameters:
+            # - quantizer: Coarse quantizer for first-level clustering
+            # - dimension: Vector dimensionality (1152)
+            # - nlist: Number of Voronoi cells (50)
+            # - M: Number of subquantizers (8)
+            # - nbits: Bits per subquantizer (8)
+            self.index = faiss.IndexIVFPQ(
+                self.quantizer, dimension, self.nlist, self.M, self.nbits
+            )
+
+            # Set the number of clusters to probe during search
+            # Higher nprobe = better recall but slower search
+            self.index.nprobe = self.nprobe
+
+            logger.info(
+                f"Initialized FAISS IndexIVFPQ with dimension {dimension}, "
+                f"nlist={self.nlist}, M={self.M}, nbits={self.nbits}, nprobe={self.nprobe}"
+            )
 
     def train(self, training_vectors: np.ndarray) -> None:
         """
-        Train the IndexIVFPQ with representative data.
+        Train the index with representative data.
 
-        This method is REQUIRED before adding vectors to the index. The training
-        process performs two key operations:
-        1. Coarse quantization: Clusters the training data into nlist Voronoi cells
-        2. Product quantization: Learns M subquantizers for compressing vectors
-
-        The training data should be representative of the full dataset to ensure
-        good quantization quality. Typically, 10-20% of the dataset is sufficient.
+        For IndexIVFPQ, this method is REQUIRED before adding vectors to the index.
+        For IndexFlatL2, training is not required but this method sets the trained flag.
 
         Args:
             training_vectors: Array of shape (n_training, dimension) containing
@@ -160,21 +171,30 @@ class AnnIndex:
 
         # Train the index
         try:
-            logger.info(
-                f"Training IndexIVFPQ with {training_vectors.shape[0]} vectors..."
-            )
-            self.index.train(training_vectors_float32)
-            self.is_trained = True
+            if self.use_simple_index:
+                # IndexFlatL2 doesn't require training, just mark as trained
+                logger.info(
+                    f"IndexFlatL2 doesn't require training, marking as trained with {training_vectors.shape[0]} vectors..."
+                )
+                self.is_trained = True
+                logger.info("IndexFlatL2 ready for use")
+            else:
+                # Train IndexIVFPQ
+                logger.info(
+                    f"Training IndexIVFPQ with {training_vectors.shape[0]} vectors..."
+                )
+                self.index.train(training_vectors_float32)
+                self.is_trained = True
 
-            logger.info(
-                f"IndexIVFPQ training completed successfully. "
-                f"Memory usage per vector: ~{self.M * self.nbits / 8} bytes "
-                f"(vs {self.dimension * 4} bytes for full vectors)"
-            )
+                logger.info(
+                    f"IndexIVFPQ training completed successfully. "
+                    f"Memory usage per vector: ~{self.M * self.nbits / 8} bytes "
+                    f"(vs {self.dimension * 4} bytes for full vectors)"
+                )
 
         except Exception as e:
-            logger.error(f"Failed to train IndexIVFPQ: {e}")
-            raise RuntimeError(f"IndexIVFPQ training failed: {e}")
+            logger.error(f"Failed to train index: {e}")
+            raise RuntimeError(f"Index training failed: {e}")
 
     def add(self, vectors: np.ndarray) -> int:
         """
@@ -399,32 +419,131 @@ class MetadataStore:
 
     The database uses efficient batch operations for indexing and provides
     fast key-value lookups for retrieving histograms by image IDs during
-    the reranking phase.
+    the reranking phase. Includes histogram caching for improved performance.
 
     Attributes:
         db_path: Path to the DuckDB database file
         connection: Active DuckDB connection
         table_name: Name of the main metadata table
+        _histogram_cache: LRU cache for frequently accessed histograms
+        _cache_lock: Thread lock for cache operations
     """
 
-    def __init__(self, db_path: str = ":memory:"):
+    def __init__(self, db_path: str = ":memory:", cache_size: int = 1000):
         """
         Initialize the DuckDB metadata store.
 
         Args:
             db_path: Path to the DuckDB database file. Defaults to ":memory:"
                     for in-memory database (useful for testing).
+            cache_size: Maximum number of histograms to cache in memory.
         """
         self.db_path = db_path
         self.table_name = "image_metadata"
+        self.cache_size = cache_size
 
         # Initialize connection
         self.connection = duckdb.connect(db_path)
 
+        # Initialize histogram cache with thread safety
+        self._cache_lock = threading.Lock()
+        self._histogram_cache: Dict[str, np.ndarray] = {}
+
         # Set up the database schema
         self.setup_table()
 
-        logger.info(f"Initialized DuckDB metadata store at {db_path}")
+        logger.info(
+            f"Initialized DuckDB metadata store at {db_path} with cache size {cache_size}"
+        )
+
+    def _get_histogram_from_cache(self, image_id: str) -> Optional[np.ndarray]:
+        """
+        Get histogram from cache if available.
+
+        Args:
+            image_id: Image identifier
+
+        Returns:
+            Cached histogram or None if not in cache
+        """
+        with self._cache_lock:
+            return self._histogram_cache.get(image_id)
+
+    def _add_histogram_to_cache(self, image_id: str, histogram: np.ndarray) -> None:
+        """
+        Add histogram to cache with LRU eviction.
+
+        Args:
+            image_id: Image identifier
+            histogram: Histogram to cache
+        """
+        with self._cache_lock:
+            # If cache is full, remove oldest entry (simple FIFO for now)
+            if len(self._histogram_cache) >= self.cache_size:
+                # Remove the first (oldest) entry
+                oldest_key = next(iter(self._histogram_cache))
+                del self._histogram_cache[oldest_key]
+                logger.debug(f"Evicted histogram {oldest_key} from cache")
+
+            self._histogram_cache[image_id] = histogram.copy()
+            logger.debug(
+                f"Added histogram {image_id} to cache (cache size: {len(self._histogram_cache)})"
+            )
+
+    def _load_histogram_from_db(self, image_id: str) -> Optional[np.ndarray]:
+        """
+        Load histogram from database.
+
+        Args:
+            image_id: Image identifier
+
+        Returns:
+            Histogram array or None if not found
+        """
+        query_sql = f"""
+        SELECT histogram
+        FROM {self.table_name}
+        WHERE image_id = ?
+        """
+
+        try:
+            result = self.connection.execute(query_sql, [image_id]).fetchone()
+            if result:
+                histogram_blob = result[0]
+                histogram_array = np.frombuffer(histogram_blob, dtype=np.float32)
+                return histogram_array
+            else:
+                return None
+        except Exception as e:
+            logger.error(f"Failed to load histogram for {image_id}: {e}")
+            return None
+
+    def get_histogram(self, image_id: str) -> Optional[np.ndarray]:
+        """
+        Get histogram for a single image ID with caching.
+
+        Args:
+            image_id: Image identifier
+
+        Returns:
+            Histogram array or None if not found
+        """
+        # Try cache first
+        cached_histogram = self._get_histogram_from_cache(image_id)
+        if cached_histogram is not None:
+            logger.debug(f"Cache hit for histogram {image_id}")
+            return cached_histogram
+
+        # Load from database
+        histogram = self._load_histogram_from_db(image_id)
+        if histogram is not None:
+            # Add to cache
+            self._add_histogram_to_cache(image_id, histogram)
+            logger.debug(f"Cache miss for histogram {image_id}, loaded from DB")
+        else:
+            logger.warning(f"Histogram not found for {image_id}")
+
+        return histogram
 
     def setup_table(self) -> None:
         """
@@ -530,19 +649,22 @@ class MetadataStore:
 
     def get_histograms_by_ids(self, image_ids: List[str]) -> Dict[str, np.ndarray]:
         """
-        Retrieve raw histograms for a list of image IDs.
+        Retrieve raw histograms for a list of image IDs with caching.
 
         This method is crucial for the reranking stage, as it provides
         the original, non-transformed histograms needed for accurate
         Sinkhorn-EMD distance calculations. The histograms are returned
         as a dictionary mapping image_id to numpy array.
 
+        Uses intelligent caching to avoid repeated database queries for
+        frequently accessed histograms.
+
         Args:
             image_ids: List of image IDs to retrieve histograms for.
 
         Returns:
             Dictionary mapping image_id to histogram numpy array.
-            Only includes IDs that were found in the database.
+            Only includes IDs that were found in the database or cache.
 
         Raises:
             ValueError: If image_ids is empty.
@@ -551,33 +673,56 @@ class MetadataStore:
         if not image_ids:
             raise ValueError("Image IDs list cannot be empty")
 
-        # Create placeholders for the IN clause
-        placeholders = ",".join(["?" for _ in image_ids])
+        histograms = {}
+        uncached_ids = []
 
-        query_sql = f"""
-        SELECT image_id, histogram
-        FROM {self.table_name}
-        WHERE image_id IN ({placeholders})
-        """
+        # Check cache first
+        for image_id in image_ids:
+            cached_histogram = self._get_histogram_from_cache(image_id)
+            if cached_histogram is not None:
+                histograms[image_id] = cached_histogram
+                logger.debug(f"Cache hit for histogram {image_id}")
+            else:
+                uncached_ids.append(image_id)
 
-        try:
-            result = self.connection.execute(query_sql, image_ids).fetchall()
-
-            # Convert results to dictionary
-            histograms = {}
-            for image_id, histogram_blob in result:
-                # Convert BLOB back to numpy array
-                histogram_array = np.frombuffer(histogram_blob, dtype=np.float32)
-                histograms[image_id] = histogram_array
-
+        # Load uncached histograms from database
+        if uncached_ids:
             logger.debug(
-                f"Retrieved {len(histograms)} histograms for {len(image_ids)} requested IDs"
+                f"Loading {len(uncached_ids)} uncached histograms from database"
             )
-            return histograms
 
-        except Exception as e:
-            logger.error(f"Failed to retrieve histograms: {e}")
-            raise RuntimeError(f"Database query failed: {e}")
+            # Create placeholders for the IN clause
+            placeholders = ",".join(["?" for _ in uncached_ids])
+
+            query_sql = f"""
+            SELECT image_id, histogram
+            FROM {self.table_name}
+            WHERE image_id IN ({placeholders})
+            """
+
+            try:
+                result = self.connection.execute(query_sql, uncached_ids).fetchall()
+
+                # Convert results to dictionary and add to cache
+                for image_id, histogram_blob in result:
+                    # Convert BLOB back to numpy array
+                    histogram_array = np.frombuffer(histogram_blob, dtype=np.float32)
+                    histograms[image_id] = histogram_array
+
+                    # Add to cache
+                    self._add_histogram_to_cache(image_id, histogram_array)
+                    logger.debug(f"Cache miss for histogram {image_id}, loaded from DB")
+
+                logger.debug(
+                    f"Retrieved {len(histograms)} histograms for {len(image_ids)} requested IDs "
+                    f"({len(uncached_ids)} from DB, {len(image_ids) - len(uncached_ids)} from cache)"
+                )
+
+            except Exception as e:
+                logger.error(f"Failed to retrieve histograms: {e}")
+                raise RuntimeError(f"Database query failed: {e}")
+
+        return histograms
 
     def get_all_histograms(self) -> Dict[str, np.ndarray]:
         """
@@ -691,6 +836,69 @@ class MetadataStore:
         except Exception as e:
             logger.error(f"Failed to get image count: {e}")
             return 0
+
+    def get_image_ids_in_order(self) -> List[str]:
+        """
+        Get all image IDs in insertion order (matching FAISS indices).
+
+        This method returns image IDs in the same order they were inserted,
+        which corresponds to the FAISS index order. This is crucial for
+        mapping FAISS indices to actual image IDs.
+
+        Returns:
+            List of image IDs in insertion order.
+
+        Raises:
+            RuntimeError: If database query fails.
+        """
+        query_sql = f"""
+        SELECT image_id
+        FROM {self.table_name}
+        ORDER BY ROWID
+        """
+
+        try:
+            result = self.connection.execute(query_sql).fetchall()
+            image_ids = [row[0] for row in result]
+
+            logger.debug(f"Retrieved {len(image_ids)} image IDs in insertion order")
+            return image_ids
+
+        except Exception as e:
+            logger.error(f"Failed to retrieve image IDs in order: {e}")
+            raise RuntimeError(f"Database query failed: {e}")
+
+    def get_all_image_metadata(self, limit: int = 1000) -> List[Dict[str, Any]]:
+        """
+        Get metadata for all images in the store.
+
+        Args:
+            limit: Maximum number of images to return (default: 1000).
+
+        Returns:
+            List of dictionaries containing image metadata.
+        """
+        try:
+            query = f"""
+                SELECT image_id, file_path, file_size
+                FROM {self.table_name}
+                LIMIT ?
+            """
+            result = self.connection.execute(query, (limit,)).fetchall()
+
+            # Convert to list of dictionaries
+            images = []
+            for row in result:
+                images.append(
+                    {"image_id": row[0], "file_path": row[1], "file_size": row[2]}
+                )
+
+            logger.info(f"Retrieved {len(images)} image metadata records")
+            return images
+
+        except Exception as e:
+            logger.error(f"Failed to get all image metadata: {e}")
+            return []
 
     def close(self) -> None:
         """

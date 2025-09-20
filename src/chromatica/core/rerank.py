@@ -24,6 +24,11 @@ import numpy as np
 import ot  # Python Optimal Transport (POT)
 from typing import List, Tuple, Optional, Union
 from dataclasses import dataclass
+from multiprocessing import Pool, cpu_count
+from functools import partial
+import time
+import psutil
+import os
 
 from ..utils.config import (
     L_BINS,
@@ -39,6 +44,87 @@ logger = logging.getLogger(__name__)
 
 # Global cost matrix - computed once and reused for all distance calculations
 _COST_MATRIX: Optional[np.ndarray] = None
+
+
+def _check_memory_usage() -> bool:
+    """
+    Check if memory usage is too high and we should use fallback methods.
+
+    Returns:
+        True if memory usage is acceptable, False if we should use fallback
+    """
+    try:
+        process = psutil.Process(os.getpid())
+        memory_info = process.memory_info()
+        memory_mb = memory_info.rss / 1024 / 1024  # Convert to MB
+
+        # If we're using more than 1GB, use fallback methods
+        if memory_mb > 1024:
+            logger.warning(
+                f"High memory usage detected: {memory_mb:.1f}MB, using fallback methods"
+            )
+            return False
+
+        return True
+    except Exception as e:
+        logger.warning(f"Could not check memory usage: {e}")
+        return True  # Default to safe mode
+
+
+def _compute_distance_worker(
+    args: Tuple[np.ndarray, np.ndarray, str, float],
+) -> Tuple[str, float]:
+    """
+    Worker function for parallel distance computation.
+
+    This function is designed to be used with multiprocessing.Pool
+    to compute Sinkhorn distances in parallel.
+
+    Args:
+        args: Tuple containing (query_hist, candidate_hist, candidate_id, epsilon)
+
+    Returns:
+        Tuple of (candidate_id, distance)
+    """
+    query_hist, candidate_hist, candidate_id, epsilon = args
+
+    try:
+        # Compute Sinkhorn distance
+        distance = compute_sinkhorn_distance(query_hist, candidate_hist, epsilon)
+        return candidate_id, distance
+    except Exception as e:
+        logger.warning(f"Failed to compute distance for {candidate_id}: {e}")
+        # Return a large distance as fallback
+        return candidate_id, float("inf")
+
+
+def _compute_distance_batch_worker(
+    args: Tuple[np.ndarray, List[np.ndarray], List[str], float],
+) -> List[Tuple[str, float]]:
+    """
+    Worker function for batch parallel distance computation.
+
+    This function processes a batch of candidates in a single worker process,
+    reducing the overhead of process creation.
+
+    Args:
+        args: Tuple containing (query_hist, candidate_hists, candidate_ids, epsilon)
+
+    Returns:
+        List of tuples (candidate_id, distance)
+    """
+    query_hist, candidate_hists, candidate_ids, epsilon = args
+
+    results = []
+    for candidate_hist, candidate_id in zip(candidate_hists, candidate_ids):
+        try:
+            distance = compute_sinkhorn_distance(query_hist, candidate_hist, epsilon)
+            results.append((candidate_id, distance))
+        except Exception as e:
+            logger.warning(f"Failed to compute distance for {candidate_id}: {e}")
+            results.append((candidate_id, float("inf")))
+
+    return results
 
 
 @dataclass
@@ -177,7 +263,11 @@ def get_cost_matrix() -> np.ndarray:
 
 
 def compute_sinkhorn_distance(
-    hist1: np.ndarray, hist2: np.ndarray, epsilon: float = SINKHORN_EPSILON
+    hist1: np.ndarray,
+    hist2: np.ndarray,
+    epsilon: float = SINKHORN_EPSILON,
+    early_termination_threshold: float = 1e-6,
+    max_iterations: int = 100,  # Add iteration limit
 ) -> float:
     """
     Compute the Sinkhorn distance between two histograms.
@@ -239,6 +329,14 @@ def compute_sinkhorn_distance(
     if np.any(hist1 < -1e-10) or np.any(hist2 < -1e-10):
         raise ValueError("Histograms contain negative values")
 
+    # Early termination check for very similar histograms
+    l2_distance = np.linalg.norm(hist1 - hist2)
+    if l2_distance < early_termination_threshold:
+        logger.debug(
+            f"Early termination: L2 distance {l2_distance:.2e} < threshold {early_termination_threshold:.2e}"
+        )
+        return float(l2_distance)
+
     # Get the pre-computed cost matrix
     cost_matrix = get_cost_matrix()
 
@@ -250,13 +348,32 @@ def compute_sinkhorn_distance(
         hist2_reg = hist2 + 1e-10
         hist1_reg = hist1_reg / hist1_reg.sum()
         hist2_reg = hist2_reg / hist2_reg.sum()
-        
+
         try:
-            distance = ot.sinkhorn2(hist1_reg, hist2_reg, cost_matrix, reg=epsilon)
-            
+            # Use a more conservative epsilon for better convergence
+            conservative_epsilon = max(epsilon, 0.1)
+
+            # Try Sinkhorn with iteration limit
+            try:
+                distance = ot.sinkhorn2(
+                    hist1_reg,
+                    hist2_reg,
+                    cost_matrix,
+                    reg=conservative_epsilon,
+                    numItermax=max_iterations,
+                )
+            except Exception as e:
+                logger.warning(
+                    f"Sinkhorn failed with conservative epsilon: {e}, using L2 fallback"
+                )
+                distance = np.linalg.norm(hist1_reg - hist2_reg)
+                return float(distance)
+
             # Validate the result
             if not np.isfinite(distance):
-                logger.warning(f"Sinkhorn distance not finite: {distance}, using fallback")
+                logger.warning(
+                    f"Sinkhorn distance not finite: {distance}, using fallback"
+                )
                 # Fallback to L2 distance if Sinkhorn fails
                 distance = np.linalg.norm(hist1_reg - hist2_reg)
             elif distance < 0:
@@ -270,9 +387,9 @@ def compute_sinkhorn_distance(
                 )
                 # Use L2 distance for very small values to avoid numerical issues
                 distance = np.linalg.norm(hist1_reg - hist2_reg)
-                
+
             return float(distance)
-            
+
         except Exception as e:
             logger.warning(f"Sinkhorn algorithm failed: {e}, using L2 fallback")
             # Fallback to L2 distance if Sinkhorn completely fails
@@ -293,9 +410,16 @@ def rerank_candidates(
     candidate_ids: List[Union[str, int]],
     epsilon: float = SINKHORN_EPSILON,
     max_candidates: Optional[int] = None,
+    batch_size: int = 10,
+    use_approximate: bool = False,
+    use_parallel: bool = False,  # Disable parallel processing by default
+    num_processes: Optional[int] = None,
+    early_termination_threshold: float = 0.01,
+    early_termination_count: int = 10,
+    streaming_mode: bool = True,  # Enable streaming mode by default
 ) -> List[RerankResult]:
     """
-    Rerank candidate images using Sinkhorn-EMD distances.
+    Rerank candidate images using Sinkhorn-EMD distances with optional parallel processing.
 
     This function implements the high-fidelity reranking stage of the two-stage
     search architecture. It takes candidate histograms from the ANN search stage
@@ -310,6 +434,7 @@ def rerank_candidates(
     Performance considerations:
     - The cost matrix is pre-computed and reused for all distance calculations
     - Histograms are processed in batches to minimize memory overhead
+    - Optional parallel processing for large candidate sets
     - Results are sorted by distance for optimal ranking
 
     Args:
@@ -324,6 +449,14 @@ def rerank_candidates(
         max_candidates: Maximum number of candidates to return
                        If None, returns all candidates. If specified, returns
                        the top max_candidates by distance.
+        batch_size: Batch size for processing (used for parallel processing)
+        use_approximate: If True, use L2 distance instead of Sinkhorn-EMD
+        use_parallel: If True, use parallel processing for distance calculations
+        num_processes: Number of processes to use for parallel processing.
+                      If None, uses cpu_count() - 1
+        early_termination_threshold: Stop processing when distance improvement is below this threshold
+        early_termination_count: Stop processing after finding this many good candidates
+        streaming_mode: If True, process histograms in streaming fashion to minimize memory usage
 
     Returns:
         List[RerankResult]: Ranked list of candidates with distances and ranks.
@@ -339,7 +472,7 @@ def rerank_candidates(
         >>> candidate_hists = [np.random.random(1152) for _ in range(5)]
         >>> candidate_hists = [h / h.sum() for h in candidate_hists]
         >>> candidate_ids = [f"img_{i}" for i in range(5)]
-        >>> results = rerank_candidates(query_hist, candidate_hists, candidate_ids)
+        >>> results = rerank_candidates(query_hist, candidate_hists, candidate_ids, use_parallel=True)
         >>> for result in results[:3]:  # Top 3 results
         ...     print(f"Rank {result.rank}: {result.candidate_id} (distance: {result.distance:.6f})")
         Rank 1: img_2 (distance: 0.045123)
@@ -360,27 +493,179 @@ def rerank_candidates(
     if max_candidates is not None and max_candidates <= 0:
         raise ValueError(f"max_candidates must be positive, got {max_candidates}")
 
-    logger.info(f"Reranking {len(candidate_hists)} candidates using Sinkhorn-EMD")
+    if use_approximate:
+        logger.info(
+            f"🚀 FAST MODE: Reranking {len(candidate_hists)} candidates using approximate L2 distance"
+        )
+    else:
+        logger.info(
+            f"🎯 NORMAL MODE: Reranking {len(candidate_hists)} candidates using Sinkhorn-EMD"
+        )
     logger.debug(f"Query histogram shape: {query_hist.shape}")
     logger.debug(f"Epsilon: {epsilon}")
 
+    # Check memory usage and adjust strategy accordingly
+    memory_ok = _check_memory_usage()
+    if not memory_ok and not use_approximate:
+        # Only force approximate mode if user hasn't already chosen it
+        # and memory usage is critically high
+        use_approximate = True
+        streaming_mode = True
+        logger.warning(
+            "High memory usage detected, forcing approximate mode and streaming"
+        )
+    elif not memory_ok and use_approximate:
+        # User already chose fast mode, just enable streaming
+        streaming_mode = True
+        logger.info(
+            "High memory usage detected, enabling streaming mode for fast search"
+        )
+
     # Compute distances for all candidates
     distances = []
-    for i, (hist, candidate_id) in enumerate(zip(candidate_hists, candidate_ids)):
-        try:
-            distance = compute_sinkhorn_distance(query_hist, hist, epsilon)
-            distances.append((candidate_id, distance, i))
+    start_time = time.time()
+
+    if streaming_mode or len(candidate_hists) > 20 or not memory_ok:
+        # Use streaming mode for moderate to large candidate sets to minimize memory usage
+        logger.info(f"Using streaming mode for {len(candidate_hists)} candidates")
+
+        # Process candidates one by one to minimize memory usage
+        for i, (hist, candidate_id) in enumerate(zip(candidate_hists, candidate_ids)):
+            try:
+                if use_approximate:
+                    # Use fast L2 distance for approximate reranking
+                    distance = np.linalg.norm(query_hist - hist)
+                else:
+                    # Use full Sinkhorn-EMD for high-fidelity reranking
+                    distance = compute_sinkhorn_distance(query_hist, hist, epsilon)
+                distances.append((candidate_id, distance, i))
+
+                # Early termination check in streaming mode
+                if len(distances) >= early_termination_count:
+                    # Sort current results to check for convergence
+                    sorted_distances = sorted(distances, key=lambda x: x[1])
+
+                    # Check if the last few distances are very similar (convergence)
+                    if len(sorted_distances) >= early_termination_count:
+                        recent_distances = [d[1] for d in sorted_distances[-5:]]
+                        distance_variance = np.var(recent_distances)
+
+                        if distance_variance < early_termination_threshold:
+                            logger.info(
+                                f"Early termination in streaming mode: distance variance {distance_variance:.6f} < threshold {early_termination_threshold}"
+                            )
+                            break
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to compute distance for candidate {candidate_id}: {e}"
+                )
+                continue
+
+            # Log progress for streaming mode
+            if (i + 1) % 10 == 0:  # More frequent logging for smaller sets
+                logger.debug(
+                    f"Streaming processed {i + 1}/{len(candidate_hists)} candidates"
+                )
+
+    elif use_parallel and len(candidate_hists) > 10 and not use_approximate:
+        # Use parallel processing for large candidate sets
+        if num_processes is None:
+            num_processes = max(1, cpu_count() - 1)
+
+        logger.info(f"Using parallel processing with {num_processes} processes")
+
+        # Prepare arguments for parallel processing
+        if len(candidate_hists) > 50:
+            # Use batch processing for very large sets
+            batch_args = []
+            for batch_start in range(0, len(candidate_hists), batch_size):
+                batch_end = min(batch_start + batch_size, len(candidate_hists))
+                batch_hists = candidate_hists[batch_start:batch_end]
+                batch_ids = candidate_ids[batch_start:batch_end]
+                batch_args.append((query_hist, batch_hists, batch_ids, epsilon))
+
+            # Process batches in parallel
+            with Pool(processes=num_processes) as pool:
+                batch_results = pool.map(_compute_distance_batch_worker, batch_args)
+
+            # Flatten results
+            for batch_result in batch_results:
+                for candidate_id, distance in batch_result:
+                    distances.append(
+                        (candidate_id, distance, 0)
+                    )  # original_index not used in parallel mode
+        else:
+            # Use individual processing for smaller sets
+            args = [
+                (query_hist, hist, candidate_id, epsilon)
+                for hist, candidate_id in zip(candidate_hists, candidate_ids)
+            ]
+
+            with Pool(processes=num_processes) as pool:
+                results = pool.map(_compute_distance_worker, args)
+
+            for candidate_id, distance in results:
+                distances.append(
+                    (candidate_id, distance, 0)
+                )  # original_index not used in parallel mode
+    else:
+        # Use sequential processing with early termination
+        logger.info("Using sequential processing with early termination")
+
+        # Process candidates in batches for better performance
+        for batch_start in range(0, len(candidate_hists), batch_size):
+            batch_end = min(batch_start + batch_size, len(candidate_hists))
+            batch_hists = candidate_hists[batch_start:batch_end]
+            batch_ids = candidate_ids[batch_start:batch_end]
+            batch_indices = list(range(batch_start, batch_end))
+
+            # Process batch
+            for i, (hist, candidate_id, original_index) in enumerate(
+                zip(batch_hists, batch_ids, batch_indices)
+            ):
+                try:
+                    if use_approximate:
+                        # Use fast L2 distance for approximate reranking
+                        distance = np.linalg.norm(query_hist - hist)
+                    else:
+                        # Use full Sinkhorn-EMD for high-fidelity reranking
+                        distance = compute_sinkhorn_distance(query_hist, hist, epsilon)
+                    distances.append((candidate_id, distance, original_index))
+
+                    # Early termination check
+                    if len(distances) >= early_termination_count:
+                        # Sort current results to check for convergence
+                        sorted_distances = sorted(distances, key=lambda x: x[1])
+
+                        # Check if the last few distances are very similar (convergence)
+                        if len(sorted_distances) >= early_termination_count:
+                            recent_distances = [d[1] for d in sorted_distances[-5:]]
+                            distance_variance = np.var(recent_distances)
+
+                            if distance_variance < early_termination_threshold:
+                                logger.info(
+                                    f"Early termination: distance variance {distance_variance:.6f} < threshold {early_termination_threshold}"
+                                )
+                                break
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to compute distance for candidate {candidate_id}: {e}"
+                    )
+                    # Continue with other candidates rather than failing completely
+                    continue
+
+            # Check for early termination after each batch
+            if len(distances) >= early_termination_count:
+                break
 
             # Log progress for large batches
-            if (i + 1) % 50 == 0:
-                logger.debug(f"Processed {i + 1}/{len(candidate_hists)} candidates")
+            if batch_end % (batch_size * 5) == 0:
+                logger.debug(f"Processed {batch_end}/{len(candidate_hists)} candidates")
 
-        except Exception as e:
-            logger.error(
-                f"Failed to compute distance for candidate {candidate_id}: {e}"
-            )
-            # Continue with other candidates rather than failing completely
-            continue
+    computation_time = time.time() - start_time
+    logger.info(f"Distance computation completed in {computation_time:.3f}s")
 
     if not distances:
         logger.error("No valid distances computed, returning empty results")

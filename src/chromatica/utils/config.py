@@ -16,6 +16,8 @@ All constants are defined as module-level variables to ensure they can be import
 and used consistently across the application without modification.
 """
 
+from typing import Dict
+
 # =============================================================================
 # COLOR SPACE BINNING PARAMETERS
 # =============================================================================
@@ -59,14 +61,25 @@ RERANK_K = 200
 # Increased from 0.1 to 1.0 for better numerical stability
 SINKHORN_EPSILON = 1.0
 
+# Performance optimization parameters
+# Early termination threshold for very similar histograms (L2 distance)
+EARLY_TERMINATION_THRESHOLD = 1e-6
+
+# Batch size for reranking operations
+RERANK_BATCH_SIZE = 10
+
+# Default reranking mode (False = Sinkhorn-EMD, True = approximate L2)
+USE_APPROXIMATE_RERANKING = False
+
 # FAISS IndexIVFPQ parameters for memory-efficient indexing
 # These parameters control the Product Quantization (PQ) compression
-# Higher values generally provide better accuracy but use more memory
+# Optimized for speed/accuracy trade-off in color search applications
 
 # Number of Voronoi cells (clusters) for coarse quantization
 # More clusters = better accuracy but more memory usage
 # Note: FAISS recommends at least nlist * 39 training points
-IVFPQ_NLIST = 50  # Reduced from 100 for better training efficiency
+# Optimized for faster search with good accuracy
+IVFPQ_NLIST = 32  # Reduced from 50 for faster search
 
 # Number of subquantizers for Product Quantization
 # Each subquantizer handles dimension/M components
@@ -79,7 +92,67 @@ IVFPQ_NBITS = 8  # 2^8 = 256 centroids per subquantizer
 
 # Number of clusters to probe during search
 # Higher values = better recall but slower search
-IVFPQ_NPROBE = 10
+# Optimized for speed while maintaining good accuracy
+IVFPQ_NPROBE = 8  # Reduced from 10 for faster search
+
+# Additional FAISS optimization parameters
+# Enable GPU acceleration if available (future enhancement)
+FAISS_USE_GPU = False
+
+# Enable memory mapping for large indices
+FAISS_USE_MMAP = True
+
+# Search timeout in milliseconds (prevents hanging on large indices)
+FAISS_SEARCH_TIMEOUT_MS = 5000
+
+
+# Adaptive search parameters based on dataset size
+def get_adaptive_search_params(dataset_size: int) -> Dict[str, int]:
+    """
+    Get adaptive FAISS search parameters based on dataset size.
+
+    This function optimizes search parameters based on the size of the dataset
+    to provide the best speed/accuracy trade-off for different scales.
+
+    Args:
+        dataset_size: Number of images in the dataset
+
+    Returns:
+        Dictionary with optimized search parameters
+    """
+    if dataset_size < 1000:
+        # Small datasets: use simple index for best accuracy
+        return {
+            "use_simple_index": True,
+            "nlist": 0,
+            "nprobe": 0,
+            "rerank_k": min(50, dataset_size),
+        }
+    elif dataset_size < 10000:
+        # Medium datasets: balanced parameters
+        return {
+            "use_simple_index": False,
+            "nlist": 16,
+            "nprobe": 4,
+            "rerank_k": min(100, dataset_size),
+        }
+    elif dataset_size < 100000:
+        # Large datasets: optimized for speed
+        return {
+            "use_simple_index": False,
+            "nlist": 32,
+            "nprobe": 8,
+            "rerank_k": min(200, dataset_size),
+        }
+    else:
+        # Very large datasets: maximum speed optimization
+        return {
+            "use_simple_index": False,
+            "nlist": 64,
+            "nprobe": 16,
+            "rerank_k": min(500, dataset_size),
+        }
+
 
 # =============================================================================
 # IMAGE PROCESSING CONSTANTS

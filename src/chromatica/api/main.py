@@ -21,6 +21,7 @@ The API follows the two-stage search architecture:
 """
 
 import logging
+import os
 import time
 import uuid
 from typing import List, Optional
@@ -39,6 +40,7 @@ from ..search import find_similar
 from ..indexing.store import AnnIndex, MetadataStore
 from ..utils.config import TOTAL_BINS
 from ..visualization import create_query_visualization, create_results_collage
+from .visualization_3d import router as visualization_3d_router, set_search_components
 import cv2
 import numpy as np
 from sklearn.cluster import KMeans
@@ -56,6 +58,9 @@ app = FastAPI(
     description="A two-stage color-based image search engine using CIE Lab color space and Sinkhorn-EMD reranking with visual enhancements",
     version="1.0.0",
 )
+
+# Include 3D visualization router
+app.include_router(visualization_3d_router)
 
 # Mount static files for web interface
 try:
@@ -173,21 +178,26 @@ async def startup_event():
     logger.info("Starting Chromatica Color Search Engine API...")
 
     try:
-        # Load the FAISS index
-        index_path = Path("index/chromatica_index.faiss")
+        # Load the FAISS index - support custom path via environment variable
+        index_dir = os.getenv("CHROMATICA_INDEX_DIR", "index")
+        index_filename = os.getenv("CHROMATICA_INDEX_FILE", "chromatica_index.faiss")
+        index_path = Path(index_dir) / index_filename
+
         if not index_path.exists():
             logger.warning(f"FAISS index not found at {index_path}")
             logger.info(
-                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir index"
+                f"Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir {index_dir}"
             )
             return
 
-        # Load the DuckDB metadata store
-        db_path = Path("index/chromatica_metadata.db")
+        # Load the DuckDB metadata store - support custom path via environment variable
+        db_filename = os.getenv("CHROMATICA_DB_FILE", "chromatica_metadata.db")
+        db_path = Path(index_dir) / db_filename
+
         if not db_path.exists():
             logger.warning(f"Metadata store not found at {db_path}")
             logger.info(
-                "Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir index"
+                f"Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir {index_dir}"
             )
             return
 
@@ -198,9 +208,16 @@ async def startup_event():
         index.load(str(index_path))
         store = MetadataStore(db_path=str(db_path))
 
+        # Set search components for 3D visualization
+        set_search_components(index, store)
+
         logger.info("Search components initialized successfully")
         logger.info(f"FAISS index loaded: {index_path}")
         logger.info(f"Metadata store loaded: {db_path}")
+        logger.info(f"Index directory: {index_dir}")
+        logger.info(
+            f"Environment variables: INDEX_DIR={os.getenv('CHROMATICA_INDEX_DIR', 'default')}, INDEX_FILE={os.getenv('CHROMATICA_INDEX_FILE', 'default')}, DB_FILE={os.getenv('CHROMATICA_DB_FILE', 'default')}"
+        )
 
     except Exception as e:
         logger.error(f"Failed to initialize search components: {e}")
@@ -253,6 +270,21 @@ async def root():
         }
 
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for server status."""
+    return {
+        "status": "healthy" if index is not None and store is not None else "unhealthy",
+        "message": "Chromatica Color Search Engine API",
+        "version": "1.0.0",
+        "components": {
+            "faiss_index": "loaded" if index is not None else "not_loaded",
+            "metadata_store": "loaded" if store is not None else "not_loaded",
+        },
+        "timestamp": time.time(),
+    }
+
+
 @app.get("/api/info")
 async def api_info():
     """API information endpoint."""
@@ -284,6 +316,16 @@ async def search_images(
     k: int = Query(50, description="Number of results to return", ge=1, le=200),
     fuzz: float = Query(
         1.0, description="Gaussian sigma multiplier for query fuzziness", ge=0.1, le=5.0
+    ),
+    fast_mode: bool = Query(
+        False,  # Default to normal mode, let users choose fast mode explicitly
+        description="Use fast approximate reranking (L2 distance instead of Sinkhorn-EMD)",
+    ),
+    batch_size: int = Query(
+        5,
+        description="Batch size for reranking operations",
+        ge=1,
+        le=50,  # Smaller batch size
     ),
 ):
     """
@@ -384,13 +426,18 @@ async def search_images(
 
         # Perform the search
         try:
-            logger.info(f"Starting search with k={k}")
+            mode_str = (
+                "FAST MODE (L2 distance)" if fast_mode else "NORMAL MODE (Sinkhorn-EMD)"
+            )
+            logger.info(f"Starting search with k={k} in {mode_str}")
             search_results = find_similar(
                 query_histogram=query_histogram,
                 index=index,
                 store=store,
                 k=k,
                 max_rerank=k,
+                use_approximate_reranking=fast_mode,
+                rerank_batch_size=batch_size,
             )
 
             if not search_results:
@@ -424,8 +471,9 @@ async def search_images(
             formatted_results = []
 
             for result in search_results:
-                # Extract dominant colors from the image
-                dominant_colors = extract_dominant_colors(result.file_path)
+                # Skip expensive dominant color extraction for performance
+                # This was causing 20+ second delays due to K-means clustering on every image
+                dominant_colors = ["#000000"]  # Placeholder to avoid breaking the API
 
                 formatted_result = SearchResult(
                     image_id=result.image_id,
@@ -631,6 +679,8 @@ async def visualize_results(
             store=store,
             k=k,
             max_rerank=k,
+            use_approximate_reranking=False,  # Use high-fidelity for visualization
+            rerank_batch_size=10,
         )
 
         if not search_results:
@@ -692,6 +742,110 @@ class CommandResponse(BaseModel):
     success: bool = Field(..., description="Whether the command executed successfully")
     output: str = Field(..., description="Command output or error message")
     error: Optional[str] = Field(None, description="Error message if command failed")
+
+
+@app.post("/restart")
+async def restart_server():
+    """
+    Restart the server by killing all Python processes and restarting.
+
+    This endpoint will:
+    1. Kill all running Python processes (including this server)
+    2. Start a new server instance
+    3. Return success status
+
+    Returns:
+        JSON response with restart status
+    """
+    import subprocess
+    import os
+    import sys
+    import signal
+    import psutil
+
+    try:
+        logger.info("Server restart requested")
+
+        # Get current process ID
+        current_pid = os.getpid()
+        logger.info(f"Current server PID: {current_pid}")
+
+        # Find all Python processes related to this project
+        python_processes = []
+        for proc in psutil.process_iter(["pid", "name", "cmdline"]):
+            try:
+                if proc.info["name"] and "python" in proc.info["name"].lower():
+                    cmdline = proc.info["cmdline"]
+                    if cmdline and any(
+                        "chromatica" in str(arg).lower() for arg in cmdline
+                    ):
+                        python_processes.append(proc.info["pid"])
+                        logger.info(
+                            f"Found Chromatica Python process: PID {proc.info['pid']}"
+                        )
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+
+        # Kill all related Python processes (except current one)
+        killed_processes = []
+        for pid in python_processes:
+            if pid != current_pid:
+                try:
+                    proc = psutil.Process(pid)
+                    proc.terminate()
+                    killed_processes.append(pid)
+                    logger.info(f"Terminated process PID {pid}")
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+
+        # Wait a moment for processes to terminate
+        import time
+
+        time.sleep(2)
+
+        # Force kill any remaining processes
+        for pid in killed_processes:
+            try:
+                proc = psutil.Process(pid)
+                if proc.is_running():
+                    proc.kill()
+                    logger.info(f"Force killed process PID {pid}")
+            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                pass
+
+        # Start new server instance
+        project_root = Path(__file__).parent.parent.parent.parent
+        python_path = (
+            str(project_root / "venv311" / "Scripts" / "python.exe")
+            if os.name == "nt"
+            else str(project_root / "venv311" / "bin" / "python")
+        )
+
+        # Start new server in background
+        subprocess.Popen(
+            [python_path, "-m", "src.chromatica.api.main"],
+            cwd=str(project_root),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0,
+        )
+
+        logger.info("New server instance started")
+
+        return {
+            "success": True,
+            "message": "Server restart initiated successfully",
+            "killed_processes": killed_processes,
+            "new_server_started": True,
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to restart server: {e}")
+        return {
+            "success": False,
+            "message": f"Failed to restart server: {str(e)}",
+            "error": str(e),
+        }
 
 
 @app.post("/api/execute-command", response_model=CommandResponse)

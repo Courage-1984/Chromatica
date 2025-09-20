@@ -303,23 +303,101 @@ Examples:
         db_path = output_dir / "chromatica_metadata.db"
 
         # Initialize components
-        ann_index = AnnIndex(dimension=TOTAL_BINS)
+        # Use simple index for small datasets to avoid training requirements
+        # IndexIVFPQ requires at least 1950 training points for proper clustering
+        use_simple_index = total_images < 2000
+        if use_simple_index:
+            logger.info(f"Using IndexFlatL2 for small dataset ({total_images} images)")
+        else:
+            logger.info(f"Using IndexIVFPQ for large dataset ({total_images} images)")
+
+        ann_index = AnnIndex(dimension=TOTAL_BINS, use_simple_index=use_simple_index)
         metadata_store = MetadataStore(db_path=str(db_path))
 
         logger.info("Components initialized successfully")
 
-        # Process images in batches
+        # Train the FAISS index with a sample of images
+        logger.info("Training FAISS index with representative data...")
+        training_sample_size = min(
+            1000, total_images
+        )  # Use up to 1000 images for training
+        training_files = image_files[:training_sample_size]
+
+        # Process training images to get histograms
+        training_histograms = []
+        for i, image_path in enumerate(training_files):
+            try:
+                logger.info(
+                    f"Processing training image {i+1}/{len(training_files)}: {image_path.name}"
+                )
+                histogram = process_image(str(image_path))
+                validate_processed_image(histogram, str(image_path))
+                training_histograms.append(histogram)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to process training image {image_path.name}: {str(e)}"
+                )
+                continue
+
+        if not training_histograms:
+            raise RuntimeError("No valid training histograms could be generated")
+
+        # Convert to numpy array and train the index
+        training_data = np.array(training_histograms)
+        ann_index.train(training_data)
+
+        logger.info(
+            f"FAISS index training completed with {len(training_histograms)} histograms"
+        )
+
+        # Process remaining images in batches (skip training images)
         start_time = time.time()
         total_successful = 0
         total_errors = 0
 
-        for batch_start in range(0, total_images, args.batch_size):
-            batch_end = min(batch_start + args.batch_size, total_images)
-            batch_files = image_files[batch_start:batch_end]
+        # Add training images to the index and metadata store
+        if training_histograms:
+            try:
+                # Add training histograms to FAISS index
+                ann_index.add(training_data)
+
+                # Add training metadata to DuckDB
+                training_metadata = []
+                for i, image_path in enumerate(
+                    training_files[: len(training_histograms)]
+                ):
+                    training_metadata.append(
+                        {
+                            "image_id": image_path.stem,
+                            "file_path": str(image_path),
+                            "histogram": training_histograms[i],
+                            "file_size": image_path.stat().st_size,
+                        }
+                    )
+
+                metadata_store.add_batch(training_metadata)
+                total_successful += len(training_histograms)
+
+                logger.info(
+                    f"Successfully indexed {len(training_histograms)} training images"
+                )
+            except Exception as e:
+                logger.error(f"Failed to index training images: {str(e)}")
+                total_errors += len(training_histograms)
+
+        # Process remaining images in batches
+        remaining_images = image_files[training_sample_size:]
+        remaining_count = len(remaining_images)
+
+        logger.info(f"Processing {remaining_count} remaining images in batches...")
+
+        for batch_start in range(0, remaining_count, args.batch_size):
+            batch_end = min(batch_start + args.batch_size, remaining_count)
+            batch_files = remaining_images[batch_start:batch_end]
 
             logger.info(
                 f"Processing batch {batch_start//args.batch_size + 1}: "
-                f"images {batch_start + 1}-{batch_end} of {total_images}"
+                f"images {batch_start + 1}-{batch_end} of {remaining_count} remaining"
             )
 
             # Process batch

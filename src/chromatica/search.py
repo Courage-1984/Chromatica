@@ -23,8 +23,11 @@ and serves as the foundation for the color search engine's query processing.
 import logging
 import time
 import numpy as np
+import hashlib
 from typing import List, Dict, Tuple, Optional, Union
 from dataclasses import dataclass
+from functools import lru_cache
+import threading
 
 from .indexing.store import AnnIndex, MetadataStore
 from .core.rerank import rerank_candidates, RerankResult
@@ -45,12 +48,199 @@ class SearchResult:
     ann_score: float  # Original ANN distance score
 
 
+# Global query cache for avoiding repeated computations
+_query_cache: Dict[str, List[SearchResult]] = {}
+_cache_lock = threading.Lock()
+_cache_max_size = 1000  # Maximum number of cached queries
+
+# Performance monitoring
+_performance_stats = {
+    "total_searches": 0,
+    "cache_hits": 0,
+    "cache_misses": 0,
+    "avg_ann_time": 0.0,
+    "avg_metadata_time": 0.0,
+    "avg_rerank_time": 0.0,
+    "avg_total_time": 0.0,
+}
+_performance_lock = threading.Lock()
+
+
+def _generate_query_hash(
+    query_histogram: np.ndarray,
+    k: int,
+    max_rerank: int,
+    use_approximate_reranking: bool,
+) -> str:
+    """
+    Generate a hash for a query to use as cache key.
+
+    Args:
+        query_histogram: Query histogram
+        k: Number of candidates to retrieve
+        max_rerank: Maximum number of candidates to rerank
+        use_approximate_reranking: Whether to use approximate reranking
+
+    Returns:
+        Hash string for the query
+    """
+    # Create a hash from the query parameters
+    query_data = {
+        "histogram": query_histogram.tobytes(),
+        "k": k,
+        "max_rerank": max_rerank,
+        "use_approximate_reranking": use_approximate_reranking,
+    }
+
+    # Convert to string and hash
+    query_str = str(query_data)
+    return hashlib.md5(query_str.encode()).hexdigest()
+
+
+def _get_cached_results(query_hash: str) -> Optional[List[SearchResult]]:
+    """
+    Get cached results for a query hash.
+
+    Args:
+        query_hash: Hash of the query
+
+    Returns:
+        Cached results or None if not found
+    """
+    with _cache_lock:
+        return _query_cache.get(query_hash)
+
+
+def _cache_results(query_hash: str, results: List[SearchResult]) -> None:
+    """
+    Cache results for a query hash.
+
+    Args:
+        query_hash: Hash of the query
+        results: Search results to cache
+    """
+    with _cache_lock:
+        # Simple LRU eviction: remove oldest entries if cache is full
+        if len(_query_cache) >= _cache_max_size:
+            # Remove the first (oldest) entry
+            oldest_key = next(iter(_query_cache))
+            del _query_cache[oldest_key]
+            logger.debug(f"Evicted query {oldest_key} from cache")
+
+        _query_cache[query_hash] = results.copy()
+        logger.debug(
+            f"Cached query {query_hash} with {len(results)} results (cache size: {len(_query_cache)})"
+        )
+
+
+def _clear_query_cache() -> None:
+    """Clear the query cache."""
+    with _cache_lock:
+        _query_cache.clear()
+        logger.info("Query cache cleared")
+
+
+def _update_performance_stats(
+    ann_time: float,
+    metadata_time: float,
+    rerank_time: float,
+    total_time: float,
+    cache_hit: bool,
+) -> None:
+    """
+    Update performance statistics.
+
+    Args:
+        ann_time: ANN search time in seconds
+        metadata_time: Metadata retrieval time in seconds
+        rerank_time: Reranking time in seconds
+        total_time: Total search time in seconds
+        cache_hit: Whether this was a cache hit
+    """
+    with _performance_lock:
+        _performance_stats["total_searches"] += 1
+
+        if cache_hit:
+            _performance_stats["cache_hits"] += 1
+        else:
+            _performance_stats["cache_misses"] += 1
+
+        # Update running averages
+        n = _performance_stats["total_searches"]
+        _performance_stats["avg_ann_time"] = (
+            _performance_stats["avg_ann_time"] * (n - 1) + ann_time
+        ) / n
+        _performance_stats["avg_metadata_time"] = (
+            _performance_stats["avg_metadata_time"] * (n - 1) + metadata_time
+        ) / n
+        _performance_stats["avg_rerank_time"] = (
+            _performance_stats["avg_rerank_time"] * (n - 1) + rerank_time
+        ) / n
+        _performance_stats["avg_total_time"] = (
+            _performance_stats["avg_total_time"] * (n - 1) + total_time
+        ) / n
+
+
+def get_performance_stats() -> Dict[str, Union[int, float]]:
+    """
+    Get current performance statistics.
+
+    Returns:
+        Dictionary containing performance metrics
+    """
+    with _performance_lock:
+        stats = _performance_stats.copy()
+
+        # Calculate cache hit rate
+        if stats["total_searches"] > 0:
+            stats["cache_hit_rate"] = stats["cache_hits"] / stats["total_searches"]
+        else:
+            stats["cache_hit_rate"] = 0.0
+
+        return stats
+
+
+def _get_adaptive_parameters(
+    dataset_size: int, query_complexity: float
+) -> Dict[str, Union[bool, int, float]]:
+    """
+    Get adaptive search parameters based on dataset size and query complexity.
+
+    Args:
+        dataset_size: Number of images in the dataset
+        query_complexity: Measure of query complexity (0.0 to 1.0)
+
+    Returns:
+        Dictionary with adaptive parameters
+    """
+    from ..utils.config import get_adaptive_search_params
+
+    # Get base parameters from dataset size
+    base_params = get_adaptive_search_params(dataset_size)
+
+    # Adjust based on query complexity
+    if query_complexity > 0.8:
+        # Complex queries: use more conservative parameters
+        base_params["rerank_k"] = min(base_params["rerank_k"] * 2, dataset_size)
+        base_params["use_parallel"] = True
+        base_params["streaming_mode"] = False
+    elif query_complexity < 0.3:
+        # Simple queries: use faster parameters
+        base_params["rerank_k"] = max(base_params["rerank_k"] // 2, 10)
+        base_params["use_parallel"] = False
+        base_params["streaming_mode"] = True
+
+    return base_params
+
+
 def find_similar(
     query_histogram: np.ndarray,
     index: AnnIndex,
     store: MetadataStore,
     k: Optional[int] = None,
     max_rerank: Optional[int] = None,
+    use_approximate_reranking: bool = False,
+    rerank_batch_size: int = 10,
 ) -> List[SearchResult]:
     """
     Perform a complete two-stage search for similar images.
@@ -168,6 +358,24 @@ def find_similar(
     logger.debug(f"Query histogram shape: {query_histogram.shape}")
     logger.debug(f"Query histogram sum: {query_histogram.sum():.6f}")
 
+    # Check cache first
+    query_hash = _generate_query_hash(
+        query_histogram, k, max_rerank, use_approximate_reranking
+    )
+    cached_results = _get_cached_results(query_hash)
+
+    if cached_results is not None:
+        logger.info(
+            f"Cache hit for query {query_hash[:8]}... returning {len(cached_results)} cached results"
+        )
+        # Update performance stats for cache hit
+        _update_performance_stats(
+            0.0, 0.0, 0.0, 0.001, True
+        )  # Very fast for cache hits
+        return cached_results
+
+    logger.debug(f"Cache miss for query {query_hash[:8]}..., proceeding with search")
+
     # Stage 1: ANN Search
     ann_start_time = time.time()
     try:
@@ -188,21 +396,17 @@ def find_similar(
         logger.error(f"ANN search failed after {ann_time:.3f}s: {e}")
         raise RuntimeError(f"ANN search stage failed: {e}")
 
-    # Stage 2: Metadata Retrieval
+    # Stage 2: Metadata Retrieval (Optimized)
     metadata_start_time = time.time()
     try:
-        logger.info("Stage 2: Retrieving metadata and raw histograms")
+        logger.info("Stage 2: Retrieving metadata and raw histograms (optimized)")
 
-        # Get all histograms to map FAISS indices to image IDs
-        all_histograms = store.get_all_histograms()
+        # Get image IDs in insertion order (matching FAISS indices)
+        image_ids = store.get_image_ids_in_order()
 
-        if not all_histograms:
-            logger.error("No histograms found in metadata store")
+        if not image_ids:
+            logger.error("No image IDs found in metadata store")
             raise RuntimeError("Metadata store is empty")
-
-        # Map FAISS indices to image IDs and histograms
-        # Note: FAISS indices correspond to insertion order in the metadata store
-        image_ids = list(all_histograms.keys())
 
         if len(image_ids) != index.get_total_vectors():
             logger.warning(
@@ -210,31 +414,51 @@ def find_similar(
                 f"metadata count ({len(image_ids)})"
             )
 
-        # Extract candidate information
-        candidate_histograms = []
-        candidate_ids = []
+        # Extract candidate image IDs from FAISS results
+        candidate_image_ids = []
         ann_scores = []
 
         for i, (distance, index_idx) in enumerate(zip(distances[0], indices[0])):
             if index_idx < len(image_ids):
                 image_id = image_ids[index_idx]
-                histogram = all_histograms[image_id]
-
-                candidate_histograms.append(histogram)
-                candidate_ids.append(image_id)
+                candidate_image_ids.append(image_id)
                 ann_scores.append(float(distance))
             else:
                 logger.warning(
                     f"FAISS index {index_idx} out of range for metadata store"
                 )
 
-        if not candidate_histograms:
+        if not candidate_image_ids:
             logger.error("No valid candidates found after metadata mapping")
             raise RuntimeError("Failed to map FAISS results to metadata")
 
+        # Load only the histograms we need (selective loading)
+        logger.info(f"Loading histograms for {len(candidate_image_ids)} candidates")
+        hist_start = time.time()
+        candidate_histograms_dict = store.get_histograms_by_ids(candidate_image_ids)
+        hist_time = time.time() - hist_start
+        logger.info(f"Histogram loading took {hist_time:.3f}s")
+
+        # Convert to ordered list matching the FAISS results
+        candidate_histograms = []
+        candidate_ids = []
+
+        for image_id in candidate_image_ids:
+            if image_id in candidate_histograms_dict:
+                candidate_histograms.append(candidate_histograms_dict[image_id])
+                candidate_ids.append(image_id)
+            else:
+                logger.warning(f"Histogram not found for image {image_id}")
+
+        if not candidate_histograms:
+            logger.error("No valid histograms retrieved for candidates")
+            raise RuntimeError("Failed to retrieve candidate histograms")
+
         metadata_time = time.time() - metadata_start_time
         logger.info(f"Metadata retrieval completed in {metadata_time:.3f}s")
-        logger.info(f"Mapped {len(candidate_histograms)} candidates to metadata")
+        logger.info(
+            f"Loaded {len(candidate_histograms)} histograms for {len(candidate_image_ids)} candidates"
+        )
 
     except Exception as e:
         metadata_time = time.time() - metadata_start_time
@@ -253,13 +477,27 @@ def find_similar(
             ann_scores = ann_scores[:max_rerank]
             logger.info(f"Limited reranking to top {max_rerank} candidates")
 
-        # Perform Sinkhorn-EMD reranking
+        # Perform Sinkhorn-EMD reranking with optimization options
+        rerank_start = time.time()
         rerank_results = rerank_candidates(
-            query_histogram, candidate_histograms, candidate_ids
+            query_histogram,
+            candidate_histograms,
+            candidate_ids,
+            use_approximate=use_approximate_reranking,
+            batch_size=rerank_batch_size,
+            use_parallel=False,  # Disable parallel processing to avoid memory issues
+            streaming_mode=True,  # Enable streaming mode for memory efficiency
+            early_termination_count=min(
+                10, len(candidate_histograms)  # More aggressive early termination
+            ),  # Limit processing
+            early_termination_threshold=0.05,  # Higher threshold for faster termination
         )
 
         rerank_time = time.time() - rerank_start_time
-        logger.info(f"Reranking completed in {rerank_time:.3f}s")
+        rerank_actual_time = time.time() - rerank_start
+        logger.info(
+            f"Reranking completed in {rerank_time:.3f}s (actual rerank: {rerank_actual_time:.3f}s)"
+        )
         logger.info(f"Successfully reranked {len(rerank_results)} candidates")
 
     except Exception as e:
@@ -288,8 +526,8 @@ def find_similar(
             # Get file path from metadata store
             try:
                 metadata = store.get_image_info(rerank_result.candidate_id)
-                if metadata and metadata.get('file_path'):
-                    file_path = metadata['file_path']
+                if metadata and metadata.get("file_path"):
+                    file_path = metadata["file_path"]
                 else:
                     logger.warning(
                         f"No file path found for {rerank_result.candidate_id}"
@@ -330,6 +568,15 @@ def find_similar(
             min_dist = search_results[0].distance
             max_dist = search_results[-1].distance
             logger.info(f"  - Final distance range: [{min_dist:.6f}, {max_dist:.6f}]")
+
+        # Cache the results
+        _cache_results(query_hash, search_results)
+        logger.debug(f"Cached search results for query {query_hash[:8]}...")
+
+        # Update performance statistics
+        _update_performance_stats(
+            ann_time, metadata_time, rerank_time, total_time, False
+        )
 
         return search_results
 

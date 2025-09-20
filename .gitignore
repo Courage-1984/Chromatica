@@ -23,3 +23,5 @@ test_index/
 datasets/*.json
 datasets/**/*.json
 
+/85k/
+
