@@ -7,6 +7,7 @@ Quick reference for all essential commands and usage examples for the Chromatica
 - [Environment Setup](#environment-setup)
 - [Index Building](#index-building)
 - [API Server](#api-server)
+- [Parallel Processing](#parallel-processing)
 - [Testing & Validation](#testing--validation)
 - [Development Tools](#development-tools)
 - [Data Management](#data-management)
@@ -146,6 +147,172 @@ python scripts/build_index.py --help
 # Check index files exist
 ls -la index/
 # Should show: chromatica_index.faiss, chromatica_metadata.db
+```
+
+---
+
+## ⚡ Parallel Processing
+
+### Parallel Search API
+
+```bash
+# Test parallel search endpoint
+curl -X POST "http://localhost:8000/search/parallel" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queries": [
+      {"colors": "FF0000", "weights": "1.0", "k": 10},
+      {"colors": "00FF00", "weights": "1.0", "k": 10},
+      {"colors": "0000FF", "weights": "1.0", "k": 10}
+    ],
+    "max_concurrent": 5
+  }'
+
+# Get performance statistics
+curl "http://localhost:8000/performance/stats"
+```
+
+### Parallel Testing Tools
+
+```bash
+# Test parallel API capabilities
+python tools/test_parallel_api.py
+
+# Test specific parallel features
+python tools/test_parallel_api.py --parallel-search
+python tools/test_parallel_api.py --load-test
+python tools/test_parallel_api.py --performance
+
+# Run parallel search demonstration
+python tools/demo_parallel_search.py
+
+# Compare all methods (sequential, parallel, async, parallel API)
+python tools/demo_parallel_search.py --compare
+
+# Load testing with many queries
+python tools/demo_parallel_search.py --load-test
+
+# Custom parameters
+python tools/demo_parallel_search.py --queries 20 --concurrent 8
+```
+
+### Enhanced API Testing
+
+```bash
+# Test all API features including parallel processing
+python tools/test_api.py
+
+# Test parallel request handling
+python tools/test_api.py --parallel
+
+# Test performance monitoring
+python tools/test_api.py --performance
+
+# Test specific endpoints
+python tools/test_api.py --health
+python tools/test_api.py --search
+```
+
+### Performance Monitoring
+
+```bash
+# Monitor performance in real-time
+python -c "
+import requests
+import time
+while True:
+    try:
+        response = requests.get('http://localhost:8000/performance/stats')
+        stats = response.json()
+        print(f'Total: {stats[\"total_searches\"]}, Concurrent: {stats[\"concurrent_searches\"]}, Avg: {stats[\"average_search_time\"]:.3f}s')
+        time.sleep(5)
+    except KeyboardInterrupt:
+        break
+"
+
+# Check system health
+curl "http://localhost:8000/health"
+```
+
+### Concurrent Request Examples
+
+```bash
+# Multiple concurrent individual requests
+for i in {1..5}; do
+  curl "http://localhost:8000/search?colors=FF0000&weights=1.0&k=5" &
+done
+wait
+
+# Load testing with many requests
+for i in {1..20}; do
+  curl "http://localhost:8000/search?colors=00FF00&weights=1.0&k=10" &
+done
+wait
+```
+
+### Python Parallel Examples
+
+```python
+# Concurrent requests using ThreadPoolExecutor
+import requests
+from concurrent.futures import ThreadPoolExecutor
+
+def search_request(query):
+    return requests.get("http://localhost:8000/search", params=query)
+
+queries = [
+    {"colors": "FF0000", "weights": "1.0", "k": 10},
+    {"colors": "00FF00", "weights": "1.0", "k": 10},
+    {"colors": "0000FF", "weights": "1.0", "k": 10}
+]
+
+with ThreadPoolExecutor(max_workers=3) as executor:
+    results = list(executor.map(search_request, queries))
+```
+
+```python
+# Async requests using aiohttp
+import asyncio
+import aiohttp
+
+async def async_search(session, query):
+    async with session.get("http://localhost:8000/search", params=query) as response:
+        return await response.json()
+
+async def main():
+    queries = [
+        {"colors": "FF0000", "weights": "1.0", "k": 10},
+        {"colors": "00FF00", "weights": "1.0", "k": 10}
+    ]
+    
+    async with aiohttp.ClientSession() as session:
+        tasks = [async_search(session, query) for query in queries]
+        results = await asyncio.gather(*tasks)
+        return results
+
+# Run async searches
+results = asyncio.run(main())
+```
+
+### Performance Tuning
+
+```bash
+# Monitor system resources during parallel processing
+# Windows:
+tasklist /fi "imagename eq python.exe"
+
+# Unix/macOS:
+ps aux | grep python
+
+# Check memory usage
+# Windows:
+wmic process where name="python.exe" get processid,workingsetsize
+
+# Unix/macOS:
+ps -o pid,vsz,rss,comm -p $(pgrep python)
+```
+
+---
 
 # Remove old index files
 rm -rf index/

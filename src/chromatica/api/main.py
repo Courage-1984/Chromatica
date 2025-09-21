@@ -24,16 +24,21 @@ import logging
 import os
 import time
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 import base64
 import io
 from datetime import datetime
 from contextlib import asynccontextmanager
+import asyncio
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+from functools import lru_cache
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, Response, HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import numpy as np
 
@@ -98,17 +103,104 @@ logger = api_logger  # Keep backward compatibility
 index: Optional[AnnIndex] = None
 store: Optional[MetadataStore] = None
 
+# Thread pool for CPU-intensive operations
+thread_pool: Optional[ThreadPoolExecutor] = None
+
+# Performance monitoring
+performance_stats = {
+    "total_searches": 0,
+    "concurrent_searches": 0,
+    "max_concurrent_searches": 0,
+    "average_search_time": 0.0,
+    "search_times": [],
+}
+
+# Thread lock for stats updates
+stats_lock = threading.Lock()
+
+
+def update_performance_stats(search_time: float) -> None:
+    """Update performance statistics in a thread-safe manner."""
+    global performance_stats
+    with stats_lock:
+        performance_stats["total_searches"] += 1
+        performance_stats["search_times"].append(search_time)
+
+        # Keep only last 1000 search times for rolling average
+        if len(performance_stats["search_times"]) > 1000:
+            performance_stats["search_times"] = performance_stats["search_times"][
+                -1000:
+            ]
+
+        # Update average search time
+        performance_stats["average_search_time"] = sum(
+            performance_stats["search_times"]
+        ) / len(performance_stats["search_times"])
+
+
+def increment_concurrent_searches() -> None:
+    """Increment concurrent search counter."""
+    global performance_stats
+    with stats_lock:
+        performance_stats["concurrent_searches"] += 1
+        performance_stats["max_concurrent_searches"] = max(
+            performance_stats["max_concurrent_searches"],
+            performance_stats["concurrent_searches"],
+        )
+
+
+def decrement_concurrent_searches() -> None:
+    """Decrement concurrent search counter."""
+    global performance_stats
+    with stats_lock:
+        performance_stats["concurrent_searches"] = max(
+            0, performance_stats["concurrent_searches"] - 1
+        )
+
+
+async def perform_search_async(
+    query_histogram: np.ndarray, k: int, fast_mode: bool, batch_size: int
+) -> List[Any]:
+    """Perform search operation asynchronously using thread pool."""
+    global index, store, thread_pool
+
+    if thread_pool is None:
+        raise RuntimeError("Thread pool not initialized")
+
+    # Run the CPU-intensive search in thread pool
+    loop = asyncio.get_event_loop()
+    search_results = await loop.run_in_executor(
+        thread_pool,
+        find_similar,
+        query_histogram,
+        index,
+        store,
+        k,
+        k,  # max_rerank
+        fast_mode,
+        batch_size,
+    )
+
+    return search_results
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifespan with proper startup and shutdown."""
-    global index, store
+    global index, store, thread_pool
 
     # Startup
     api_logger.info("Starting Chromatica Color Search Engine API...")
     api_logger.info(f"Global variables before init: index={index}, store={store}")
 
     try:
+        # Initialize thread pool for CPU-intensive operations
+        max_workers = min(32, (os.cpu_count() or 1) + 4)  # Optimal for I/O bound tasks
+        thread_pool = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="chromatica"
+        )
+        api_logger.info(f"Initialized thread pool with {max_workers} workers")
+
         # Load the FAISS index
         index_dir = os.getenv("CHROMATICA_INDEX_DIR", "index")
         index_filename = os.getenv("CHROMATICA_INDEX_FILE", "chromatica_index.faiss")
@@ -154,6 +246,9 @@ async def lifespan(app: FastAPI):
             api_logger.info("Metadata store connection closed")
         if index:
             api_logger.info("FAISS index cleanup completed")
+        if thread_pool:
+            thread_pool.shutdown(wait=True)
+            api_logger.info("Thread pool shutdown completed")
     except Exception as e:
         api_logger.error(f"Error during cleanup: {e}")
 
@@ -164,6 +259,15 @@ app = FastAPI(
     description="A two-stage color-based image search engine using CIE Lab color space and Sinkhorn-EMD reranking with visual enhancements",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+# Add CORS middleware for parallel requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Include 3D visualization router
@@ -598,24 +702,28 @@ async def search_images(
                 status_code=500, detail=f"Failed to process query colors: {str(e)}"
             )
 
-        # Perform the search
+        # Perform the search asynchronously
         try:
             mode_str = (
                 "FAST MODE (L2 distance)" if fast_mode else "NORMAL MODE (Sinkhorn-EMD)"
             )
             search_logger.info(f"Starting search with k={k} in {mode_str}")
 
+            # Track concurrent searches
+            increment_concurrent_searches()
+
             search_start = time.time()
-            search_results = find_similar(
+            search_results = await perform_search_async(
                 query_histogram=query_histogram,
-                index=index,
-                store=store,
                 k=k,
-                max_rerank=k,
-                use_approximate_reranking=fast_mode,
-                rerank_batch_size=batch_size,
+                fast_mode=fast_mode,
+                batch_size=batch_size,
             )
             search_time = time.time() - search_start
+
+            # Update performance stats
+            update_performance_stats(search_time)
+            decrement_concurrent_searches()
 
             if not search_results:
                 search_logger.warning("Search returned no results")
@@ -929,6 +1037,216 @@ class CommandResponse(BaseModel):
     success: bool = Field(..., description="Whether the command executed successfully")
     output: str = Field(..., description="Command output or error message")
     error: Optional[str] = Field(None, description="Error message if command failed")
+
+
+class ParallelSearchRequest(BaseModel):
+    """Request model for parallel search operations"""
+
+    queries: List[Dict[str, Any]] = Field(..., description="List of search queries")
+    max_concurrent: int = Field(
+        10, description="Maximum number of concurrent searches", ge=1, le=50
+    )
+
+
+class ParallelSearchResponse(BaseModel):
+    """Response model for parallel search operations"""
+
+    total_queries: int = Field(..., description="Total number of queries processed")
+    successful_queries: int = Field(..., description="Number of successful queries")
+    failed_queries: int = Field(..., description="Number of failed queries")
+    total_time_ms: int = Field(..., description="Total processing time in milliseconds")
+    results: List[Dict[str, Any]] = Field(
+        ..., description="Search results for each query"
+    )
+
+
+class PerformanceStatsResponse(BaseModel):
+    """Response model for performance statistics"""
+
+    total_searches: int = Field(..., description="Total number of searches performed")
+    concurrent_searches: int = Field(
+        ..., description="Current number of concurrent searches"
+    )
+    max_concurrent_searches: int = Field(
+        ..., description="Maximum concurrent searches reached"
+    )
+    average_search_time: float = Field(
+        ..., description="Average search time in seconds"
+    )
+    recent_search_times: List[float] = Field(..., description="Recent search times")
+
+
+@app.post("/search/parallel", response_model=ParallelSearchResponse)
+async def parallel_search(request: ParallelSearchRequest):
+    """
+    Perform multiple search queries in parallel.
+
+    This endpoint allows processing multiple search queries concurrently,
+    significantly improving throughput for batch operations. Each query
+    is processed independently and results are returned together.
+
+    Args:
+        request: ParallelSearchRequest containing list of queries and concurrency limit
+
+    Returns:
+        ParallelSearchResponse with results for all queries
+    """
+    global index, store
+
+    if index is None or store is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Search system is not available. Please try again later.",
+        )
+
+    search_logger.info(f"=== PARALLEL SEARCH REQUEST START ===")
+    search_logger.info(f"Total queries: {len(request.queries)}")
+    search_logger.info(f"Max concurrent: {request.max_concurrent}")
+
+    start_time = time.time()
+    results = []
+    successful_queries = 0
+    failed_queries = 0
+
+    # Process queries in parallel with semaphore to limit concurrency
+    semaphore = asyncio.Semaphore(request.max_concurrent)
+
+    async def process_single_query(
+        query_data: Dict[str, Any], query_id: str
+    ) -> Dict[str, Any]:
+        """Process a single search query."""
+        async with semaphore:
+            try:
+                # Extract query parameters
+                colors = query_data.get("colors", "")
+                weights = query_data.get("weights", "")
+                k = query_data.get("k", 50)
+                fast_mode = query_data.get("fast_mode", False)
+                batch_size = query_data.get("batch_size", 5)
+
+                # Parse and validate parameters
+                color_list = [c.strip() for c in colors.split(",") if c.strip()]
+                weight_list = [
+                    float(w.strip()) for w in weights.split(",") if w.strip()
+                ]
+
+                if len(color_list) != len(weight_list):
+                    raise ValueError("Number of colors must match number of weights")
+
+                # Normalize weights
+                weight_sum = sum(weight_list)
+                weight_list = [w / weight_sum for w in weight_list]
+
+                # Create query histogram
+                query_histogram = create_query_histogram(color_list, weight_list)
+
+                # Perform search
+                search_results = await perform_search_async(
+                    query_histogram=query_histogram,
+                    k=k,
+                    fast_mode=fast_mode,
+                    batch_size=batch_size,
+                )
+
+                # Format results
+                formatted_results = []
+                for result in search_results:
+                    formatted_results.append(
+                        {
+                            "image_id": result.image_id,
+                            "distance": float(result.distance),
+                            "file_path": result.file_path,
+                        }
+                    )
+
+                return {
+                    "query_id": query_id,
+                    "success": True,
+                    "results": formatted_results,
+                    "results_count": len(formatted_results),
+                }
+
+            except Exception as e:
+                search_logger.error(f"Query {query_id} failed: {e}")
+                return {
+                    "query_id": query_id,
+                    "success": False,
+                    "error": str(e),
+                    "results": [],
+                    "results_count": 0,
+                }
+
+    # Create tasks for all queries
+    tasks = []
+    for i, query_data in enumerate(request.queries):
+        query_id = f"parallel_query_{i}_{uuid.uuid4().hex[:8]}"
+        task = process_single_query(query_data, query_id)
+        tasks.append(task)
+
+    # Execute all queries concurrently
+    try:
+        query_results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        # Process results
+        for result in query_results:
+            if isinstance(result, Exception):
+                failed_queries += 1
+                results.append(
+                    {
+                        "query_id": f"failed_{uuid.uuid4().hex[:8]}",
+                        "success": False,
+                        "error": str(result),
+                        "results": [],
+                        "results_count": 0,
+                    }
+                )
+            else:
+                if result["success"]:
+                    successful_queries += 1
+                else:
+                    failed_queries += 1
+                results.append(result)
+
+    except Exception as e:
+        search_logger.error(f"Parallel search failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Parallel search failed: {str(e)}")
+
+    total_time = time.time() - start_time
+    total_time_ms = int(total_time * 1000)
+
+    search_logger.info(f"=== PARALLEL SEARCH REQUEST COMPLETE ===")
+    search_logger.info(f"Total time: {total_time:.3f}s")
+    search_logger.info(f"Successful: {successful_queries}, Failed: {failed_queries}")
+
+    return ParallelSearchResponse(
+        total_queries=len(request.queries),
+        successful_queries=successful_queries,
+        failed_queries=failed_queries,
+        total_time_ms=total_time_ms,
+        results=results,
+    )
+
+
+@app.get("/performance/stats", response_model=PerformanceStatsResponse)
+async def get_performance_stats():
+    """
+    Get current performance statistics.
+
+    Returns real-time performance metrics including search counts,
+    timing information, and concurrency statistics.
+    """
+    global performance_stats
+
+    with stats_lock:
+        return PerformanceStatsResponse(
+            total_searches=performance_stats["total_searches"],
+            concurrent_searches=performance_stats["concurrent_searches"],
+            max_concurrent_searches=performance_stats["max_concurrent_searches"],
+            average_search_time=performance_stats["average_search_time"],
+            recent_search_times=performance_stats["search_times"][
+                -100:
+            ],  # Last 100 searches
+        )
 
 
 @app.post("/restart")

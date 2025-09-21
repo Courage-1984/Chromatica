@@ -57,13 +57,12 @@ $env:CHROMATICA_INDEX_DIR = "C:\Users\anon\github\Chromatica\85k"
 python scripts/build_index.py "C:\Users\anon\ai\train\_1_2_combined_both\hq" --output-dir "C:\Users\anon\github\Chromatica\85k" --batch-size 100 --verbose
 
 
-
+http://127.0.0.1:8000/
 
 
 python -m src.chromatica.api.main
 
 
 uvicorn src.chromatica.api.main:app --host 0.0.0.0 --port 8000
-
 
 

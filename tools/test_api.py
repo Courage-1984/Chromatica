@@ -23,10 +23,14 @@ import requests
 import json
 import time
 import argparse
+import asyncio
+import aiohttp
+import os
 from typing import Dict, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # API base URL
-BASE_URL = "http://localhost:8000"
+BASE_URL = os.getenv("CHROMATICA_API_URL", "http://localhost:8000")
 
 
 def test_health_endpoint() -> bool:
@@ -234,6 +238,76 @@ def test_invalid_queries() -> bool:
     return success_count == len(invalid_queries)
 
 
+def test_parallel_requests() -> bool:
+    """Test multiple concurrent search requests."""
+    print("🔍 Testing parallel search requests...")
+    
+    # Test queries
+    test_queries = [
+        {"colors": "FF0000", "weights": "1.0", "k": 5},
+        {"colors": "00FF00", "weights": "1.0", "k": 5},
+        {"colors": "0000FF", "weights": "1.0", "k": 5},
+        {"colors": "FFFF00", "weights": "1.0", "k": 5},
+        {"colors": "FF00FF", "weights": "1.0", "k": 5}
+    ]
+    
+    def make_request(query_params):
+        """Make a single search request."""
+        try:
+            start_time = time.time()
+            response = requests.get(f"{BASE_URL}/search", params=query_params)
+            request_time = time.time() - start_time
+            return {
+                "success": response.status_code == 200,
+                "time": request_time,
+                "status": response.status_code
+            }
+        except Exception as e:
+            return {"success": False, "time": 0, "error": str(e)}
+    
+    try:
+        start_time = time.time()
+        
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            futures = [executor.submit(make_request, query) for query in test_queries]
+            results = [future.result() for future in as_completed(futures)]
+        
+        total_time = time.time() - start_time
+        successful = sum(1 for r in results if r["success"])
+        
+        print(f"   Total time: {total_time:.3f}s")
+        print(f"   Successful: {successful}/{len(test_queries)}")
+        print(f"   Average time per request: {total_time/len(test_queries):.3f}s")
+        
+        return successful == len(test_queries)
+        
+    except Exception as e:
+        print(f"   ❌ Test failed: {e}")
+        return False
+
+
+def test_performance_stats() -> bool:
+    """Test performance statistics endpoint."""
+    print("🔍 Testing performance statistics...")
+    
+    try:
+        response = requests.get(f"{BASE_URL}/performance/stats")
+        print(f"   Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            print(f"   Total searches: {data['total_searches']}")
+            print(f"   Concurrent searches: {data['concurrent_searches']}")
+            print(f"   Average search time: {data['average_search_time']:.3f}s")
+            return True
+        else:
+            print(f"   ❌ Request failed: {response.text}")
+            return False
+    except Exception as e:
+        print(f"   ❌ Test failed: {e}")
+        return False
+
+
 def main():
     """Main test function."""
     parser = argparse.ArgumentParser(description="Test Chromatica API endpoints")
@@ -245,6 +319,12 @@ def main():
     )
     parser.add_argument(
         "--invalid", action="store_true", help="Test only invalid query handling"
+    )
+    parser.add_argument(
+        "--parallel", action="store_true", help="Test parallel request handling"
+    )
+    parser.add_argument(
+        "--performance", action="store_true", help="Test performance statistics"
     )
 
     args = parser.parse_args()
@@ -277,6 +357,10 @@ def main():
         test_search_endpoint()
     elif args.invalid:
         test_invalid_queries()
+    elif args.parallel:
+        test_parallel_requests()
+    elif args.performance:
+        test_performance_stats()
     else:
         # Run all tests
         print("Running all tests...\n")
@@ -293,6 +377,12 @@ def main():
         invalid_ok = test_invalid_queries()
         print()
 
+        parallel_ok = test_parallel_requests()
+        print()
+
+        performance_ok = test_performance_stats()
+        print()
+
         # Summary
         print("=" * 50)
         print("Test Summary:")
@@ -300,8 +390,10 @@ def main():
         print(f"  Root endpoint: {'✅ PASS' if root_ok else '❌ FAIL'}")
         print(f"  Search endpoint: {'✅ PASS' if search_ok else '❌ FAIL'}")
         print(f"  Invalid query handling: {'✅ PASS' if invalid_ok else '❌ FAIL'}")
+        print(f"  Parallel requests: {'✅ PASS' if parallel_ok else '❌ FAIL'}")
+        print(f"  Performance stats: {'✅ PASS' if performance_ok else '❌ FAIL'}")
 
-        all_passed = health_ok and root_ok and search_ok and invalid_ok
+        all_passed = health_ok and root_ok and search_ok and invalid_ok and parallel_ok and performance_ok
         print(
             f"\nOverall result: {'✅ ALL TESTS PASSED' if all_passed else '❌ SOME TESTS FAILED'}"
         )

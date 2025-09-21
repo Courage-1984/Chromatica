@@ -11,6 +11,8 @@ Chromatica is a production-ready color search engine that retrieves images whose
 - **CIE Lab Color Space**: Perceptually uniform color representation avoiding RGB non-uniformity and HSV hue wraparound issues
 - **Advanced Histogram Generation**: 8×12×12 binning grid (1,152 dimensions) with tri-linear soft assignment for robustness
 - **Two-Stage Search Pipeline**: Fast FAISS HNSW index for candidate retrieval + Sinkhorn-EMD reranking for accuracy
+- **Parallel Processing**: High-throughput concurrent search operations with async/await support
+- **Performance Monitoring**: Real-time statistics and performance tracking
 - **Production Ready**: Comprehensive testing, validation, and performance optimization
 - **Comprehensive Tooling**: Testing tools, visualization, and analysis capabilities
 
@@ -34,10 +36,13 @@ Chromatica is a production-ready color search engine that retrieves images whose
 - **FAISS HNSW Index**: Vector similarity search implementation
 - **DuckDB Metadata Store**: Efficient storage and retrieval system
 - **Two-Stage Search Pipeline**: Complete ANN search + Sinkhorn-EMD reranking
-- **FastAPI Web API**: REST endpoints for search functionality
+- **FastAPI Web API**: REST endpoints for search functionality with parallel processing support
+- **Parallel Search API**: Batch processing endpoint for multiple concurrent queries
+- **Performance Monitoring**: Real-time statistics and performance tracking
 - **Advanced Visualization Tools**: 6 comprehensive tools with expandable panels
 - **Output Cleanup Tool**: Comprehensive utility for managing generated files and maintaining clean development environment
 - **Web Interface**: Catppuccin Mocha theme with custom typography
+- **Parallel Testing Tools**: Comprehensive testing suite for concurrent operations
 - **Documentation**: Detailed guides and progress tracking
 - **Cursor Rules System**: Modern `.cursor/rules` structure with comprehensive project guidance
 
@@ -104,6 +109,62 @@ python tools/test_histogram_generation.py --directory datasets/test-dataset-50/ 
 - **test-dataset-50**: 50 images for validation and testing
 - **test-dataset-200**: 200 images for performance testing
 - **test-dataset-5000**: 5,000 images for production-scale validation
+
+## ⚡ Parallel Processing
+
+Chromatica supports high-throughput parallel processing for concurrent search operations:
+
+### Parallel Search API
+
+Process multiple search queries concurrently using the dedicated parallel endpoint:
+
+```bash
+# Parallel search with multiple queries
+curl -X POST "http://localhost:8000/search/parallel" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "queries": [
+      {"colors": "FF0000", "weights": "1.0", "k": 10},
+      {"colors": "00FF00", "weights": "1.0", "k": 10},
+      {"colors": "0000FF", "weights": "1.0", "k": 10}
+    ],
+    "max_concurrent": 5
+  }'
+```
+
+### Performance Monitoring
+
+Real-time performance statistics and monitoring:
+
+```bash
+# Get performance statistics
+curl "http://localhost:8000/performance/stats"
+```
+
+### Testing Tools
+
+Comprehensive parallel processing testing:
+
+```bash
+# Test parallel capabilities
+python tools/test_parallel_api.py
+
+# Run parallel search demo
+python tools/demo_parallel_search.py --compare
+
+# Load testing
+python tools/demo_parallel_search.py --load-test
+```
+
+### Key Features
+
+- **Async/Await Support**: Non-blocking I/O operations
+- **Thread Pool Management**: Configurable worker threads
+- **Concurrent Request Handling**: Multiple simultaneous searches
+- **Performance Tracking**: Real-time statistics and monitoring
+- **Resource Management**: Automatic cleanup and optimization
+
+For detailed information, see the [Parallel Processing Guide](docs/parallel_processing_guide.md).
 
 ## 🎨 Advanced Visualization Tools
 
