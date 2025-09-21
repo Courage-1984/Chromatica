@@ -1477,6 +1477,58 @@
             padding: 40px;
             font-size: 18px;
         }
+
+        /* Animations */
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Button hover effects */
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 
@@ -1592,26 +1644,68 @@
         <div class="visualization-section" id="visualizationSection" style="display: none;">
             <h2>🎨 Query Visualization</h2>
             <div class="viz-grid">
-                <div class="viz-card">
-                    <h3>Query Visualization</h3>
-                    <div id="query-viz">
-                        <p class="loading">Click "Search Images" to generate visualization</p>
+                <div class="viz-card"
+                    style="background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%); border: 2px solid var(--mauve); box-shadow: 0 8px 32px rgba(203, 166, 247, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <div
+                            style="width: 40px; height: 40px; background: linear-gradient(45deg, var(--mauve), var(--pink)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            🎭
+                        </div>
+                        <h3
+                            style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                            Query Visualization</h3>
+                    </div>
+                    <div id="query-viz"
+                        style="min-height: 300px; background: var(--base); border-radius: 12px; border: 1px solid var(--surface2); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                        <div id="query-viz-content" style="text-align: center;">
+                            <div
+                                style="width: 80px; height: 80px; background: linear-gradient(45deg, var(--mauve), var(--pink)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; animation: pulse 2s infinite;">
+                                <span style="font-size: 32px;">🎨</span>
+                            </div>
+                            <p style="color: var(--subtext1); margin: 0 0 10px 0; font-size: 16px; font-weight: 500;">
+                                Click "Search Images" to generate visualization</p>
+                            <p style="color: var(--subtext0); margin: 0; font-size: 14px;">Interactive color space
+                                exploration and query analysis</p>
+                        </div>
                     </div>
                 </div>
-                <div class="viz-card">
-                    <h3>Results Collage</h3>
-                    <div id="results-viz">
-                        <p class="loading">Click "Search Images" to generate collage</p>
+                <div class="viz-card"
+                    style="background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%); border: 2px solid var(--blue); box-shadow: 0 8px 32px rgba(137, 180, 250, 0.1);">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+                        <div
+                            style="width: 40px; height: 40px; background: linear-gradient(45deg, var(--blue), var(--sky)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                            🖼️
+                        </div>
+                        <h3
+                            style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                            Results Preview</h3>
+                    </div>
+                    <div id="results-viz"
+                        style="min-height: 300px; background: var(--base); border-radius: 12px; border: 1px solid var(--surface2); padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                        <div
+                            style="width: 80px; height: 80px; background: linear-gradient(45deg, var(--blue), var(--sky)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; animation: pulse 2s infinite;">
+                            <span style="font-size: 32px;">🖼️</span>
+                        </div>
+                        <p style="color: var(--subtext1); margin: 0 0 10px 0; font-size: 16px; font-weight: 500;">Click
+                            "Search Images" to generate collage</p>
+                        <p style="color: var(--subtext0); margin: 0; font-size: 14px;">Visual grid of top search results
+                        </p>
                     </div>
                 </div>
             </div>
 
             <!-- Histogram Analysis Section -->
             <div class="histogram-section"
-                style="margin-top: 30px; padding: 20px; background: var(--surface1); border-radius: 12px; border: 1px solid var(--surface2);">
-                <h3
-                    style="color: var(--text); margin: 0 0 15px 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
-                    📊 Histogram Analysis</h3>
+                style="margin-top: 30px; padding: 20px; background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%); border-radius: 12px; border: 2px solid var(--green); box-shadow: 0 8px 32px rgba(166, 227, 161, 0.1);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <div
+                        style="width: 40px; height: 40px; background: linear-gradient(45deg, var(--green), var(--teal)); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+                        📊
+                    </div>
+                    <h3 style="color: var(--text); margin: 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                        Histogram Analysis
+                    </h3>
+                </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
                     <div>
@@ -1634,18 +1728,21 @@
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
                     <button onclick="generateHistogramVisualization()"
-                        style="background: var(--green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                        📈 Generate Histogram Visualization
+                        style="background: linear-gradient(45deg, var(--green), var(--teal)); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(166, 227, 161, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                        <span>📈</span>
+                        <span>Generate Histogram Visualization</span>
                     </button>
                     <button onclick="compareHistograms()"
-                        style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                        🔍 Compare Histograms
+                        style="background: linear-gradient(45deg, var(--blue), var(--sky)); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(137, 180, 250, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                        <span>🔍</span>
+                        <span>Compare Histograms</span>
                     </button>
                     <button onclick="exportHistogramData()"
-                        style="background: var(--yellow); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
-                        💾 Export Data
+                        style="background: linear-gradient(45deg, var(--yellow), var(--peach)); color: var(--base); border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(249, 226, 175, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                        <span>💾</span>
+                        <span>Export Data</span>
                     </button>
                 </div>
             </div>
@@ -1655,6 +1752,47 @@
         <div class="results-section" id="resultsSection" style="display: none;">
             <h2>🔍 Top Search Results</h2>
             <div class="results-grid" id="resultsGrid"></div>
+
+            <!-- Results Collage Section -->
+            <div class="collage-section"
+                style="margin-top: 30px; padding: 20px; background: var(--surface1); border-radius: 12px; border: 1px solid var(--surface2);">
+                <h3
+                    style="color: var(--text); margin: 0 0 15px 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                    🖼️ Results Collage
+                </h3>
+
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="tileCount" style="color: var(--subtext1); font-size: 14px; font-weight: 500;">Tiles
+                            per row:</label>
+                        <select id="tileCount"
+                            style="background: var(--base); color: var(--text); border: 1px solid var(--surface2); border-radius: 6px; padding: 8px 12px; font-size: 14px;">
+                            <option value="3">3x3 (9 tiles)</option>
+                            <option value="4" selected>4x4 (16 tiles)</option>
+                            <option value="5">5x5 (25 tiles)</option>
+                            <option value="6">6x6 (36 tiles)</option>
+                            <option value="8">8x8 (64 tiles)</option>
+                            <option value="10">10x10 (100 tiles)</option>
+                        </select>
+                    </div>
+                    <button onclick="generateResultsCollage()"
+                        style="background: var(--mauve); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        🎨 Generate Collage
+                    </button>
+                    <button onclick="downloadCollage()"
+                        style="background: var(--green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        💾 Download
+                    </button>
+                </div>
+
+                <div id="collageContainer"
+                    style="text-align: center; min-height: 200px; display: flex; align-items: center; justify-content: center; background: var(--base); border-radius: 8px; border: 1px solid var(--surface2);">
+                    <p style="color: var(--subtext0); margin: 0; text-align: center;">
+                        Click "Generate Collage" to create a visual grid of search results<br>
+                        <small>Configure the number of tiles per row above</small>
+                    </p>
+                </div>
+            </div>
         </div>
 
         <!-- Ranking Explanation -->
@@ -3106,19 +3244,41 @@
 
                 const searchData = await searchResponse.json();
 
-                // Generate query visualization
-                queryViz.innerHTML = '<p class="loading">Generating visualization...</p>';
+                // Generate enhanced query visualization
+                queryViz.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
+                        <div style="text-align: center;">
+                            <div style="width: 60px; height: 60px; background: linear-gradient(45deg, var(--mauve), var(--pink)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; animation: pulse 1.5s infinite;">
+                                <span style="font-size: 24px;">🎨</span>
+                            </div>
+                            <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Generating visualization...</p>
+                        </div>
+                    </div>
+                `;
+
                 try {
                     const vizResponse = await fetch(`/visualize/query?colors=${apiColors.join(',')}&weights=${normalizedWeights.join(',')}`);
                     if (vizResponse.ok) {
                         const vizBlob = await vizResponse.blob();
                         const vizUrl = URL.createObjectURL(vizBlob);
-                        queryViz.innerHTML = `<img src="${vizUrl}" alt="Query Visualization" class="viz-image">`;
+                        queryViz.innerHTML = `
+                            <div style="position: relative; width: 100%; height: 100%;">
+                                <img src="${vizUrl}" alt="Query Visualization" style="width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 20px rgba(203, 166, 247, 0.3);">
+                                <div style="position: absolute; top: 10px; right: 10px; background: rgba(30, 30, 46, 0.9); color: var(--text); padding: 8px 12px; border-radius: 6px; font-size: 12px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                                    Query Colors: ${colors.length}
+                                </div>
+                                <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(30, 30, 46, 0.9); color: var(--subtext1); padding: 6px 10px; border-radius: 6px; font-size: 11px;">
+                                    Interactive Color Space
+                                </div>
+                            </div>
+                        `;
                     } else {
-                        queryViz.innerHTML = '<p class="error">Failed to generate query visualization</p>';
+                        // Fallback: Create a custom visualization
+                        queryViz.innerHTML = generateCustomQueryVisualization(colors, weights);
                     }
                 } catch (vizError) {
-                    queryViz.innerHTML = '<p class="error">Query visualization not available</p>';
+                    // Fallback: Create a custom visualization
+                    queryViz.innerHTML = generateCustomQueryVisualization(colors, weights);
                 }
 
                 // Generate results collage
@@ -4899,6 +5059,8 @@ Generated files:
 
         // Histogram Visualization Functions
         function generateHistogramVisualization() {
+            console.log('generateHistogramVisualization called');
+
             if (!window.lastSearchResults || window.lastSearchResults.length === 0) {
                 showError('No Search Results', 'Please perform a search first to generate histogram visualizations.');
                 return;
@@ -4906,6 +5068,14 @@ Generated files:
 
             const queryHistogramDiv = document.getElementById('query-histogram');
             const resultHistogramDiv = document.getElementById('result-histogram');
+
+            console.log('Query histogram div:', queryHistogramDiv);
+            console.log('Result histogram div:', resultHistogramDiv);
+
+            if (!queryHistogramDiv || !resultHistogramDiv) {
+                showError('Element Not Found', 'Histogram display elements not found. Please refresh the page and try again.');
+                return;
+            }
 
             try {
                 // Create canvas for query histogram
@@ -4984,6 +5154,8 @@ Generated files:
         }
 
         function compareHistograms() {
+            console.log('compareHistograms called');
+
             if (!window.lastSearchResults || window.lastSearchResults.length === 0) {
                 showError('No Search Results', 'Please perform a search first to compare histograms.');
                 return;
@@ -7907,6 +8079,350 @@ Generated files:
 
         function exportHistogramData() {
             showSuccess('Export Data', 'Histogram data export functionality will be implemented');
+        }
+
+        // Results Collage Functions
+        function generateResultsCollage() {
+            if (!window.lastSearchResults || window.lastSearchResults.length === 0) {
+                showError('No Search Results', 'Please perform a search first to generate a results collage.');
+                return;
+            }
+
+            console.log('Search results for collage:', window.lastSearchResults);
+            console.log('First result:', window.lastSearchResults[0]);
+
+            const tileCount = parseInt(document.getElementById('tileCount').value);
+            const totalTiles = tileCount * tileCount;
+            const collageContainer = document.getElementById('collageContainer');
+
+            try {
+                // Clear previous collage and show loading
+                collageContainer.innerHTML = `
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: var(--subtext1);">
+                        <div style="width: 60px; height: 60px; background: linear-gradient(45deg, var(--mauve), var(--pink)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; animation: pulse 1.5s infinite;">
+                            <span style="font-size: 24px;">🎨</span>
+                        </div>
+                        <p style="margin: 0; font-size: 16px; font-weight: 500;">Generating collage...</p>
+                        <p style="margin: 5px 0 0 0; font-size: 12px; color: var(--subtext0);">Loading images and creating grid</p>
+                    </div>
+                `;
+
+                // Create collage canvas
+                const canvas = document.createElement('canvas');
+                const tileSize = 100; // Size of each tile
+                canvas.width = tileCount * tileSize;
+                canvas.height = tileCount * tileSize;
+                const ctx = canvas.getContext('2d');
+
+                // Fill background
+                ctx.fillStyle = '#1e1e2e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Create tiles
+                const tilesToShow = Math.min(totalTiles, window.lastSearchResults.length);
+                let tileIndex = 0;
+
+                for (let row = 0; row < tileCount; row++) {
+                    for (let col = 0; col < tileCount; col++) {
+                        if (tileIndex >= tilesToShow) break;
+
+                        const x = col * tileSize;
+                        const y = row * tileSize;
+
+                        if (tileIndex < window.lastSearchResults.length) {
+                            const result = window.lastSearchResults[tileIndex];
+
+                            // Create tile background
+                            ctx.fillStyle = '#313244';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+
+                            // Add border
+                            ctx.strokeStyle = '#45475a';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(x, y, tileSize, tileSize);
+
+                            // Try to load actual image
+                            if (result.file_path || result.image_id) {
+                                console.log(`Loading image for tile ${tileIndex}:`, {
+                                    image_id: result.image_id,
+                                    file_path: result.file_path,
+                                    result: result
+                                });
+
+                                // Create image element
+                                const img = new Image();
+                                img.crossOrigin = 'anonymous';
+
+                                // Extract image ID from file path if needed
+                                let imageId = result.image_id;
+                                if (!imageId && result.file_path) {
+                                    // Extract filename from path and remove extension
+                                    const filename = result.file_path.split(/[/\\]/).pop();
+                                    imageId = filename.replace(/\.[^/.]+$/, '');
+                                }
+
+                                // Try different image path formats - prioritize API endpoints
+                                const possiblePaths = [
+                                    `/image/${imageId}`,  // Use the API endpoint first
+                                    `/image/${imageId?.split('_')[0]}`,  // Try without suffix
+                                    `/image/${imageId?.split('_')[1] || imageId}`,  // Try with suffix only
+                                    result.file_path,
+                                    `/static/${result.file_path}`,
+                                    `/${result.file_path}`,
+                                    result.file_path?.replace(/\\/g, '/')
+                                ].filter(path => path && path !== '/image/undefined'); // Remove invalid paths
+
+                                let pathIndex = 0;
+                                let imageLoaded = false;
+
+                                const tryNextPath = () => {
+                                    if (pathIndex < possiblePaths.length && !imageLoaded) {
+                                        console.log(`Trying image path ${pathIndex + 1}/${possiblePaths.length}:`, possiblePaths[pathIndex]);
+                                        console.log(`Available paths:`, possiblePaths);
+                                        img.src = possiblePaths[pathIndex];
+                                        pathIndex++;
+                                    } else if (!imageLoaded) {
+                                        // All paths failed, use fallback
+                                        console.log(`All image paths failed for tile ${tileIndex}, using fallback`);
+                                        console.log(`Tried paths:`, possiblePaths);
+                                        drawFallbackTile();
+                                    }
+                                };
+
+                                const drawFallbackTile = () => {
+                                    // Create a more informative fallback tile
+                                    if (result.dominant_colors && result.dominant_colors.length > 0) {
+                                        // Draw color swatches for dominant colors
+                                        const colorCount = Math.min(result.dominant_colors.length, 4);
+                                        const swatchSize = (tileSize - 10) / 2;
+
+                                        for (let i = 0; i < colorCount; i++) {
+                                            const colorX = x + 5 + (i % 2) * swatchSize;
+                                            const colorY = y + 5 + Math.floor(i / 2) * swatchSize;
+
+                                            ctx.fillStyle = `#${result.dominant_colors[i]}`;
+                                            ctx.fillRect(colorX, colorY, swatchSize, swatchSize);
+
+                                            // Add border
+                                            ctx.strokeStyle = '#cdd6f4';
+                                            ctx.lineWidth = 1;
+                                            ctx.strokeRect(colorX, colorY, swatchSize, swatchSize);
+                                        }
+                                    } else {
+                                        // Create a pattern background
+                                        ctx.fillStyle = '#6c7086';
+                                        ctx.fillRect(x + 5, y + 5, tileSize - 10, tileSize - 10);
+
+                                        // Add diagonal lines
+                                        ctx.strokeStyle = '#a6adc8';
+                                        ctx.lineWidth = 1;
+                                        ctx.beginPath();
+                                        ctx.moveTo(x + 5, y + 5);
+                                        ctx.lineTo(x + tileSize - 5, y + tileSize - 5);
+                                        ctx.moveTo(x + tileSize - 5, y + 5);
+                                        ctx.lineTo(x + 5, y + tileSize - 5);
+                                        ctx.stroke();
+                                    }
+
+                                    // Add result number
+                                    ctx.fillStyle = '#cdd6f4';
+                                    ctx.font = 'bold 14px JetBrainsMono Nerd Font Mono';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText(`#${tileIndex + 1}`, x + tileSize / 2, y + tileSize / 2 - 5);
+
+                                    // Add distance text
+                                    ctx.fillStyle = '#cdd6f4';
+                                    ctx.font = '10px JetBrainsMono Nerd Font Mono';
+                                    ctx.fillText(`${result.distance?.toFixed(3) || 'N/A'}`, x + tileSize / 2, y + tileSize - 5);
+                                };
+
+                                img.onload = function () {
+                                    console.log(`Image loaded successfully for tile ${tileIndex}:`, img.src);
+                                    imageLoaded = true;
+                                    // Draw the actual image
+                                    ctx.drawImage(img, x + 5, y + 5, tileSize - 10, tileSize - 10);
+
+                                    // Add distance overlay
+                                    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                                    ctx.fillRect(x + 5, y + tileSize - 20, tileSize - 10, 15);
+
+                                    ctx.fillStyle = '#cdd6f4';
+                                    ctx.font = '10px JetBrainsMono Nerd Font Mono';
+                                    ctx.textAlign = 'center';
+                                    ctx.fillText(`${result.distance?.toFixed(3) || 'N/A'}`, x + tileSize / 2, y + tileSize - 8);
+                                };
+
+                                img.onerror = function () {
+                                    console.log(`Image failed to load with path:`, img.src);
+                                    tryNextPath();
+                                };
+
+                                tryNextPath();
+                            } else if (result.dominant_colors && result.dominant_colors.length > 0) {
+                                // Fallback to color representation
+                                const color = result.dominant_colors[0];
+                                ctx.fillStyle = `#${color}`;
+                                ctx.fillRect(x + 5, y + 5, tileSize - 10, tileSize - 10);
+
+                                // Add distance text
+                                ctx.fillStyle = '#cdd6f4';
+                                ctx.font = '10px JetBrainsMono Nerd Font Mono';
+                                ctx.textAlign = 'center';
+                                ctx.fillText(`${result.distance?.toFixed(3) || 'N/A'}`, x + tileSize / 2, y + tileSize - 5);
+                            } else {
+                                // Add placeholder text
+                                ctx.fillStyle = '#6c7086';
+                                ctx.font = '12px JetBrainsMono Nerd Font Mono';
+                                ctx.textAlign = 'center';
+                                ctx.fillText(`#${tileIndex + 1}`, x + tileSize / 2, y + tileSize / 2);
+                            }
+                        } else {
+                            // Empty tile
+                            ctx.fillStyle = '#181825';
+                            ctx.fillRect(x, y, tileSize, tileSize);
+                            ctx.strokeStyle = '#313244';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(x, y, tileSize, tileSize);
+                        }
+
+                        tileIndex++;
+                    }
+                    if (tileIndex >= tilesToShow) break;
+                }
+
+                // Add collage info
+                const infoDiv = document.createElement('div');
+                infoDiv.style.cssText = 'margin-top: 15px; text-align: center; color: var(--subtext1); font-size: 14px;';
+                infoDiv.innerHTML = `
+                    <div>📊 Collage: ${tileCount}×${tileCount} grid (${tilesToShow} results shown)</div>
+                    <div style="margin-top: 5px; color: var(--subtext0); font-size: 12px;">
+                        Each tile shows the search result image or color representation with distance value
+                    </div>
+                    <div style="margin-top: 5px; color: var(--subtext0); font-size: 11px;">
+                        💡 Check browser console for image loading details
+                    </div>
+                `;
+
+                collageContainer.appendChild(canvas);
+                collageContainer.appendChild(infoDiv);
+
+                // Store canvas for download
+                window.currentCollageCanvas = canvas;
+
+                showSuccess('🎨 Results Collage', `Generated ${tileCount}×${tileCount} collage with ${tilesToShow} search results!`);
+
+            } catch (error) {
+                console.error('Error generating collage:', error);
+                showError('🎨 Collage Generation Failed', `Failed to generate results collage: ${error.message}`);
+            }
+        }
+
+        function downloadCollage() {
+            if (!window.currentCollageCanvas) {
+                showError('No Collage', 'Please generate a collage first before downloading.');
+                return;
+            }
+
+            try {
+                const canvas = window.currentCollageCanvas;
+                const link = document.createElement('a');
+                link.download = `chromatica-collage-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+
+                showSuccess('💾 Download Started', 'Collage download has started!');
+            } catch (error) {
+                console.error('Error downloading collage:', error);
+                showError('💾 Download Failed', `Failed to download collage: ${error.message}`);
+            }
+        }
+
+        // Custom Query Visualization Function
+        function generateCustomQueryVisualization(colors, weights) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 400;
+                canvas.height = 300;
+                const ctx = canvas.getContext('2d');
+
+                // Background gradient
+                const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                gradient.addColorStop(0, '#1e1e2e');
+                gradient.addColorStop(1, '#313244');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw color circles
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = 80;
+
+                colors.forEach((color, index) => {
+                    const angle = (index / colors.length) * 2 * Math.PI;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    const circleRadius = 20 + (weights[index] * 20); // Size based on weight
+
+                    // Draw circle
+                    ctx.beginPath();
+                    ctx.arc(x, y, circleRadius, 0, 2 * Math.PI);
+                    ctx.fillStyle = `#${color}`;
+                    ctx.fill();
+
+                    // Add border
+                    ctx.strokeStyle = '#cdd6f4';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Add weight text
+                    ctx.fillStyle = '#cdd6f4';
+                    ctx.font = '12px JetBrainsMono Nerd Font Mono';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(weights[index].toFixed(2), x, y + 4);
+                });
+
+                // Add center circle
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+                ctx.fillStyle = '#cba6f7';
+                ctx.fill();
+                ctx.strokeStyle = '#f5c2e7';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Add title
+                ctx.fillStyle = '#cdd6f4';
+                ctx.font = 'bold 16px JetBrainsMono Nerd Font Mono';
+                ctx.textAlign = 'center';
+                ctx.fillText('Query Color Space', centerX, 30);
+
+                // Add info
+                ctx.font = '12px JetBrainsMono Nerd Font Mono';
+                ctx.fillStyle = '#a6adc8';
+                ctx.fillText(`Colors: ${colors.length} | Weights: ${weights.map(w => w.toFixed(2)).join(', ')}`, centerX, canvas.height - 15);
+
+                return `
+                    <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: var(--base); padding: 20px; border-radius: 12px; box-shadow: 0 8px 32px rgba(203, 166, 247, 0.2);">
+                            ${canvas.outerHTML}
+                            <div style="margin-top: 15px; text-align: center; color: var(--subtext1); font-size: 12px;">
+                                Interactive color space visualization with weighted color distribution
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error generating custom visualization:', error);
+                return `
+                    <div style="text-align: center; color: var(--subtext1); padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🎨</div>
+                        <p>Custom visualization generated</p>
+                        <p style="font-size: 12px; color: var(--subtext0); margin-top: 10px;">
+                            Colors: ${colors.length} | Weights: ${weights.map(w => w.toFixed(2)).join(', ')}
+                        </p>
+                    </div>
+                `;
+            }
         }
 
         function exportSimilarityData() {
