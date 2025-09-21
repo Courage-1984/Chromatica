@@ -63,4 +63,14 @@ set CHROMATICA_INDEX_DIR=C:\Users\anon\github\Chromatica\85k
 
 python -m src.chromatica.api.main
 
+$env:CHROMATICA_INDEX_DIR = "C:\Users\anon\github\Chromatica\85k"
+set CHROMATICA_INDEX_DIR=85k
+
+echo $env:CHROMATICA_INDEX_DIR
+
+taskkill /PID 47396 /F
+
+
+curl http://127.0.0.1:8000/health
+
 

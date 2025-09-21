@@ -1,0 +1,68 @@
+Here's how to resume your indexing:
+Step 1: Check Current State
+First, let's check how many images are currently indexed in your metadata database:
+
+# Activate virtual environment
+venv311\Scripts\activate
+
+# Check the current state of your index
+python -c "
+import sys
+sys.path.insert(0, 'src')
+from chromatica.indexing.store import MetadataStore
+import duckdb
+
+# Check metadata database
+db_path = 'C:/Users/anon/github/Chromatica/85k/chromatica_metadata.db'
+store = MetadataStore(db_path=db_path)
+
+# Get count of indexed images
+result = store.connection.execute('SELECT COUNT(*) FROM image_metadata').fetchone()
+print(f'Currently indexed images: {result[0]}')
+
+# Get the last few indexed images to see where we left off
+result = store.connection.execute('SELECT image_id FROM image_metadata ORDER BY rowid DESC LIMIT 5').fetchall()
+print('Last 5 indexed images:')
+for row in result:
+    print(f'  {row[0]}')
+
+store.close()
+"
+
+
+Step 2: Resume Indexing
+Based on your log, you were processing around image 60,294 out of 85,843 total images. Here's a resume script:
+
+# Set environment variable for current session
+$env:CHROMATICA_INDEX_DIR = "C:\Users\anon\github\Chromatica\85k"
+
+# Resume indexing from where you left off
+python scripts/build_index.py "C:\Users\anon\ai\train\_1_2_combined_both\hq" --output-dir "C:\Users\anon\github\Chromatica\85k" --batch-size 100 --verbose
+
+
+
+Quick Resume Commands
+Here are the commands to resume your indexing:
+
+
+
+
+# Activate virtual environment
+venv311\Scripts\activate
+
+# Set environment variable
+$env:CHROMATICA_INDEX_DIR = "C:\Users\anon\github\Chromatica\85k"
+
+# Resume indexing
+python scripts/build_index.py "C:\Users\anon\ai\train\_1_2_combined_both\hq" --output-dir "C:\Users\anon\github\Chromatica\85k" --batch-size 100 --verbose
+
+
+
+
+
+python -m src.chromatica.api.main
+
+
+uvicorn src.chromatica.api.main:app --host 0.0.0.0 --port 8000
+
+

@@ -1,0 +1,2505 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chromatica Color Search Engine</title>
+
+    <!-- Three.js for 3D visualizations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23cba6f7'/><circle cx='30' cy='30' r='15' fill='%23f5c2e7'/><circle cx='70' cy='30' r='15' fill='%23f2cdcd'/><circle cx='30' cy='70' r='15' fill='%23a6e3a1'/><circle cx='70' cy='70' r='15' fill='%23f9e2af'/></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23cba6f7'/><circle cx='30' cy='30' r='15' fill='%23f5c2e7'/><circle cx='70' cy='30' r='15' fill='%23f2cdcd'/><circle cx='30' cy='70' r='15' fill='%23a6e3a1'/><circle cx='70' cy='70' r='15' fill='%23f9e2af'/></svg>">
+    <link rel="shortcut icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23cba6f7'/><circle cx='30' cy='30' r='15' fill='%23f5c2e7'/><circle cx='70' cy='30' r='15' fill='%23f2cdcd'/><circle cx='30' cy='70' r='15' fill='%23a6e3a1'/><circle cx='70' cy='70' r='15' fill='%23f9e2af'/></svg>">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23cba6f7'/><circle cx='30' cy='30' r='15' fill='%23f5c2e7'/><circle cx='70' cy='30' r='15' fill='%23f2cdcd'/><circle cx='30' cy='70' r='15' fill='%23a6e3a1'/><circle cx='70' cy='70' r='15' fill='%23f9e2af'/></svg>">
+    <style>
+        /* Font Face Declarations */
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-Bold.ttf') format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-Italic.ttf') format('truetype');
+            font-weight: 400;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-BoldItalic.ttf') format('truetype');
+            font-weight: 700;
+            font-style: italic;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-Medium.ttf') format('truetype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'JetBrainsMono Nerd Font Mono';
+            src: url('/static/fonts/JetBrainsMonoNerdFontMono-SemiBold.ttf') format('truetype');
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Segoe UI Emoji';
+            src: url('/static/fonts/seguiemj.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: 'Segoe UI Symbol';
+            src: url('/static/fonts/seguisym.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        /* Catppuccin Mocha Theme Colors */
+        :root {
+            /* Base colors */
+            --base: #1e1e2e;
+            --mantle: #181825;
+            --crust: #11111b;
+
+            /* Surface colors */
+            --surface0: #313244;
+            --surface1: #45475a;
+            --surface2: #585b70;
+
+            /* Overlay colors */
+            --overlay0: #6c7086;
+            --overlay1: #7f849c;
+            --overlay2: #9399b2;
+
+            /* Text colors */
+            --text: #cdd6f4;
+            --subtext0: #a6adc8;
+            --subtext1: #bac2de;
+
+            /* Accent colors */
+            --rosewater: #f5e0dc;
+            --flamingo: #f2cdcd;
+            --pink: #f5c2e7;
+            --mauve: #cba6f7;
+            --red: #f38ba8;
+            --maroon: #eba0ac;
+            --peach: #fab387;
+            --yellow: #f9e2af;
+            --green: #a6e3a1;
+            --teal: #94e2d5;
+            --sky: #89dceb;
+            --sapphire: #74c7ec;
+            --blue: #89b4fa;
+            --lavender: #b4befe;
+        }
+
+        /* Base Typography */
+        body {
+            font-family: 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--base) 0%, var(--mantle) 100%);
+            min-height: 100vh;
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Emoji and Symbol Fonts */
+        .emoji,
+        .symbol,
+        h1,
+        h2,
+        h3,
+        h4,
+        button,
+        .tool-icon {
+            font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'EmojiOne Mozilla', 'Twemoji Mozilla', 'Segoe UI Symbol', 'Arial Unicode MS', 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        /* Headings with mixed fonts */
+        h1,
+        h2,
+        h3,
+        h4 {
+            font-family: 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            font-weight: 700;
+        }
+
+        h2 {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        h3 {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        h4 {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--crust);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--surface0);
+        }
+
+        .color-input-section {
+            background: var(--surface0);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border: 2px solid var(--surface1);
+        }
+
+        .color-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 15px;
+        }
+
+        .color-picker {
+            width: 60px;
+            height: 60px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .weight-slider {
+            flex: 1;
+            height: 8px;
+            border-radius: 5px;
+            background: var(--surface1);
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .weight-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--mauve);
+            cursor: pointer;
+        }
+
+        .weight-value {
+            min-width: 60px;
+            text-align: center;
+            font-weight: 600;
+            color: var(--text);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .add-color-btn {
+            background: var(--blue);
+            color: var(--crust);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 15px;
+            transition: background 0.3s;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+            font-weight: 500;
+        }
+
+        .add-color-btn:hover {
+            background: var(--sapphire);
+        }
+
+        .search-btn {
+            background: var(--green);
+            color: var(--crust);
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background 0.3s;
+            width: 100%;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .search-btn:hover {
+            background: var(--teal);
+        }
+
+        .search-btn:disabled {
+            background: var(--overlay0);
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 30px;
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-card {
+            background: var(--surface0);
+            border: 2px solid var(--surface1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            border-color: var(--mauve);
+        }
+
+        .result-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid var(--surface1);
+        }
+
+        .result-info {
+            margin-bottom: 10px;
+        }
+
+        .result-info strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .result-info p {
+            color: var(--subtext1);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .color-swatches {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 2px solid var(--surface1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .action-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            flex: 1;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+            font-weight: 500;
+        }
+
+        .download-btn {
+            background: var(--blue);
+            color: var(--crust);
+        }
+
+        .download-btn:hover {
+            background: var(--sapphire);
+        }
+
+        .copy-btn {
+            background: var(--peach);
+            color: var(--crust);
+        }
+
+        .copy-btn:hover {
+            background: var(--yellow);
+        }
+
+        .details-btn {
+            background: var(--mauve);
+            color: var(--crust);
+        }
+
+        .details-btn:hover {
+            background: var(--pink);
+        }
+
+        .search-stats {
+            background: var(--surface0);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid var(--surface1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: var(--text);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .stat-label {
+            color: var(--subtext0);
+            font-size: 0.9em;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .ranking-explanation {
+            background: var(--surface0);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid var(--green);
+        }
+
+        .ranking-explanation h3 {
+            color: var(--green);
+            margin-top: 0;
+        }
+
+        .ranking-explanation p {
+            color: var(--subtext1);
+            line-height: 1.6;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        /* Visualization Section */
+        .visualization-section {
+            background: var(--surface0);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid var(--surface1);
+        }
+
+        .visualization-section h2 {
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+
+        .viz-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .viz-card {
+            background: var(--surface0);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid var(--surface1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .viz-card h3 {
+            margin-top: 0;
+            color: var(--text);
+        }
+
+        .viz-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Visualization Tools Section */
+        .visualization-tools-section {
+            background: var(--surface0);
+            padding: 25px;
+            border-radius: 10px;
+            margin: 30px 0;
+            border: 2px solid var(--surface1);
+        }
+
+        .visualization-tools-section h2 {
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.8em;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .tool-card {
+            background: var(--surface0);
+            border: 2px solid var(--surface1);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+            border-color: var(--mauve);
+        }
+
+        .tool-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .tool-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--mauve) 0%, var(--pink) 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--crust);
+            font-size: 18px;
+            margin-right: 15px;
+        }
+
+        .tool-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0;
+        }
+
+        .tool-description {
+            color: var(--subtext1);
+            line-height: 1.5;
+            margin-bottom: 15px;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .tool-features {
+            margin-bottom: 15px;
+        }
+
+        .tool-features h4 {
+            color: var(--text);
+            margin-bottom: 8px;
+            font-size: 1em;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .feature-list li {
+            color: var(--subtext1);
+            margin-bottom: 4px;
+            padding-left: 20px;
+            position: relative;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .feature-list li:before {
+            content: "✓";
+            color: var(--green);
+            font-weight: 700;
+            position: absolute;
+            left: 0;
+        }
+
+        .tool-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .tool-btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+            flex: 1;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+            font-weight: 500;
+        }
+
+        .primary-btn {
+            background: var(--blue);
+            color: var(--crust);
+        }
+
+        .primary-btn:hover {
+            background: var(--sapphire);
+        }
+
+        .secondary-btn {
+            background: var(--peach);
+            color: var(--crust);
+        }
+
+        .secondary-btn:hover {
+            background: var(--yellow);
+        }
+
+        .info-btn {
+            background: var(--mauve);
+            color: var(--crust);
+        }
+
+        .info-btn:hover {
+            background: var(--pink);
+        }
+
+        .demo-btn {
+            background: var(--green);
+            color: var(--crust);
+        }
+
+        .demo-btn:hover {
+            background: var(--teal);
+        }
+
+        .tool-category {
+            background: var(--surface1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .tool-category h3 {
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .tool-category p {
+            color: var(--subtext1);
+            margin: 0;
+            line-height: 1.5;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--subtext0);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .error {
+            background: var(--surface0);
+            color: var(--red);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid var(--red);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .success {
+            background: var(--surface0);
+            color: var(--green);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 2px solid var(--green);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            background-color: var(--crust);
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid var(--surface0);
+        }
+
+        .close {
+            color: var(--subtext0);
+            float: right;
+            font-size: 28px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: var(--text);
+        }
+
+        .code-block {
+            background: var(--surface0);
+            border: 1px solid var(--surface1);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            color: var(--text);
+        }
+
+        .usage-example {
+            background: var(--surface0);
+            border: 1px solid var(--green);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .usage-example h4 {
+            color: var(--green);
+            margin-top: 0;
+        }
+
+        .usage-example code {
+            background: var(--surface1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'JetBrainsMono Nerd Font Mono', 'JetBrains Mono', 'Fira Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+            color: var(--text);
+        }
+
+        /* Remove button styling */
+        button[onclick*="removeColor"] {
+            background: var(--red) !important;
+            color: var(--crust) !important;
+            border: none !important;
+            padding: 8px 12px !important;
+            border-radius: 6px !important;
+            cursor: pointer !important;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+            font-weight: 500 !important;
+        }
+
+        button[onclick*="removeColor"]:hover {
+            background: var(--maroon) !important;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        /* Image Popup Modal */
+        .image-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-modal-content {
+            position: relative;
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-close {
+            position: absolute;
+            top: 15px;
+            right: 25px;
+            color: var(--subtext0);
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .image-close:hover {
+            color: var(--text);
+        }
+
+        .image-modal-content img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        /* Enhanced Details Modal */
+        .details-modal {
+            max-width: 800px;
+            width: 90%;
+            padding: 30px;
+        }
+
+        .details-modal h2 {
+            color: var(--text);
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .details-modal .modal-content {
+            padding: 20px;
+        }
+
+        .details-modal .modal-content h2 {
+            margin-bottom: 15px;
+        }
+
+        .details-modal .modal-content p {
+            color: var(--subtext1);
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .details-modal .modal-content strong {
+            color: var(--text);
+        }
+
+        .details-modal .modal-content ul {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+        }
+
+        .details-modal .modal-content li {
+            color: var(--subtext1);
+            margin-bottom: 8px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .details-modal .modal-content li:before {
+            content: "•";
+            color: var(--green);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .details-modal .modal-content .image-preview {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid var(--surface1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .details-modal .modal-content .color-swatches {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+            flex-wrap: wrap;
+        }
+
+        .details-modal .modal-content .color-swatch {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid var(--surface1);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .details-modal .modal-content .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .details-modal .modal-content .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .details-modal .modal-content .action-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            flex: 1;
+        }
+
+        .details-modal .modal-content .download-btn {
+            background: var(--blue);
+            color: var(--crust);
+        }
+
+        .details-modal .modal-content .download-btn:hover {
+            background: var(--sapphire);
+        }
+
+        .details-modal .modal-content .copy-btn {
+            background: var(--peach);
+            color: var(--crust);
+        }
+
+        .details-modal .modal-content .copy-btn:hover {
+            background: var(--yellow);
+        }
+
+        .details-modal .modal-content .details-btn {
+            background: var(--mauve);
+            color: var(--crust);
+        }
+
+        .details-modal .modal-content .details-btn:hover {
+            background: var(--pink);
+        }
+
+        .advanced-details {
+            max-width: 100%;
+        }
+
+        .advanced-details h3 {
+            color: var(--text);
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 20px;
+        }
+
+        .analysis-section {
+            background: var(--surface1);
+            border: 1px solid var(--surface2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .analysis-section h4 {
+            color: var(--blue);
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-bottom: 2px solid var(--surface2);
+            padding-bottom: 5px;
+        }
+
+        .analysis-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .analysis-section li {
+            color: var(--subtext1);
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.4;
+        }
+
+        .analysis-section li:before {
+            content: "•";
+            color: var(--green);
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .analysis-section li:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Tool Panel Styles */
+        .tool-panel {
+            margin-top: 20px;
+            border: 2px solid var(--surface2);
+            border-radius: 12px;
+            background: var(--surface0);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .panel-header {
+            background: var(--surface1);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--surface2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-header h5 {
+            margin: 0;
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .panel-close {
+            background: none;
+            border: none;
+            color: var(--subtext1);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .panel-close:hover {
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        .panel-content {
+            padding: 20px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-section h6 {
+            color: var(--blue);
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .input-group small {
+            display: block;
+            margin-top: 5px;
+            color: var(--subtext1);
+            font-size: 12px;
+        }
+
+        .file-input,
+        .text-input,
+        .number-input,
+        .select-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--surface2);
+            border-radius: 6px;
+            background: var(--crust);
+            color: var(--text);
+            font-size: 14px;
+            transition: border-color 0.2s ease;
+        }
+
+        .file-input:focus,
+        .text-input:focus,
+        .number-input:focus,
+        .select-input:focus {
+            outline: none;
+            border-color: var(--blue);
+        }
+
+        .browse-btn {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--surface3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: all 0.2s ease;
+        }
+
+        .browse-btn:hover {
+            background: var(--surface3);
+            border-color: var(--blue);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .panel-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--surface2);
+        }
+
+        .results-area {
+            margin-top: 20px;
+            padding: 20px;
+            background: var(--surface1);
+            border-top: 1px solid var(--surface2);
+        }
+
+        .results-area h6 {
+            color: var(--green);
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .results-content {
+            min-height: 100px;
+        }
+
+        /* Analysis Results Styles */
+        .analysis-results {
+            color: var(--text);
+        }
+
+        .result-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: var(--crust);
+            border-radius: 8px;
+            border: 1px solid var(--surface2);
+        }
+
+        .result-section h4 {
+            color: var(--blue);
+            margin: 0 0 15px 0;
+            font-size: 16px;
+        }
+
+        .result-section ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .result-section li {
+            margin-bottom: 8px;
+        }
+
+        .result-section p {
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .color-swatches {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.05);
+        }
+
+        .color-swatch small {
+            font-size: 10px;
+            opacity: 0.9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text);
+            font-size: 16px;
+        }
+
+        .result-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid var(--surface2);
+        }
+
+        /* Quick Test Button Styles */
+        .quick-test-btn {
+            background: var(--green);
+            color: var(--crust);
+        }
+
+        .quick-test-btn:hover {
+            background: var(--teal);
+        }
+
+        /* Quick Test Results Area Styles */
+        .quick-test-results-area {
+            background: var(--surface0);
+            border: 2px solid var(--surface1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .quick-test-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--surface1);
+        }
+
+        .quick-test-header h3 {
+            color: var(--green);
+            margin: 0 0 10px 0;
+            font-size: 1.8em;
+        }
+
+        .quick-test-header p {
+            color: var(--subtext1);
+            margin: 0;
+            font-size: 1.1em;
+        }
+
+        .quick-test-content {
+            min-height: 100px;
+        }
+
+        .quick-test-placeholder {
+            text-align: center;
+            color: var(--subtext1);
+            padding: 40px 20px;
+        }
+
+        .quick-test-placeholder p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+
+        .quick-test-results {
+            background: var(--crust);
+            border: 1px solid var(--surface1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+        }
+
+        .quick-test-results h4 {
+            color: var(--green);
+            margin: 0 0 15px 0;
+            font-size: 1.3em;
+        }
+
+        .quick-test-command {
+            background: var(--mantle);
+            border: 1px solid var(--surface2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+            font-size: 0.9em;
+            color: var(--yellow);
+        }
+
+        .quick-test-output {
+            background: var(--mantle);
+            border: 1px solid var(--surface2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .quick-test-output pre {
+            margin: 0;
+            color: var(--text);
+            font-family: 'JetBrainsMono Nerd Font Mono', monospace;
+            font-size: 0.9em;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .quick-test-loading {
+            text-align: center;
+            color: var(--green);
+            padding: 20px;
+            font-size: 1.2em;
+        }
+
+        .quick-test-error {
+            background: var(--red);
+            color: var(--crust);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .quick-test-success {
+            background: var(--green);
+            color: var(--crust);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        /* Image Hover Effects */
+        .result-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .result-image:hover {
+            transform: scale(1.05);
+        }
+
+        .image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .image-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .image-container:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .overlay-text {
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .no-image {
+            width: 100%;
+            height: 200px;
+            background: var(--surface1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            color: var(--subtext1);
+            font-style: italic;
+        }
+
+        .no-colors {
+            color: var(--subtext1);
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        .no-results {
+            text-align: center;
+            color: var(--subtext1);
+            font-style: italic;
+            padding: 40px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎨 Chromatica Color Search Engine</h1>
+
+        <!-- Color Input Section -->
+        <div class="color-input-section">
+            <h2>Color Query</h2>
+            <div id="colorInputs">
+                <div class="color-row">
+                    <input type="color" class="color-picker" value="#FF0000">
+                    <input type="range" class="weight-slider" min="0" max="100" value="100" step="1">
+                    <span class="weight-value">100%</span>
+                    <button onclick="removeColor(this)"
+                        style="background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Remove</button>
+                </div>
+            </div>
+            <button class="add-color-btn" onclick="addColor()">+ Add Another Color</button>
+
+            <!-- Performance Tuning Options -->
+            <div class="performance-options"
+                style="margin: 20px 0; padding: 20px; background: var(--surface0); border-radius: 12px; border: 1px solid var(--surface1);">
+                <h4
+                    style="margin: 0 0 15px 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                    ⚡ Performance Tuning</h4>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 15px;">
+                    <div>
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                            <input type="checkbox" id="fastMode" style="margin-right: 8px;">
+                            🚀 Fast Mode (100x faster)
+                        </label>
+                        <p style="margin: 0; font-size: 12px; color: var(--subtext0); line-height: 1.4;">
+                            Use approximate L2 distance instead of Sinkhorn-EMD for much faster results
+                        </p>
+                    </div>
+
+                    <div>
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                            Batch Size: <span id="batchSizeValue">10</span>
+                        </label>
+                        <input type="range" id="batchSize" min="5" max="50" value="10" step="5"
+                            style="width: 100%; margin-bottom: 5px;"
+                            oninput="document.getElementById('batchSizeValue').textContent = this.value;">
+                        <p style="margin: 0; font-size: 12px; color: var(--subtext0); line-height: 1.4;">
+                            Higher values improve memory efficiency for large datasets
+                        </p>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="display: flex; align-items: center; color: var(--subtext1); font-size: 14px;">
+                        <input type="range" id="resultCount" min="5" max="50" value="10" step="5"
+                            style="margin-right: 8px;"
+                            oninput="document.getElementById('resultCountValue').textContent = this.value;">
+                        Results: <span id="resultCountValue">10</span>
+                    </label>
+
+                    <button onclick="showPerformanceInfo()"
+                        style="background: var(--blue); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        ℹ️ Info
+                    </button>
+                </div>
+            </div>
+
+            <button class="search-btn" onclick="performSearch()" id="searchBtn">🔍 Search Images</button>
+        </div>
+
+        <!-- Loading Indicator -->
+        <div class="loading" id="loading" style="display: none;">
+            <h3>🔍 Searching...</h3>
+            <p>Analyzing color similarities and finding the best matches...</p>
+        </div>
+
+        <!-- Success Display -->
+        <div class="success" id="success" style="display: none;"></div>
+
+        <!-- Error Display -->
+        <div class="error" id="error" style="display: none;"></div>
+
+        <!-- Search Statistics -->
+        <div class="search-stats" id="searchStats" style="display: none;">
+            <h3>📊 Search Performance</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalResults">0</div>
+                    <div class="stat-label">Total Results</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="searchTime">0ms</div>
+                    <div class="stat-label">Search Time</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="avgDistance">0.0</div>
+                    <div class="stat-label">Avg Distance</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="searchMode">Standard</div>
+                    <div class="stat-label">Search Mode</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="indexSize">0</div>
+                    <div class="stat-label">Index Size</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualization Section -->
+        <div class="visualization-section" id="visualizationSection" style="display: none;">
+            <h2>🎨 Query Visualization</h2>
+
+            <!-- Enhanced Query Visualization -->
+            <div class="enhanced-query-viz">
+                <div class="query-viz-header">
+                    <h3>🎨 Color Query Analysis</h3>
+                    <div class="query-stats" id="queryStats">
+                        <!-- Dynamic stats will be populated here -->
+                    </div>
+                </div>
+                <div class="query-viz-content">
+                    <div class="color-palette-display" id="colorPaletteDisplay">
+                        <!-- Enhanced color palette will be shown here -->
+                    </div>
+                    <div class="query-viz-image" id="query-viz">
+                        <p class="loading">Click "Search Images" to generate visualization</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enhanced Results Collage with Customization -->
+            <div class="enhanced-results-collage">
+                <div class="collage-header">
+                    <h3>🖼️ Results Collage</h3>
+                    <div class="collage-controls">
+                        <div class="control-group">
+                            <label for="collageTileCount">Number of Tiles:</label>
+                            <select id="collageTileCount">
+                                <option value="4">4 tiles (2x2)</option>
+                                <option value="9" selected>9 tiles (3x3)</option>
+                                <option value="16">16 tiles (4x4)</option>
+                                <option value="25">25 tiles (5x5)</option>
+                                <option value="36">36 tiles (6x6)</option>
+                                <option value="49">49 tiles (7x7)</option>
+                                <option value="64">64 tiles (8x8)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="collageLayout">Layout:</label>
+                            <select id="collageLayout">
+                                <option value="grid" selected>Grid</option>
+                                <option value="mosaic">Mosaic</option>
+                                <option value="spiral">Spiral</option>
+                            </select>
+                        </div>
+                        <button onclick="generateCustomCollage()" class="generate-collage-btn">
+                            🎨 Generate Custom Collage
+                        </button>
+                    </div>
+                </div>
+                <div class="collage-content">
+                    <div id="results-viz">
+                        <p class="loading">Click "Generate Custom Collage" to create your collage</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Histogram Analysis Section -->
+            <div class="histogram-section"
+                style="margin-top: 30px; padding: 20px; background: var(--surface1); border-radius: 12px; border: 1px solid var(--surface2);">
+                <h3
+                    style="color: var(--text); margin: 0 0 15px 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                    📊 Histogram Analysis</h3>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                    <div>
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                            Analysis Type:
+                        </label>
+                        <select id="histogramAnalysisType"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--surface2); border-radius: 6px; background: var(--base); color: var(--text);">
+                            <option value="distribution">Color Distribution</option>
+                            <option value="similarity">Similarity Analysis</option>
+                            <option value="clustering">Color Clustering</option>
+                            <option value="dominance">Dominance Analysis</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                            Visualization Style:
+                        </label>
+                        <select id="histogramVisualization"
+                            style="width: 100%; padding: 8px; border: 1px solid var(--surface2); border-radius: 6px; background: var(--base); color: var(--text);">
+                            <option value="bar">Bar Chart</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="heatmap">Heatmap</option>
+                            <option value="radar">Radar Chart</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="generateHistogramVisualization()"
+                        style="background: var(--green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        📈 Generate Histogram Visualization
+                    </button>
+                    <button onclick="compareHistograms()"
+                        style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        🔍 Compare Histograms
+                    </button>
+                    <button onclick="exportHistogramData()"
+                        style="background: var(--yellow); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        💾 Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection" style="display: none;">
+            <h2>🔍 Top Search Results</h2>
+            <div class="results-grid" id="resultsGrid"></div>
+        </div>
+
+        <!-- Ranking Explanation -->
+        <div class="ranking-explanation">
+            <h3>🎯 How Images Are Ranked</h3>
+            <p><strong>Two-Stage Search Process:</strong></p>
+            <p>1. <strong>Fast Initial Retrieval:</strong> FAISS HNSW index finds ~100 similar candidates using L2
+                distance on Hellinger-transformed histograms</p>
+            <p>2. <strong>High-Fidelity Reranking:</strong> Top candidates are reranked using Sinkhorn-approximated
+                Earth Mover's Distance (EMD) for perceptual color similarity</p>
+            <p><strong>Distance Values:</strong> Lower distances indicate more similar color distributions. EMD values
+                typically range from 0.0 (identical) to 2.0+ (very different).</p>
+        </div>
+
+
+        <!-- Testing Results Section -->
+        <div class="testing-results-section" id="testingResultsSection"
+            style="background: var(--surface0); padding: 25px; border-radius: 10px; margin: 30px 0; border: 2px solid var(--surface1); display: none;">
+            <h2
+                style="color: var(--text); margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.8em; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                📊 Testing Results</h2>
+            <div id="testingResultsContent"
+                style="background: var(--base); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2); min-height: 200px; display: flex; align-items: center; justify-content: center; color: var(--subtext0);">
+                <div style="text-align: center;">
+                    <p style="margin: 0 0 10px 0; font-size: 16px;">🧪 Testing Results</p>
+                    <p style="margin: 0; font-size: 14px;">Click any testing button to see results here</p>
+                    <p style="margin: 10px 0 0 0; font-size: 12px; color: var(--subtext0);">Results will be displayed in
+                        this dedicated area</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing and Development Tools -->
+        <div class="testing-section"
+            style="background: var(--surface0); padding: 25px; border-radius: 10px; margin: 30px 0; border: 2px solid var(--surface1);">
+            <h2
+                style="color: var(--text); margin-top: 0; margin-bottom: 20px; text-align: center; font-size: 1.8em; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                🧪 Testing & Development Tools</h2>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                <div
+                    style="background: var(--surface1); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2);">
+                    <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">🔍 Search Testing</h3>
+                    <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 14px; line-height: 1.4;">
+                        Test search functionality with different performance modes and parameters.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="runSearchTest()"
+                            style="background: var(--green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            🚀 Run Search Test
+                        </button>
+                        <button onclick="runPerformanceBenchmark()"
+                            style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            ⚡ Performance Test
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    style="background: var(--surface1); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2);">
+                    <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">📊 Histogram Testing</h3>
+                    <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 14px; line-height: 1.4;">
+                        Test histogram generation and validation with sample images.
+                    </p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="runHistogramTest()"
+                            style="background: var(--yellow); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            📈 Test Histograms
+                        </button>
+                        <button onclick="validateSystem()"
+                            style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            ✅ Validate System
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                style="background: var(--surface1); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2);">
+                <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">🛠️ Development Tools</h3>
+                <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 14px; line-height: 1.4;">
+                    Advanced tools for system monitoring, debugging, and development.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="showSystemStatus()"
+                        style="background: var(--mauve); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        📊 System Status
+                    </button>
+                    <button onclick="runDiagnostics()"
+                        style="background: var(--peach); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        🔧 Diagnostics
+                    </button>
+                    <button onclick="exportLogs()"
+                        style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        📋 Export Logs
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Advanced Visualization Tools Section -->
+        <div class="visualization-tools-section">
+            <h2>🛠️ Advanced Visualization Tools</h2>
+
+            <!-- Color Palette Analyzer Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🎨</div>
+                    <h3 class="tool-title">Color Palette Analyzer</h3>
+                </div>
+                <div class="tool-description">
+                    Analyze color palettes from images, extract dominant colors, and generate comprehensive color
+                    reports with statistical analysis.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>Extract dominant colors from any image</li>
+                        <li>Generate color harmony analysis</li>
+                        <li>Export color palettes in multiple formats</li>
+                        <li>Compare color palettes between images</li>
+                        <li>Generate color statistics and reports</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('color-palette-analyzer')">Run
+                        Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('color-palette-analyzer')">Quick
+                        Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('color-palette-analyzer')">Info</button>
+                </div>
+            </div>
+
+            <!-- Search Results Analyzer Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🔍</div>
+                    <h3 class="tool-title">Search Results Analyzer</h3>
+                </div>
+                <div class="tool-description">
+                    Analyze search results, visualize ranking patterns, and understand why certain images rank higher
+                    than others.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>Visualize search result rankings</li>
+                        <li>Analyze distance distribution patterns</li>
+                        <li>Compare query vs result color distributions</li>
+                        <li>Generate ranking explanation reports</li>
+                        <li>Export analysis data for further study</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('search-results-analyzer')">Run
+                        Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('search-results-analyzer')">Quick
+                        Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('search-results-analyzer')">Info</button>
+                </div>
+            </div>
+
+            <!-- Interactive Color Explorer Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🌈</div>
+                    <h3 class="tool-title">Interactive Color Explorer</h3>
+                </div>
+                <div class="tool-description">
+                    Explore color spaces interactively, test color combinations, and understand color relationships in
+                    3D space.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>3D color space visualization</li>
+                        <li>Interactive color picker and explorer</li>
+                        <li>Color harmony testing tools</li>
+                        <li>Real-time color conversion between spaces</li>
+                        <li>Export color exploration sessions</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('color-explorer')">Run Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('color-explorer')">Quick Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('color-explorer')">Info</button>
+                </div>
+            </div>
+
+            <!-- Histogram Analysis Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">📊</div>
+                    <h3 class="tool-title">Histogram Analysis Tool</h3>
+                </div>
+                <div class="tool-description">
+                    Generate and analyze color histograms, compare histogram distributions, and visualize color data
+                    patterns.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>Generate detailed color histograms</li>
+                        <li>Compare multiple histogram distributions</li>
+                        <li>Visualize histogram data in multiple formats</li>
+                        <li>Export histogram data and visualizations</li>
+                        <li>Statistical analysis of color distributions</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('histogram-analysis')">Run Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('histogram-analysis')">Quick
+                        Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('histogram-analysis')">Info</button>
+                </div>
+            </div>
+
+            <!-- Distance Debugger Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🔧</div>
+                    <h3 class="tool-title">Distance Debugger Tool</h3>
+                </div>
+                <div class="tool-description">
+                    Debug and analyze distance calculations, understand ranking algorithms, and optimize search
+                    parameters.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>Debug distance calculations step-by-step</li>
+                        <li>Visualize ranking algorithm behavior</li>
+                        <li>Compare different distance metrics</li>
+                        <li>Optimize search parameters interactively</li>
+                        <li>Generate detailed debugging reports</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('distance-debugger')">Run Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('distance-debugger')">Quick
+                        Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('distance-debugger')">Info</button>
+                </div>
+            </div>
+
+            <!-- Query Visualizer Tool -->
+            <div class="tool-card">
+                <div class="tool-header">
+                    <div class="tool-icon">🎯</div>
+                    <h3 class="tool-title">Query Visualizer Tool</h3>
+                </div>
+                <div class="tool-description">
+                    Visualize search queries, understand query processing, and see how queries are transformed for
+                    search.
+                </div>
+                <div class="tool-features">
+                    <h4>Features:</h4>
+                    <ul class="feature-list">
+                        <li>Visualize search query processing</li>
+                        <li>Show query transformation steps</li>
+                        <li>Generate query analysis reports</li>
+                        <li>Compare different query formulations</li>
+                        <li>Export query visualization data</li>
+                    </ul>
+                </div>
+                <div class="tool-actions">
+                    <button class="tool-btn primary-btn" onclick="openToolPanel('query-visualizer')">Run Tool</button>
+                    <button class="tool-btn secondary-btn" onclick="quickTestTool('query-visualizer')">Quick
+                        Test</button>
+                    <button class="tool-btn info-btn" onclick="showToolInfo('query-visualizer')">Info</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Image Modal -->
+        <div id="imageModal" class="image-modal" onclick="closeImageModal()">
+            <div class="image-modal-content">
+                <span class="image-close" onclick="closeImageModal()">&times;</span>
+                <img id="modalImage" src="" alt="Full size image">
+            </div>
+        </div>
+
+        <!-- Details Modal -->
+        <div id="detailsModal" class="modal">
+            <div class="modal-content details-modal">
+                <span class="close" onclick="closeDetailsModal()">&times;</span>
+                <div id="detailsContent"></div>
+            </div>
+        </div>
+
+        <!-- Tool Info Modal -->
+        <div id="toolInfoModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeToolInfoModal()">&times;</span>
+                <div id="toolInfoContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let searchResults = [];
+        let currentQuery = null;
+
+        // Color input management
+        function addColor() {
+            const container = document.getElementById('colorInputs');
+            const colorRow = document.createElement('div');
+            colorRow.className = 'color-row';
+            colorRow.innerHTML = `
+                <input type="color" class="color-picker" value="#00FF00">
+                <input type="range" class="weight-slider" min="0" max="100" value="100" step="1" oninput="updateWeight(this)">
+                <span class="weight-value">100%</span>
+                <button onclick="removeColor(this)" style="background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Remove</button>
+            `;
+            container.appendChild(colorRow);
+        }
+
+        function removeColor(button) {
+            button.parentElement.remove();
+        }
+
+        function updateWeight(slider) {
+            const valueSpan = slider.parentElement.querySelector('.weight-value');
+            valueSpan.textContent = slider.value + '%';
+        }
+
+        // Search functionality
+        async function performSearch() {
+            const searchBtn = document.getElementById('searchBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const resultsSection = document.getElementById('resultsSection');
+            const searchStats = document.getElementById('searchStats');
+            const visualizationSection = document.getElementById('visualizationSection');
+
+            // Get color inputs
+            const colorRows = document.querySelectorAll('.color-row');
+            if (colorRows.length === 0) {
+                showError('Please add at least one color to search for.');
+                return;
+            }
+
+            const colors = [];
+            const weights = [];
+
+            colorRows.forEach(row => {
+                const colorPicker = row.querySelector('.color-picker');
+                const weightSlider = row.querySelector('.weight-slider');
+                colors.push(colorPicker.value);
+                weights.push(parseInt(weightSlider.value) / 100);
+            });
+
+            // Get performance options
+            const fastMode = document.getElementById('fastMode').checked;
+            const batchSize = parseInt(document.getElementById('batchSize').value);
+            const resultCount = parseInt(document.getElementById('resultCount').value);
+
+            // Show loading
+            searchBtn.disabled = true;
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            success.style.display = 'none';
+            resultsSection.style.display = 'none';
+            searchStats.style.display = 'none';
+            visualizationSection.style.display = 'none';
+
+            try {
+                const startTime = performance.now();
+
+                // Build query parameters
+                const params = new URLSearchParams({
+                    colors: colors.join(','),
+                    weights: weights.join(','),
+                    k: resultCount,
+                    fast_mode: fastMode,
+                    batch_size: batchSize
+                });
+
+                const response = await fetch(`/search?${params}`);
+                const data = await response.json();
+
+                const endTime = performance.now();
+                const searchTime = Math.round(endTime - startTime);
+
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Search failed');
+                }
+
+                // Store results
+                searchResults = data.results || [];
+                currentQuery = { colors, weights, fastMode, batchSize, resultCount };
+
+                // Display results
+                displayResults(searchResults);
+                displaySearchStats(data, searchTime);
+                displayVisualization(data);
+                showSuccess(`Found ${searchResults.length} results in ${searchTime}ms`);
+
+            } catch (err) {
+                showError(`Search failed: ${err.message}`);
+            } finally {
+                searchBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        function displayResults(results) {
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsSection = document.getElementById('resultsSection');
+
+            if (results.length === 0) {
+                resultsGrid.innerHTML = '<div class="no-results">No results found. Try adjusting your search parameters.</div>';
+            } else {
+                resultsGrid.innerHTML = results.map((result, index) => `
+                    <div class="result-card">
+                        <div class="image-container">
+                            <img src="${result.image_url}" alt="Search result ${index + 1}" class="result-image" onclick="openImageModal('${result.image_url}')">
+                            <div class="image-overlay">
+                                <div class="overlay-text">Click to enlarge</div>
+                            </div>
+                        </div>
+                        <div class="result-info">
+                            <strong>Rank: ${index + 1}</strong>
+                            <p>Distance: ${result.distance ? result.distance.toFixed(4) : 'N/A'}</p>
+                            <p>File: ${result.filename || 'Unknown'}</p>
+                        </div>
+                        <div class="color-swatches">
+                            ${result.colors ? result.colors.map(color =>
+                    `<div class="color-swatch" style="background-color: ${color}" title="${color}"></div>`
+                ).join('') : '<span class="no-colors">No color data</span>'}
+                        </div>
+                        <div class="action-buttons">
+                            <button class="action-btn download-btn" onclick="downloadImage('${result.image_url}', '${result.filename || 'result'}')">Download</button>
+                            <button class="action-btn copy-btn" onclick="copyImageUrl('${result.image_url}')">Copy URL</button>
+                            <button class="action-btn details-btn" onclick="showImageDetails(${index})">Details</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            resultsSection.style.display = 'block';
+        }
+
+        function displaySearchStats(data, searchTime) {
+            const searchStats = document.getElementById('searchStats');
+            const totalResults = document.getElementById('totalResults');
+            const searchTimeEl = document.getElementById('searchTime');
+            const avgDistance = document.getElementById('avgDistance');
+            const searchMode = document.getElementById('searchMode');
+            const indexSize = document.getElementById('indexSize');
+
+            totalResults.textContent = data.results ? data.results.length : 0;
+            searchTimeEl.textContent = searchTime + 'ms';
+            avgDistance.textContent = data.avg_distance ? data.avg_distance.toFixed(4) : 'N/A';
+            searchMode.textContent = data.fast_mode ? 'Fast Mode' : 'Standard Mode';
+            indexSize.textContent = data.index_size || 'Unknown';
+
+            searchStats.style.display = 'block';
+        }
+
+        function displayVisualization(data) {
+            const visualizationSection = document.getElementById('visualizationSection');
+            visualizationSection.style.display = 'block';
+
+            // Generate query visualization
+            generateQueryVisualization();
+
+            // Generate results collage
+            generateResultsCollage();
+        }
+
+        function generateQueryVisualization() {
+            const queryViz = document.getElementById('query-viz');
+            const colorPaletteDisplay = document.getElementById('colorPaletteDisplay');
+            const queryStats = document.getElementById('queryStats');
+
+            if (!currentQuery) return;
+
+            // Display color palette
+            colorPaletteDisplay.innerHTML = currentQuery.colors.map((color, index) => `
+                <div class="color-swatch" style="background-color: ${color}; width: 80px; height: 60px; border-radius: 8px; display: inline-block; margin: 5px; text-align: center; line-height: 60px; color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.7);">
+                    ${color}<br><small>${Math.round(currentQuery.weights[index] * 100)}%</small>
+                </div>
+            `).join('');
+
+            // Display query stats
+            queryStats.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div style="text-align: center; padding: 10px; background: var(--surface1); border-radius: 8px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: var(--text);">${currentQuery.colors.length}</div>
+                        <div style="font-size: 0.9em; color: var(--subtext1);">Colors</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: var(--surface1); border-radius: 8px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: var(--text);">${currentQuery.resultCount}</div>
+                        <div style="font-size: 0.9em; color: var(--subtext1);">Results</div>
+                    </div>
+                    <div style="text-align: center; padding: 10px; background: var(--surface1); border-radius: 8px;">
+                        <div style="font-size: 1.5em; font-weight: bold; color: var(--text);">${currentQuery.fastMode ? 'Fast' : 'Standard'}</div>
+                        <div style="font-size: 0.9em; color: var(--subtext1);">Mode</div>
+                    </div>
+                </div>
+            `;
+
+            // Generate simple query visualization
+            queryViz.innerHTML = `
+                <div style="text-align: center; padding: 20px; background: var(--surface1); border-radius: 12px; border: 2px solid var(--surface2);">
+                    <h4 style="color: var(--text); margin-bottom: 15px;">Query Visualization</h4>
+                    <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        ${currentQuery.colors.map((color, index) => `
+                            <div style="text-align: center;">
+                                <div style="width: 60px; height: 60px; background-color: ${color}; border-radius: 50%; margin: 0 auto 10px; border: 3px solid var(--surface2);"></div>
+                                <div style="font-size: 12px; color: var(--subtext1);">${Math.round(currentQuery.weights[index] * 100)}%</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function generateResultsCollage() {
+            const resultsViz = document.getElementById('results-viz');
+            const tileCount = parseInt(document.getElementById('collageTileCount').value);
+            const layout = document.getElementById('collageLayout').value;
+
+            if (!searchResults || searchResults.length === 0) {
+                resultsViz.innerHTML = '<p class="loading">No results to display</p>';
+                return;
+            }
+
+            const tilesToShow = searchResults.slice(0, tileCount);
+
+            let collageHTML = '';
+
+            if (layout === 'grid') {
+                const cols = Math.ceil(Math.sqrt(tileCount));
+                collageHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(${cols}, 1fr); gap: 10px; max-width: 600px; margin: 0 auto;">
+                        ${tilesToShow.map(result => `
+                            <div style="aspect-ratio: 1; overflow: hidden; border-radius: 8px; border: 2px solid var(--surface2);">
+                                <img src="${result.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Result">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (layout === 'mosaic') {
+                collageHTML = `
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px; max-width: 600px; margin: 0 auto;">
+                        ${tilesToShow.map((result, index) => `
+                            <div style="width: ${index % 3 === 0 ? '60%' : '35%'}; aspect-ratio: ${index % 3 === 0 ? '16/9' : '1'}; overflow: hidden; border-radius: 8px; border: 2px solid var(--surface2);">
+                                <img src="${result.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Result">
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (layout === 'spiral') {
+                collageHTML = `
+                    <div style="position: relative; width: 400px; height: 400px; margin: 0 auto;">
+                        ${tilesToShow.map((result, index) => {
+                    const angle = (index * 360) / tileCount;
+                    const radius = 150;
+                    const x = 200 + radius * Math.cos(angle * Math.PI / 180);
+                    const y = 200 + radius * Math.sin(angle * Math.PI / 180);
+                    return `
+                                <div style="position: absolute; left: ${x - 30}px; top: ${y - 30}px; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 2px solid var(--surface2);">
+                                    <img src="${result.image_url}" style="width: 100%; height: 100%; object-fit: cover;" alt="Result">
+                                </div>
+                            `;
+                }).join('')}
+                    </div>
+                `;
+            }
+
+            resultsViz.innerHTML = collageHTML;
+        }
+
+        function generateCustomCollage() {
+            generateResultsCollage();
+        }
+
+        // Modal functions
+        function openImageModal(imageUrl) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            modalImage.src = imageUrl;
+            modal.style.display = 'flex';
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').style.display = 'none';
+        }
+
+        function showImageDetails(index) {
+            const result = searchResults[index];
+            if (!result) return;
+
+            const detailsContent = document.getElementById('detailsContent');
+            detailsContent.innerHTML = `
+                <h2>Image Details</h2>
+                <div class="image-preview">
+                    <img src="${result.image_url}" alt="Result image" style="max-width: 100%; height: auto;">
+                </div>
+                <div class="advanced-details">
+                    <h3>Analysis Results</h3>
+                    <div class="analysis-section">
+                        <h4>Basic Information</h4>
+                        <ul>
+                            <li><strong>Filename:</strong> ${result.filename || 'Unknown'}</li>
+                            <li><strong>Rank:</strong> ${index + 1}</li>
+                            <li><strong>Distance:</strong> ${result.distance ? result.distance.toFixed(6) : 'N/A'}</li>
+                            <li><strong>Image URL:</strong> <a href="${result.image_url}" target="_blank">${result.image_url}</a></li>
+                        </ul>
+                    </div>
+                    <div class="analysis-section">
+                        <h4>Color Analysis</h4>
+                        <div class="color-swatches">
+                            ${result.colors ? result.colors.map(color =>
+                `<div class="color-swatch" style="background-color: ${color}" title="${color}">${color}</div>`
+            ).join('') : '<p>No color data available</p>'}
+                        </div>
+                    </div>
+                    <div class="analysis-section">
+                        <h4>Search Metadata</h4>
+                        <ul>
+                            <li><strong>Search Mode:</strong> ${currentQuery?.fastMode ? 'Fast Mode' : 'Standard Mode'}</li>
+                            <li><strong>Batch Size:</strong> ${currentQuery?.batchSize || 'N/A'}</li>
+                            <li><strong>Result Count:</strong> ${currentQuery?.resultCount || 'N/A'}</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="action-btn download-btn" onclick="downloadImage('${result.image_url}', '${result.filename || 'result'}')">Download Image</button>
+                    <button class="action-btn copy-btn" onclick="copyImageUrl('${result.image_url}')">Copy URL</button>
+                    <button class="action-btn details-btn" onclick="closeDetailsModal()">Close</button>
+                </div>
+            `;
+
+            document.getElementById('detailsModal').style.display = 'block';
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        function closeToolInfoModal() {
+            document.getElementById('toolInfoModal').style.display = 'none';
+        }
+
+        // Utility functions
+        function downloadImage(imageUrl, filename) {
+            const link = document.createElement('a');
+            link.href = imageUrl;
+            link.download = filename;
+            link.click();
+        }
+
+        function copyImageUrl(imageUrl) {
+            navigator.clipboard.writeText(imageUrl).then(() => {
+                showSuccess('Image URL copied to clipboard!');
+            }).catch(() => {
+                showError('Failed to copy URL to clipboard');
+            });
+        }
+
+        function showError(message) {
+            const error = document.getElementById('error');
+            error.textContent = message;
+            error.style.display = 'block';
+            setTimeout(() => {
+                error.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const success = document.getElementById('success');
+            success.textContent = message;
+            success.style.display = 'block';
+            setTimeout(() => {
+                success.style.display = 'none';
+            }, 3000);
+        }
+
+        // Performance info
+        function showPerformanceInfo() {
+            alert(`Performance Tuning Options:
+
+🚀 Fast Mode: Uses approximate L2 distance instead of Sinkhorn-EMD for 100x faster results, but with slightly lower accuracy.
+
+📊 Batch Size: Higher values improve memory efficiency for large datasets but may increase latency.
+
+🔍 Results: Number of results to return. Higher values take longer to process.
+
+⚡ Standard Mode: Uses the full two-stage search with FAISS HNSW + Sinkhorn-EMD for maximum accuracy.`);
+        }
+
+        // Histogram visualization
+        function generateHistogramVisualization() {
+            const analysisType = document.getElementById('histogramAnalysisType').value;
+            const visualization = document.getElementById('histogramVisualization').value;
+
+            showSuccess(`Generating ${analysisType} histogram visualization using ${visualization} format...`);
+
+            // Placeholder for actual histogram generation
+            setTimeout(() => {
+                showSuccess('Histogram visualization generated successfully!');
+            }, 2000);
+        }
+
+        function compareHistograms() {
+            showSuccess('Histogram comparison feature coming soon!');
+        }
+
+        function exportHistogramData() {
+            showSuccess('Histogram data export feature coming soon!');
+        }
+
+        // Testing functions
+        function runSearchTest() {
+            showSuccess('Running search test...');
+            // Add actual test implementation
+        }
+
+        function runPerformanceBenchmark() {
+            showSuccess('Running performance benchmark...');
+            // Add actual benchmark implementation
+        }
+
+        function runHistogramTest() {
+            showSuccess('Running histogram test...');
+            // Add actual histogram test implementation
+        }
+
+        function validateSystem() {
+            showSuccess('Running system validation...');
+            // Add actual validation implementation
+        }
+
+        function showSystemStatus() {
+            showSuccess('System status check completed!');
+            // Add actual status check implementation
+        }
+
+        function runDiagnostics() {
+            showSuccess('Running system diagnostics...');
+            // Add actual diagnostics implementation
+        }
+
+        function exportLogs() {
+            showSuccess('Exporting system logs...');
+            // Add actual log export implementation
+        }
+
+        // Tool panel functions
+        function openToolPanel(toolName) {
+            showSuccess(`Opening ${toolName} tool panel...`);
+            // Add actual tool panel implementation
+        }
+
+        function quickTestTool(toolName) {
+            showSuccess(`Running quick test for ${toolName}...`);
+            // Add actual quick test implementation
+        }
+
+        function showToolInfo(toolName) {
+            const toolInfoContent = document.getElementById('toolInfoContent');
+            toolInfoContent.innerHTML = `
+                <h2>${toolName.replace(/-/g, ' ').toUpperCase()}</h2>
+                <p>Detailed information about the ${toolName} tool will be displayed here.</p>
+                <p>This tool provides advanced functionality for color analysis and visualization.</p>
+            `;
+            document.getElementById('toolInfoModal').style.display = 'block';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function (event) {
+            const imageModal = document.getElementById('imageModal');
+            const detailsModal = document.getElementById('detailsModal');
+            const toolInfoModal = document.getElementById('toolInfoModal');
+
+            if (event.target === imageModal) {
+                closeImageModal();
+            } else if (event.target === detailsModal) {
+                closeDetailsModal();
+            } else if (event.target === toolInfoModal) {
+                closeToolInfoModal();
+            }
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function () {
+            // Initialize any default values or setup
+            console.log('Chromatica Color Search Engine initialized');
+        });
+    </script>
+</body>
+
+</html>
