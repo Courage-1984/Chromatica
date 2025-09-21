@@ -377,7 +377,87 @@ class VisualizationResponse(BaseModel):
     mime_type: str = Field(..., description="MIME type of the image")
 
 
-@app.get("/")
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the search components on application startup."""
+    global index, store
+
+    api_logger.info("Starting Chromatica Color Search Engine API...")
+    api_logger.info(f"Global variables before init: index={index}, store={store}")
+
+    try:
+        # Load the FAISS index - support custom path via environment variable
+        index_dir = os.getenv("CHROMATICA_INDEX_DIR", "index")
+        index_filename = os.getenv("CHROMATICA_INDEX_FILE", "chromatica_index.faiss")
+        index_path = Path(index_dir) / index_filename
+
+        if not index_path.exists():
+            api_logger.warning(f"FAISS index not found at {index_path}")
+            api_logger.info(
+                f"Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir {index_dir}"
+            )
+            return
+
+        # Load the DuckDB metadata store - support custom path via environment variable
+        db_filename = os.getenv("CHROMATICA_DB_FILE", "chromatica_metadata.db")
+        db_path = Path(index_dir) / db_filename
+
+        if not db_path.exists():
+            api_logger.warning(f"Metadata store not found at {db_path}")
+            api_logger.info(
+                f"Please run the indexing script first: python scripts/build_index.py <dataset> --output-dir {index_dir}"
+            )
+            return
+
+        # Initialize the search components
+        from ..indexing.store import AnnIndex, MetadataStore
+
+        index = AnnIndex()
+        index.load(str(index_path))
+        store = MetadataStore(db_path=str(db_path))
+
+        # Set search components for 3D visualization
+        set_search_components(index, store)
+
+        api_logger.info("Search components initialized successfully")
+        api_logger.info(f"FAISS index loaded: {index_path}")
+        api_logger.info(f"Metadata store loaded: {db_path}")
+        api_logger.info(f"Index directory: {index_dir}")
+        api_logger.info(
+            f"Global variables after init: index={index is not None}, store={store is not None}"
+        )
+        api_logger.info(
+            f"Environment variables: INDEX_DIR={os.getenv('CHROMATICA_INDEX_DIR', 'default')}, INDEX_FILE={os.getenv('CHROMATICA_INDEX_FILE', 'default')}, DB_FILE={os.getenv('CHROMATICA_DB_FILE', 'default')}"
+        )
+
+    except Exception as e:
+        api_logger.error(f"Failed to initialize search components: {e}")
+        api_logger.error("API will not be able to process search requests")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Clean up resources on application shutdown."""
+    global index, store
+
+    logger.info("Shutting down Chromatica Color Search Engine API...")
+
+    try:
+        if store:
+            store.close()
+            logger.info("Metadata store connection closed")
+
+        # FAISS index doesn't need explicit cleanup
+        if index:
+            logger.info("FAISS index cleanup completed")
+
+        logger.info("Cleanup completed successfully")
+
+    except Exception as e:
+        logger.error(f"Error during cleanup: {e}")
+
+
+@app.get("/", response_class=HTMLResponse)
 async def root():
     """Root endpoint with web interface."""
     try:
