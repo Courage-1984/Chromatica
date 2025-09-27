@@ -261,14 +261,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Get absolute path to static directory
-static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "static"))
-print(f"Static directory: {static_dir}")
-print(f"Static directory exists: {os.path.exists(static_dir)}")
-
-# Mount static files
-app.mount("/static", StaticFiles(directory=static_dir), name="static")
-
 # Add CORS middleware for parallel requests
 app.add_middleware(
     CORSMiddleware,

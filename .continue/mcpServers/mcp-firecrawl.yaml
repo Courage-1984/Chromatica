@@ -1,0 +1,11 @@
+name: mcp-firecrawl
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: firecrawl
+    command: npx
+    args:
+      - -y
+      - firecrawl-mcp
+    env:
+      FIRECRAWL_API_KEY: fc-17511dcdf1114e2eb5adb76eb6b12fc2

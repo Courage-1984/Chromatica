@@ -1,0 +1,9 @@
+name: mcp-Playwright-MCP
+version: 0.0.1
+schema: v1
+mcpServers:
+  - name: Playwright MCP
+    command: npx
+    args:
+      - "@playwright/mcp@latest"
+    env: {}
