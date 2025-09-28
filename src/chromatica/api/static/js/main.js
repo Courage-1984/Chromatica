@@ -1834,7 +1834,7 @@ function generateAnalogousScheme(baseColor) {
     colors.push(hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l));
     colors.push(hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l));
 
-    return { name: 'Analogous', type: 'analogous', colors: colors };
+    return colors;
 }
 
 // Generate triadic color scheme
@@ -1847,7 +1847,7 @@ function generateTriadicScheme(baseColor) {
     colors.push(hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l));
     colors.push(hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l));
 
-    return { name: 'Triadic', type: 'triadic', colors: colors };
+    return colors;
 }
 
 // Generate color schemes from search results (Step 1)
@@ -1954,21 +1954,19 @@ function generateColorSchemes(colors) {
 
         // Analogous scheme
         if (baseColors.length >= 3) {
-            const analogousScheme = generateAnalogousScheme(baseColors[0]);
             schemes.push({
-                name: analogousScheme.name,
-                type: analogousScheme.type,
-                colors: analogousScheme.colors,
+                name: 'Analogous',
+                type: 'analogous',
+                colors: generateAnalogousScheme(baseColors[0]),
                 description: 'Colors adjacent on the color wheel'
             });
         }
 
         // Triadic scheme
-        const triadicScheme = generateTriadicScheme(baseColors[0]);
         schemes.push({
-            name: triadicScheme.name,
-            type: triadicScheme.type,
-            colors: triadicScheme.colors,
+            name: 'Triadic',
+            type: 'triadic',
+            colors: generateTriadicScheme(baseColors[0]),
             description: 'Three colors evenly spaced on the color wheel'
         });
 
@@ -2125,6 +2123,13 @@ function addColorRow(color, weight = 100) {
 
     const colorRow = document.createElement('div');
     colorRow.className = 'color-row';
+    colorRow.style.display = 'flex';
+    colorRow.style.alignItems = 'center';
+    colorRow.style.gap = '10px';
+    colorRow.style.padding = '10px';
+    colorRow.style.backgroundColor = 'var(--surface0)';
+    colorRow.style.borderRadius = '6px';
+    colorRow.style.marginBottom = '8px';
 
     // Create elements individually for better control
     const colorPicker = document.createElement('input');
@@ -2161,11 +2166,67 @@ function addColorRow(color, weight = 100) {
     removeButton.onclick = () => window.removeColor(removeButton);
 
     // Append all elements to the color row
+    // Create info container for extra color details
+    const infoContainer = document.createElement('div');
+    infoContainer.className = 'color-info-container';
+    infoContainer.style.display = 'flex';
+    infoContainer.style.flexDirection = 'column';
+    infoContainer.style.marginLeft = '10px';
+
+    // Add color name with enhanced styling
+    colorName.style.fontWeight = 'bold';
+    infoContainer.appendChild(colorName);
+
+    // Add RGB values
+    const rgb = hexToRgb(color);
+    const rgbInfo = document.createElement('span');
+    rgbInfo.className = 'color-rgb-info';
+    rgbInfo.style.fontSize = '11px';
+    rgbInfo.style.color = 'var(--subtext0)';
+    rgbInfo.textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
+    infoContainer.appendChild(rgbInfo);
+
+    // Add HSL values
+    const hsl = hexToHsl(color);
+    const hslInfo = document.createElement('span');
+    hslInfo.className = 'color-hsl-info';
+    hslInfo.style.fontSize = '11px';
+    hslInfo.style.color = 'var(--subtext0)';
+    hslInfo.textContent = `HSL: ${Math.round(hsl.h)}°, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%`;
+    infoContainer.appendChild(hslInfo);
+
+    // Add complementary color info
+    const complementaryColor = getComplementaryColor(color);
+    const complementaryName = getColorName(complementaryColor);
+
+    const complementaryContainer = document.createElement('div');
+    complementaryContainer.className = 'complementary-color';
+    complementaryContainer.style.display = 'flex';
+    complementaryContainer.style.alignItems = 'center';
+    complementaryContainer.style.marginTop = '4px';
+
+    const complementarySwatch = document.createElement('div');
+    complementarySwatch.style.width = '15px';
+    complementarySwatch.style.height = '15px';
+    complementarySwatch.style.backgroundColor = complementaryColor;
+    complementarySwatch.style.border = '1px solid var(--surface2)';
+    complementarySwatch.style.borderRadius = '3px';
+    complementarySwatch.style.marginRight = '6px';
+
+    const complementaryInfo = document.createElement('span');
+    complementaryInfo.style.fontSize = '11px';
+    complementaryInfo.style.color = 'var(--subtext0)';
+    complementaryInfo.textContent = `Complementary: ${complementaryName} (${complementaryColor})`;
+
+    complementaryContainer.appendChild(complementarySwatch);
+    complementaryContainer.appendChild(complementaryInfo);
+    infoContainer.appendChild(complementaryContainer);
+
     colorRow.appendChild(colorPicker);
     colorRow.appendChild(weightSlider);
     colorRow.appendChild(weightValue);
     colorRow.appendChild(removeButton);
-    colorRow.appendChild(colorName);
+    colorRow.appendChild(infoContainer);
 
     // Add styles for color name
     const colorNameElement = colorRow.querySelector('.color-name');
@@ -2302,11 +2363,37 @@ window.removeColor = function (buttonElement) {
 // Unified handler for color picker changes
 window.handleColorPickerChange = function () {
     console.log('Color picker changed:', this.value);
+    const color = this.value;
 
-    // Update color name display in the current row
-    const colorNameDisplay = this.parentElement.querySelector('.color-name');
-    if (colorNameDisplay) {
-        colorNameDisplay.textContent = getColorName(this.value);
+    // Get the color info container
+    const infoContainer = this.parentElement.querySelector('.color-info-container');
+    if (infoContainer) {
+        // Update RGB values
+        const rgb = hexToRgb(color);
+        const rgbInfo = infoContainer.querySelector('.color-rgb-info');
+        if (rgbInfo) {
+            rgbInfo.textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
+        }
+
+        // Update HSL values
+        const hsl = hexToHsl(color);
+        const hslInfo = infoContainer.querySelector('.color-hsl-info');
+        if (hslInfo) {
+            hslInfo.textContent = `HSL: ${Math.round(hsl.h)}°, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%`;
+        }
+
+        // Update complementary color info
+        const complementaryColor = getComplementaryColor(color);
+        const complementaryName = getColorName(complementaryColor);
+        const complementaryContainer = infoContainer.querySelector('.complementary-color');
+        if (complementaryContainer) {
+            const swatch = complementaryContainer.querySelector('div');
+            const info = complementaryContainer.querySelector('span');
+            if (swatch && info) {
+                swatch.style.backgroundColor = complementaryColor;
+                info.textContent = `Complementary: ${complementaryName} (${complementaryColor})`;
+            }
+        }
     }
 
     // Update global colors and trigger palette/suggestion updates
@@ -2384,3 +2471,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Event listeners initialized');
 });
+
