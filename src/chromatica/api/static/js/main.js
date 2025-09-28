@@ -1044,6 +1044,9 @@ window.generateResultsCollage = function () {
         imgContainer.addEventListener('mouseover', () => { img.style.transform = 'scale(1.05)'; overlay.style.opacity = '0.3'; });
         imgContainer.addEventListener('mouseout', () => { img.style.transform = 'scale(1)'; overlay.style.opacity = '0'; });
         imgContainer.addEventListener('click', () => window.showImageInModal(imgSrc));
+        imgContainer.onclick = function () {
+            showImageDetails(result);
+        };
         imgContainer.appendChild(img); imgContainer.appendChild(overlay); imgContainer.appendChild(distanceIndicator); collageGrid.appendChild(imgContainer);
     });
 
@@ -1318,14 +1321,57 @@ window.updateSearchResults = function (data) {
         rankBadge.textContent = `#${index + 1}`;
         resultCard.appendChild(rankBadge);
 
-        // Image container
+        // Image container with hover overlay
         const imageContainer = document.createElement('div');
         imageContainer.className = 'result-image-container';
+        imageContainer.style.position = 'relative';
+        imageContainer.style.overflow = 'hidden';
+        imageContainer.style.borderRadius = '8px';
+        imageContainer.style.cursor = 'pointer';
+
         const img = document.createElement('img');
         img.src = imgSrc;
         img.alt = `Result ${index + 1}`;
         img.className = 'result-image';
+        img.style.transition = 'transform 0.3s ease';
         imageContainer.appendChild(img);
+
+        // Create hover overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'image-overlay';
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.right = '0';
+        overlay.style.bottom = '0';
+        overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.display = 'flex';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.opacity = '0';
+        overlay.style.transition = 'opacity 0.3s ease';
+        overlay.style.color = 'white';
+        overlay.style.fontSize = '14px';
+        overlay.style.fontWeight = 'bold';
+        overlay.textContent = 'Click to View';
+        imageContainer.appendChild(overlay);
+
+        // Add hover effects
+        imageContainer.addEventListener('mouseenter', () => {
+            overlay.style.opacity = '1';
+            img.style.transform = 'scale(1.05)';
+        });
+
+        imageContainer.addEventListener('mouseleave', () => {
+            overlay.style.opacity = '0';
+            img.style.transform = 'scale(1)';
+        });
+
+        // Add click to view full resolution
+        imageContainer.addEventListener('click', () => {
+            window.showFullResolutionImage(imgSrc);
+        });
+
         resultCard.appendChild(imageContainer);
 
         // Info section
@@ -1429,7 +1475,7 @@ window.updateSearchResults = function (data) {
         const detailsBtn = document.createElement('button');
         detailsBtn.className = 'action-btn details-btn';
         detailsBtn.innerHTML = 'Details';
-        detailsBtn.onclick = () => showImageDetails(result);
+        detailsBtn.onclick = () => showImageDetails(result, index + 1);
         buttonsContainer.appendChild(detailsBtn);
 
         infoSection.appendChild(buttonsContainer);
@@ -1444,112 +1490,251 @@ window.updateSearchResults = function (data) {
     }
 };
 
-// Show detailed information about an image result
-function showImageDetails(result) {
-    const modal = document.getElementById('detailsModal');
-    if (!modal) return;
+// Show full resolution image in a modal
+window.showFullResolutionImage = function (imageSrc) {
+    // Create or get the full resolution modal
+    let fullResModal = document.getElementById('fullResolutionModal');
+    if (!fullResModal) {
+        fullResModal = document.createElement('div');
+        fullResModal.id = 'fullResolutionModal';
+        fullResModal.style.cssText = `
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            cursor: pointer;
+        `;
+        document.body.appendChild(fullResModal);
+    }
 
-    const imgSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
-    const distance = typeof result.distance === 'number' ? result.distance.toFixed(6) : 'N/A';
-    const filename = result.filename || result.image_id || 'image';
-
-    let detailsHtml = `
-        <div class="modal-header">
-            <h2>Image Details</h2>
-            <span class="close">&times;</span>
+    const modalContent = `
+        <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
+            <img src="${imageSrc}" alt="Full resolution image" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px;">
+            <button style="position: absolute; top: 20px; right: 30px; background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 30px; cursor: pointer; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">&times;</button>
         </div>
-        <div class="modal-body">
-            <div class="details-grid">
-                <div class="image-section">
-                    <div class="image-preview">
-                        <img src="${imgSrc}" alt="${filename}" style="max-width: 100%; height: auto; border-radius: 8px;">
+    `;
+
+    fullResModal.innerHTML = modalContent;
+    fullResModal.style.display = 'block';
+
+    // Close handlers
+    const closeBtn = fullResModal.querySelector('button');
+    closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        fullResModal.style.display = 'none';
+    };
+
+    fullResModal.onclick = () => {
+        fullResModal.style.display = 'none';
+    };
+
+    // Prevent image click from closing modal
+    const img = fullResModal.querySelector('img');
+    img.onclick = (e) => e.stopPropagation();
+};
+
+// Show detailed information about an image result
+function showImageDetails(result, rank) {
+    const modal = document.getElementById('detailsModal');
+    if (!modal) {
+        console.error('Details modal not found');
+        return;
+    }
+
+    // Calculate additional metrics
+    const distance = typeof result.distance === 'number' ? result.distance : 0;
+    const matchScore = ((1 - distance) * 100).toFixed(2);
+    const imageSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
+    const colorCount = result.dominant_colors ? result.dominant_colors.length : 0;
+
+    // Determine match quality
+    let matchQuality = 'Poor';
+    let qualityColor = '#f38ba8'; // red
+    if (distance < 0.2) {
+        matchQuality = 'Excellent';
+        qualityColor = '#a6e3a1'; // green
+    } else if (distance < 0.4) {
+        matchQuality = 'Very Good';
+        qualityColor = '#94e2d5'; // teal
+    } else if (distance < 0.6) {
+        matchQuality = 'Good';
+        qualityColor = '#f9e2af'; // yellow
+    } else if (distance < 0.8) {
+        matchQuality = 'Fair';
+        qualityColor = '#fab387'; // peach
+    }
+
+    const modalContent = `
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--surface2);">
+            <h2 style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Image Details - Rank #${rank}</h2>
+            <button class="close" style="background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px; max-height: 60vh; overflow-y: auto;">
+            <div class="details-section" style="margin-bottom: 25px;">
+                <img src="${imageSrc}" alt="Result image" style="width: 100%; max-height: 300px; object-fit: contain; border-radius: 8px; background: var(--surface0);" onclick="window.showFullResolutionImage('${imageSrc}')" title="Click to view full resolution">
+            </div>
+            
+            <div class="details-section" style="margin-bottom: 25px;">
+                <h3 style="color: var(--blue); margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid var(--blue); padding-bottom: 5px;">📄 Image Information</h3>
+                <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Image ID</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold; font-family: monospace;">${result.image_id || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Rank Position</span>
+                        <span class="detail-value" style="color: var(--mauve); font-weight: bold; font-size: 18px;">#${rank}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px; grid-column: 1 / -1;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">File Path</span>
+                        <span class="detail-value" style="color: var(--text); font-family: monospace; word-break: break-all;">${result.filepath || result.image_id || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Distance Score</span>
+                        <span class="detail-value" style="color: var(--red); font-weight: bold; font-family: monospace;">${distance.toFixed(6)}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Image Format</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">JPG/PNG</span>
                     </div>
                 </div>
-                <div class="info-section">
-                    <div class="info-group">
-                        <h3>Basic Information</h3>
-                        <p><strong>Image ID:</strong> ${result.image_id}</p>
-                        <p><strong>Filename:</strong> ${filename}</p>
-                        <p><strong>Distance Score:</strong> ${distance}</p>
-                    </div>`;
+            </div>
 
-    // Add metadata if available
-    if (result.metadata) {
-        detailsHtml += `
-                    <div class="info-group">
-                        <h3>Metadata</h3>`;
-        for (const [key, value] of Object.entries(result.metadata)) {
-            detailsHtml += `<p><strong>${key}:</strong> ${value}</p>`;
-        }
-        detailsHtml += `</div>`;
-    }
-
-    // Add dominant colors with larger swatches
-    if (result.dominant_colors && Array.isArray(result.dominant_colors)) {
-        detailsHtml += `
-                    <div class="info-group">
-                        <h3>Dominant Colors</h3>
-                        <div class="modal-color-swatches">`;
-        result.dominant_colors.forEach(color => {
-            detailsHtml += `
-                            <div class="modal-color-swatch" style="background-color: ${color};" title="Click to copy: ${color}"
-                                 onclick="navigator.clipboard.writeText('${color}').then(() => this.title = 'Copied!')">
-                                <span class="color-hex">${color}</span>
-                            </div>`;
-        });
-        detailsHtml += `</div>
-                    </div>`;
-    }
-
-    // Add histogram visualization if available
-    if (result.histogram && Array.isArray(result.histogram)) {
-        detailsHtml += `
-                    <div class="info-group">
-                        <h3>Color Distribution</h3>
-                        <div class="histogram-visualization">
-                            ${createSimpleHistogramVisualization(result.histogram, 'Color')}
+            <div class="details-section" style="margin-bottom: 25px;">
+                <h3 style="color: var(--green); margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid var(--green); padding-bottom: 5px;">🎨 Color Analysis</h3>
+                <div style="background: var(--surface0); padding: 15px; border-radius: 8px;">
+                    <div style="margin-bottom: 12px;">
+                        <span style="font-size: 14px; color: var(--subtext1); font-weight: bold;">Dominant Colors (${colorCount} colors detected):</span>
+                    </div>
+                    <div class="modal-color-swatches" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                        ${result.dominant_colors ? result.dominant_colors.map((color, index) => `
+                            <div class="modal-color-swatch" style="display: flex; flex-direction: column; align-items: center; min-width: 80px;">
+                                <div style="width: 50px; height: 50px; background-color: ${color}; border-radius: 8px; border: 2px solid var(--surface2); margin-bottom: 5px; cursor: pointer;" onclick="navigator.clipboard.writeText('${color}')" title="Click to copy ${color}"></div>
+                                <span class="color-hex" style="font-size: 10px; color: var(--subtext1); font-family: monospace;">${color}</span>
+                                <span class="color-name" style="font-size: 10px; color: var(--subtext0); text-align: center; max-width: 80px; word-wrap: break-word;">${getColorName(color)}</span>
+                            </div>
+                        `).join('') : '<span style="color: var(--subtext0);">No dominant colors available</span>'}
+                    </div>
+                    <div class="color-stats" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                        <div style="color: var(--subtext1);">
+                            <strong>Color Diversity:</strong> ${colorCount > 4 ? 'High' : colorCount > 2 ? 'Medium' : 'Low'}
                         </div>
-                    </div>`;
-    }
-
-    // Add LAB color values if available
-    if (result.lab_values && Array.isArray(result.lab_values)) {
-        detailsHtml += `
-                    <div class="info-group">
-                        <h3>LAB Color Values</h3>
-                        <p><strong>L*:</strong> ${result.lab_values[0].toFixed(2)} (Lightness)</p>
-                        <p><strong>a*:</strong> ${result.lab_values[1].toFixed(2)} (Green-Red)</p>
-                        <p><strong>b*:</strong> ${result.lab_values[2].toFixed(2)} (Blue-Yellow)</p>
-                    </div>`;
-    }
-
-    detailsHtml += `
+                        <div style="color: var(--subtext1);">
+                            <strong>Color Temperature:</strong> ${result.dominant_colors && result.dominant_colors.length > 0 ? 'Mixed' : 'Unknown'}
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="modal-actions">
-                <button class="action-btn download-btn" onclick="window.location.href='${imgSrc}' download='${filename}'">Download Image</button>
-                <button class="action-btn copy-btn" onclick="navigator.clipboard.writeText('${imgSrc}')">📋 Copy URL</button>
-                <button class="action-btn" onclick="document.getElementById('detailsModal').style.display='none'">Close</button>
+
+            <div class="details-section" style="margin-bottom: 25px;">
+                <h3 style="color: var(--yellow); margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid var(--yellow); padding-bottom: 5px;">⚡ Processing Status</h3>
+                <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Index Status</span>
+                        <span class="detail-value" style="color: var(--green); font-weight: bold;">✓ Indexed</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Processing Method</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">FAISS + EMD</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Algorithm</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">Sinkhorn-EMD</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Vector Dimensions</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">512D</span>
+                    </div>
+                </div>
             </div>
-        </div>`;
 
-    modal.innerHTML = detailsHtml;
-    modal.style.display = 'block';
+            <div class="details-section" style="margin-bottom: 25px;">
+                <h3 style="color: var(--mauve); margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid var(--mauve); padding-bottom: 5px;">📊 Search Relevance</h3>
+                <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Color Match Score</span>
+                        <span class="detail-value" style="color: var(--green); font-weight: bold; font-size: 18px;">${matchScore}%</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Match Quality</span>
+                        <span class="detail-value" style="color: ${qualityColor}; font-weight: bold;">${matchQuality}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Confidence Level</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">${distance < 0.3 ? 'Very High' : distance < 0.6 ? 'High' : 'Medium'}</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Search Method</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">Two-Stage</span>
+                    </div>
+                </div>
+            </div>
 
-    // Close button functionality
+            <div class="details-section" style="margin-bottom: 25px;">
+                <h3 style="color: var(--teal); margin: 0 0 15px 0; font-size: 16px; border-bottom: 2px solid var(--teal); padding-bottom: 5px;">🔧 Technical Details</h3>
+                <div class="details-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Histogram Bins</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">64 bins</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Color Space</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">LAB</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Distance Metric</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">Earth Mover's</span>
+                    </div>
+                    <div class="detail-item" style="background: var(--surface0); padding: 10px; border-radius: 6px;">
+                        <span class="detail-label" style="display: block; font-size: 12px; color: var(--subtext0); margin-bottom: 4px;">Index Type</span>
+                        <span class="detail-value" style="color: var(--text); font-weight: bold;">HNSW</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.innerHTML = modalContent;
+
+    // Apply 70% size and center the modal
+    modal.style.cssText = `
+        display: block;
+        position: fixed;
+        z-index: 1000;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: 70%;
+        max-width: 800px;
+        max-height: 85vh;
+        background: var(--base);
+        border: 1px solid var(--surface2);
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+    `;
+
+    // Add event listener to close button
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) {
-        closeBtn.onclick = () => {
+        closeBtn.onclick = function () {
             modal.style.display = 'none';
         };
     }
 
-    // Close when clicking outside
-    window.onclick = (event) => {
+    // Close modal when clicking outside
+    const closeModal = (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
         }
     };
+
+    // Remove previous event listeners and add new one
+    modal.onclick = closeModal;
 }
 
 // Function to download preview grid as image
