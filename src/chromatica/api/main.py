@@ -36,7 +36,7 @@ import threading
 from functools import lru_cache
 
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
-from fastapi.responses import JSONResponse, Response, HTMLResponse
+from fastapi.responses import JSONResponse, Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -268,6 +268,13 @@ print(f"Static directory exists: {os.path.exists(static_dir)}")
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+# Optional: Explicitly set MIME type for .js files
+@app.get("/static/js/{file_path:path}")
+async def serve_js(file_path: str):
+    return FileResponse(f"static/js/{file_path}", media_type="application/javascript")
+
 
 # Add CORS middleware for parallel requests
 app.add_middleware(
@@ -573,12 +580,20 @@ async def search_images(
             if not color_list:
                 raise ValueError("At least one color must be specified")
 
-            # Validate hex color format
+            # Validate hex color format and strip '#' prefix if present
+            processed_colors = []
             for color in color_list:
+                # Strip '#' prefix if present
+                color = color.lstrip("#")
+
                 if not all(c in "0123456789ABCDEFabcdef" for c in color):
                     raise ValueError(f"Invalid hex color format: {color}")
                 if len(color) not in [3, 6]:
                     raise ValueError(f"Hex color must be 3 or 6 characters: {color}")
+                processed_colors.append(color)
+
+            # Update color_list with processed colors
+            color_list = processed_colors
 
             # Parse weights
             weight_list = [float(w.strip()) for w in weights.split(",") if w.strip()]

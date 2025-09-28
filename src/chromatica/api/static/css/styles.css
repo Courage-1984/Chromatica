@@ -1725,3 +1725,10 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     width: inherit !important;
 }
 
+#histogram-comparison>div:nth-child(2) {
+    margin-bottom: 275px !important;
+}
+
+#histogram-comparison>div:nth-child(2)>div:nth-child(2) {
+    margin-top: 60px !important;
+}
