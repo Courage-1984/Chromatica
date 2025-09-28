@@ -1,3 +1,28 @@
+:root {
+    /* Using Catppuccin Mocha theme colors */
+    --base: #1e1e2e;
+    --surface0: #313244;
+    --surface1: #45475a;
+    --surface2: #585b70;
+    --text: #cdd6f4;
+    --subtext0: #a6adc8;
+    --subtext1: #bac2de;
+    --blue: #89b4fa;
+    --lavender: #b4befe;
+    --sapphire: #74c7ec;
+    --sky: #89dceb;
+    --teal: #94e2d5;
+    --green: #a6e3a1;
+    --yellow: #f9e2af;
+    --peach: #fab387;
+    --maroon: #eba0ac;
+    --red: #f38ba8;
+    --mauve: #cba6f7;
+    --pink: #f5c2e7;
+    --flamingo: #f2cdcd;
+    --rosewater: #f5e0dc;
+}
+
 /* Font Face Declarations */
 @font-face {
     font-family: 'JetBrainsMono Nerd Font Mono';
@@ -496,6 +521,30 @@ h4 {
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    background: var(--mantle);
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.query-visualization {
+    margin-bottom: 2rem;
+}
+
+.query-visualization canvas {
+    border: 1px solid var(--surface0);
+    border-radius: 8px;
+    background: var(--crust);
+    margin: 1rem 0;
+    max-width: 100%;
+}
+
+.search-performance {
+    margin-top: 2rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 1rem;
 }
 
@@ -518,34 +567,11 @@ h4 {
 }
 
 .stat-label {
-    font-size: 0.85rem;
-    color: var(--subtext0);
-}
 
-/* Loading Indicator */
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 1rem 0;
-    font-weight: bold;
-    color: var(--lavender);
-}
-
-.loading::before {
-    content: '';
-    width: 20px;
-    height: 20px;
-    border: 3px solid var(--surface0);
-    border-radius: 50%;
-    border-top-color: var(--lavender);
-    margin-right: 10px;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
     }
 }
 
@@ -902,7 +928,7 @@ button[onclick*="removeColor"] {
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     font-weight: 500 !important;
 }
 
@@ -1119,7 +1145,7 @@ button[onclick*="removeColor"] {
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     font-weight: 500 !important;
 }
 
@@ -1336,7 +1362,7 @@ button[onclick*="removeColor"] {
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     font-weight: 500 !important;
 }
 
@@ -1553,7 +1579,7 @@ button[onclick*="removeColor"] {
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     font-weight: 500 !important;
 }
 
@@ -1770,7 +1796,7 @@ button[onclick*="removeColor"] {
     padding: 8px 12px !important;
     border-radius: 6px !important;
     cursor: pointer !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     font-weight: 500 !important;
 }
 
@@ -1852,7 +1878,7 @@ button[onclick*="removeColor"]:hover {
     width: 12rem !important;
 }
 
-#results-viz>div:nth-child(2)>div:nth-child(1)>div:nth-child(1) {
+#results-viz>div:nth-child(2)>div:nth-child(1)>div:nth-child {
     height: 12rem !important;
     width: 12rem !important;
 }
@@ -1868,7 +1894,7 @@ div.preview-item>div:nth-child(n) {
     color: white !important;
     padding: 3px 5px !important;
     font-size: 10px !important;
-    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: auto !important;
@@ -1887,6 +1913,215 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
 
 #histogram-comparison>div:nth-child(2)>div:nth-child(2) {
     margin-top: 60px !important;
+}
+
+#restartButton {
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+/* Fix histogram visualization styling */
+#query-histogram,
+#result-histogram {
+    background: var(--base);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--surface2);
+    min-height: 200px;
+}
+
+.histogram-section {
+    margin-top: 60px !important;
+    padding: 20px !important;
+    background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%);
+    border-radius: 12px;
+    border: 2px solid var(--green);
+    box-shadow: 0 8px 32px rgba(166, 227, 161, 0.1);
+}
+
+#results-viz>div:nth-child(2)>* {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(2)>div:nth-child(1)>div:nth-child {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(3) {
+    margin-top: 40px !important;
+}
+
+div.preview-item>div:nth-child(n) {
+    position: absolute !important;
+    bottom: 5px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace ortant;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    display: inline-block !important;
+    border-radius: 4px !important;
+    height: fit-content !important;
+}
+
+div.preview-item:nth-child(1)>img:nth-child(1) {
+    width: inherit !important;
+}
+
+#histogram-comparison>div:nth-child(2) {
+    margin-bottom: 275px !important;
+}
+
+#histogram-comparison>div:nth-child(2)>div:nth-child(2) {
+    margin-top: 60px !important;
+}
+
+/* --- PARENT CONTAINER: Creates 3 equal-width buttons --- */
+.result-buttons {
+    display: flex !Important;
+    /* Enables Flexbox */
+    gap: 10px !Important;
+    /* Puts space between the buttons */
+}
+
+/* --- CHILD BUTTONS: Makes them equal size, and centers ent inline --- */
+.action-btn {
+    /* 1. Makes all three buttons the same width */
+    flex: 1 !Important;
+    /* 2. Makes the button itself a flex container to align ent */
+    display: flex !Important;
+    /* 3. Centers the emoji and text horizontally (default ction is row) */
+    justify-content: center !Important;
+    /* 4. Centers the emoji and text vertically */
+    align-items: center !Important;
+    /* 5. Adds a small, clean gap between the emoji and the  */
+    gap: 5px !Important;
+    /* Optional: Standard button height and padding */
+    padding: 10px !Important;
+    height: 40px !Important;
+    border-radius: 5px !Important;
+    padding: 4px 2px !Important;
+    font-size: 1rem !Important;
+}
+
+.color-swatch .color-label {
+    bottom: -5px !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    font-size: 1em !important;
+    background: #6c7086 !important;
+    padding: 1px !important;
+    z-index: 999 !important;
+    border-radius: 15px !important;
+}
+
+#restartButton {
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+/* Fix histogram visualization styling */
+#query-histogram,
+#result-histogram {
+    background: var(--base);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--surface2);
+    min-height: 200px;
+}
+
+.histogram-section {
+    margin-top: 60px !important;
+    padding: 20px !important;
+    background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%);
+    border-radius: 12px;
+    border: 2px solid var(--green);
+    box-shadow: 0 8px 32px rgba(166, 227, 161, 0.1);
+}
+
+#results-viz>div:nth-child(2)>* {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(2)>div:nth-child(1):nth-child(1) {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(3) {
+    margin-top: 40px !important;
+}
+
+div.preview-item>div:nth-child(n) {
+    position: absolute !important;
+    bottom: 5px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    -family: 'JetBrainsMono Nerd Font Mono', space ortant;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    display: inline-block !important;
+    border-radius: 4px !important;
+    height: fit-content !important;
+}
+
+div.preview-item:nth-child(1)>img:nth-child(1) {
+    width: inherit !important;
+}
+
+#histogram-comparison>div:nth-child(2) {
+    margin-bottom: 275px !important;
+}
+
+#histogram-comparison>div:nth-child(2)>div:nth-child(2) {
+    margin-top: 60px !important;
+}
+
+/* --- PARENT CONTAINER: Creates 3 equal-width buttons */
+.result-buttons {
+    display: flex !Important;
+    /* Enables Flexbox */
+    gap: 10px !Important;
+    /* Puts space between the buttons */
+}
+
+.action-btn {
+    /* 1. Makes all three buttons the same width */
+    flex: 1 !Important;
+    /* 4. Centers the emoji and text vertically */
+    align-items: center !Important;
+    /* dds a small, clean gap between the emoji and  */
+    gap: 5px !Important;
+    /* Optional: Standard button height and padding */
+    padding: 10px !Important;
+    height: 40px !Important;
+    border-radius: 5px !Important;
+    padding: 4px 2px !Important;
+    font-size: 1rem !Important;
+}
+
+.color-swatch .color-label {
+    bottom: -5px !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    font-size: 1em !important;
+    background: #6c7086 !important;
+    padding: 1px !important;
+    z-index: 999 !important;
+    border-radius: 15px !important;
 }
 
 #restartButton {
@@ -1956,6 +2191,8 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
 #histogram-comparison>div:nth-child(2)>div:nth-child(2) {
     margin-top: 60px !important;
 }
+
+
 
 
 /* --- PARENT CONTAINER: Creates 3 equal-width buttons --- */
@@ -1998,10 +2235,162 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     color: #000 !important;
     font-weight: 600 !important;
     font-size: 1em !important;
-    background: #6c7086 !important;
+    background: var(--overlay0) !important;
     padding: 1px !important;
     z-index: 999 !important;
     border-radius: 15px !important;
+    color: var(--subtext1) !important;
+    background: var(--base) !important;
+}
+
+#restartButton {
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+.color-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.color-name {
+    color: var(--subtext0);
+    font-size: 12px;
+    font-style: italic;
+    margin-left: 10px;
+    flex: 1;
+    min-width: 120px;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: normal;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    line-height: normal;
+    vertical-align: middle;
+}
+
+.weight-slider {
+    width: 150px;
+    margin: 0 10px;
+}
+
+.weight-value {
+    min-width: 45px;
+    text-align: right;
+}
+
+.remove-btn {
+    background-color: var(--surface1);
+    color: var(--text);
+    border: 1px solid var(--surface2);
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.remove-btn:hover {
+    background-color: var(--surface2);
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.result-item {
+    background: var(--surface0);
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.result-item img {
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+}
+
+.result-item .score {
+    color: var(--subtext1);
+    font-size: 0.9em;
+}
+
+.color-row .remove-btn {
+    background: var(--red) !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    color: var(--crust) !important;
+}
+
+.color-row .color-name {
+    flex: inherit !important;
+    min-width: 45px !important;
+}
+
+.viz-card {
+    padding: 20px !important;
+    border-radius: 15px !important;;
+}
+
+.color-swatch > .color-name {
+    display: none !important;
+}
+
+.color-swatch:hover .color-name {
+    display: inline-block !important;
+    font-size: 11px !important;
+    color: var(--mauve) !important;
+    text-align: center !important;
+    margin-top: -40px !important;
+    background: var(--crust) !important;
+    padding: 2px !important;
+    border-radius: 15px !important;
+    position: absolute !important;
+    z-index: 9999 !important;
+}
+
+
+.color-swatch:hover+.color-swatch {
+    z-index: -9 !important;
+}
+
+/* For the generated color scheme section */
+.color-palette-swatch .color-name {
+    display: none;
+}
+
+.color-palette-swatch:hover .color-name {
+    display: inline-block;
+    font-size: 11px !important;
+    color: var(--mauve) !important;
+    text-align: center !important;
+    margin-top: -10px !important;
+    background: var(--crust) !important;
+    padding: 2px !important;
+    border-radius: 15px !important;
+    position: absolute !important;
+    z-index: 9999 !important;
+}
+
+.color-palette-swatch {
+    display: flex !important;
+    align-content: center !important;
+    justify-content: center !important;
 }
 
 

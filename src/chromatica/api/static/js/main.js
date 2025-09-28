@@ -11,18 +11,50 @@ window.addColor = function () {
     console.log('addColor called');
     const colorInputs = document.getElementById('colorInputs');
     if (!colorInputs) {
-        console.error('colorInputs element not found');
+        console.error('Color inputs container not found');
         return;
     }
 
     const colorRow = document.createElement('div');
     colorRow.className = 'color-row';
-    colorRow.innerHTML = `
-        <input type="color" class="color-picker" value="#00FF00">
-        <input type="range" class="weight-slider" min="0" max="100" value="100" step="1">
-        <span class="weight-value">100%</span>
-        <button onclick="window.removeColor(this)" class="remove-btn">Remove</button>
-    `;
+
+    // Create elements for the color row
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    colorPicker.className = 'color-picker';
+    colorPicker.value = '#00FF00';
+
+    const weightSlider = document.createElement('input');
+    weightSlider.type = 'range';
+    weightSlider.className = 'weight-slider';
+    weightSlider.min = '0';
+    weightSlider.max = '100';
+    weightSlider.value = '100';
+    weightSlider.step = '1';
+
+    const weightValue = document.createElement('span');
+    weightValue.className = 'weight-value';
+    weightValue.textContent = '100%';
+
+    const colorName = document.createElement('span');
+    colorName.className = 'color-name';
+    colorName.style.fontSize = '12px';
+    colorName.style.color = 'var(--subtext0)';
+    colorName.style.marginLeft = '10px';
+    colorName.style.fontStyle = 'italic';
+    colorName.textContent = getColorName('#00FF00');
+
+    const removeButton = document.createElement('button');
+    removeButton.className = 'remove-btn';
+    removeButton.textContent = 'Remove';
+    removeButton.onclick = () => window.removeColor(removeButton);
+
+    // Append all elements to the color row
+    colorRow.appendChild(colorPicker);
+    colorRow.appendChild(weightSlider);
+    colorRow.appendChild(weightValue);
+    colorRow.appendChild(colorName);
+    colorRow.appendChild(removeButton);
 
     colorInputs.appendChild(colorRow);
     console.log('Color row added');
@@ -31,24 +63,28 @@ window.addColor = function () {
     const newColorPicker = colorRow.querySelector('.color-picker');
     const newWeightSlider = colorRow.querySelector('.weight-slider');
     const weightDisplay = colorRow.querySelector('.weight-value');
+    const colorNameDisplay = colorRow.querySelector('.color-name');
 
     if (newColorPicker) {
-        newColorPicker.addEventListener('change', window.updateColors || function () { });
+        newColorPicker.addEventListener('change', () => {
+            if (colorNameDisplay) {
+                colorNameDisplay.textContent = getColorName(newColorPicker.value);
+            }
+            window.updateColorPalette();
+        });
     }
 
     if (newWeightSlider && weightDisplay) {
         newWeightSlider.addEventListener('input', () => {
             weightDisplay.textContent = `${newWeightSlider.value}%`;
-            if (window.updateWeights) {
-                window.updateWeights();
-            }
+            window.updateColorPalette();
         });
     }
 
     if (window.updateColorPalette) {
         window.updateColorPalette();
     } else {
-        console.log('updateColorPalette function not defined yet');
+        console.warn('updateColorPalette not available');
     }
 };
 
@@ -1215,11 +1251,7 @@ window.updateSearchResults = function (data) {
             const colorSwatches = document.createElement('div');
             colorSwatches.className = 'color-swatches';
 
-            // Debug log before processing colors
-            console.log('Processing colors for result:', result.image_id, result.dominant_colors);
-
             result.dominant_colors.forEach(color => {
-                console.log('Creating swatch for color:', color); // Debug log
                 const swatch = document.createElement('div');
                 swatch.className = 'color-swatch';
                 swatch.style.backgroundColor = color;
@@ -1229,6 +1261,16 @@ window.updateSearchResults = function (data) {
                 colorLabel.className = 'color-label';
                 colorLabel.textContent = color;
                 swatch.appendChild(colorLabel);
+
+                // Add color name below swatch
+                const colorName = document.createElement('div');
+                colorName.className = 'color-name';
+                colorName.textContent = getColorName(color);
+                colorName.style.fontSize = '11px';
+                colorName.style.color = 'var(--subtext0)';
+                colorName.style.textAlign = 'center';
+                colorName.style.marginTop = '2px';
+                swatch.appendChild(colorName);
 
                 swatch.addEventListener('click', () => {
                     navigator.clipboard.writeText(color)
@@ -1582,39 +1624,711 @@ window.restartServer = function () {
         });
 };
 
+// ============================================================================
+// COLOR ENHANCEMENTS: Color Names and Schemes (Step 1-8 Implementation)
+// ============================================================================
+
+// Global variables for color enhancements
+window.colorNames = [];
+window.colorNamesLoaded = false;
+
+// Load color names from colornames.json
+async function loadColorNames() {
+    if (window.colorNamesLoaded) {
+        console.log('Color names already loaded, colorNames length:', window.colorNames?.length);
+        return Promise.resolve();
+    }
+
+    console.log('Current window.colorNames:', window.colorNames);
+
+    try {
+        console.log('Loading color names from colornames.json...');
+        const response = await fetch('/static/colornames.json');
+        console.log('Color names fetch response:', response.status, response.statusText);
+
+        if (!response.ok) {
+            throw new Error(`Failed to load color names: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Color names data loaded:', data ? 'success' : 'empty');
+
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            throw new Error('Color names data is empty or invalid');
+        }
+
+        window.colorNames = data;
+        window.colorNamesLoaded = true;
+        console.log(`Successfully loaded ${window.colorNames.length} color names`);
+
+        // Try getting a sample color name to verify functionality
+        const sampleColor = '#FF0000';
+        const sampleName = getColorName(sampleColor);
+        console.log(`Sample color test - ${sampleColor}: "${sampleName}"`);
+
+        return Promise.resolve();
+    } catch (error) {
+        console.error('Error loading color names:', error);
+        window.colorNames = [];
+        window.colorNamesLoaded = false;
+        return Promise.reject(error);
+    }
+}
+
+// Get color name from hex value with better matching
+function getColorName(hexColor) {
+    if (!window.colorNamesLoaded || !Array.isArray(window.colorNames) || window.colorNames.length === 0) {
+        console.log('Color names not available, returning hex code');
+        return hexColor;
+    }
+
+    // Handle invalid input
+    if (!hexColor || typeof hexColor !== 'string') {
+        console.warn('Invalid color input:', hexColor);
+        return 'Invalid color';
+    }
+
+    // Remove # if present and ensure uppercase
+    const cleanHex = hexColor.replace('#', '').toUpperCase();
+
+    // Validate hex format
+    if (!/^[0-9A-F]{6}$/.test(cleanHex)) {
+        console.warn('Invalid hex format:', hexColor);
+        return hexColor;
+    }
+
+    // Find exact match first
+    const exactMatch = window.colorNames.find(color =>
+        color.hex.replace('#', '').toUpperCase() === cleanHex
+    );
+
+    if (exactMatch) {
+        console.log(`Exact match found for ${hexColor}: "${exactMatch.name}"`);
+        return exactMatch.name;
+    }
+
+    // Convert target color to Lab color space for better matching
+    const targetRgb = hexToRgb(cleanHex);
+    if (!targetRgb) {
+        console.warn('Could not convert hex to RGB:', hexColor);
+        return hexColor;
+    }
+
+    const targetLab = rgbToLab(targetRgb.r, targetRgb.g, targetRgb.b);
+
+    // Find closest color using Delta E (CIE76)
+    let closestColor = null;
+    let minDeltaE = Infinity;
+
+    for (const color of window.colorNames) {
+        const rgb = hexToRgb(color.hex.replace('#', ''));
+        if (!rgb) continue;
+
+        const lab = rgbToLab(rgb.r, rgb.g, rgb.b);
+        const deltaE = calculateDeltaE(targetLab, lab);
+
+        if (deltaE < minDeltaE) {
+            minDeltaE = deltaE;
+            closestColor = color;
+        }
+    }
+
+    if (closestColor) {
+        console.log(`Closest match for ${hexColor}: "${closestColor.name}" (ΔE: ${minDeltaE.toFixed(2)})`);
+        return closestColor.name;
+    }
+
+    console.warn('No suitable color name found for:', hexColor);
+    return hexColor;
+}
+
+// Helper function to convert hex to RGB
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+    } : null;
+}
+
+// Helper function to convert RGB to hex
+function rgbToHex(r, g, b) {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// Convert RGB to Lab color space
+function rgbToLab(r, g, b) {
+    // First convert RGB to XYZ
+    let x, y, z;
+    r = r / 255;
+    g = g / 255;
+    b = b / 255;
+
+    // Convert RGB to linear RGB (remove gamma correction)
+    r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+    g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+    b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+
+    // Convert to XYZ using D65 illuminant
+    x = (r * 0.4124 + g * 0.3576 + b * 0.1805) * 100;
+    y = (r * 0.2126 + g * 0.7152 + b * 0.0722) * 100;
+    z = (r * 0.0193 + g * 0.1192 + b * 0.9505) * 100;
+
+    // Convert XYZ to Lab
+    // Using D65 reference white
+    x = x / 95.047;
+    y = y / 100.000;
+    z = z / 108.883;
+
+    x = x > 0.008856 ? Math.pow(x, 1 / 3) : (7.787 * x) + 16 / 116;
+    y = y > 0.008856 ? Math.pow(y, 1 / 3) : (7.787 * y) + 16 / 116;
+    z = z > 0.008856 ? Math.pow(z, 1 / 3) : (7.787 * z) + 16 / 116;
+
+    return {
+        l: (116 * y) - 16,
+        a: 500 * (x - y),
+        b: 200 * (y - z)
+    };
+}
+
+// Calculate color difference using Delta E (CIE76)
+function calculateDeltaE(lab1, lab2) {
+    return Math.sqrt(
+        Math.pow(lab2.l - lab1.l, 2) +
+        Math.pow(lab2.a - lab1.a, 2) +
+        Math.pow(lab2.b - lab1.b, 2)
+    );
+}
+
+// Helper function to convert hex to HSL
+function hexToHsl(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return null;
+
+    let { r, g, b } = rgb;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+        h = s = 0;
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+// Helper function to convert HSL to hex
+function hslToHex(h, s, l) {
+    h /= 360;
+    s /= 100;
+    l /= 100;
+
+    const hue2rgb = (p, q, t) => {
+        if (t < 0) t += 1;
+        if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    };
+
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l;
+    } else {
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+
+    return rgbToHex(
+        Math.round(r * 255),
+        Math.round(g * 255),
+        Math.round(b * 255)
+    );
+}
+
+// Generate complementary color
+function getComplementaryColor(hex) {
+    const hsl = hexToHsl(hex);
+    if (!hsl) return hex;
+
+    const complementaryHue = (hsl.h + 180) % 360;
+    return hslToHex(complementaryHue, hsl.s, hsl.l);
+}
+
+// Generate monochromatic color scheme
+function generateMonochromaticScheme(baseColor) {
+    const hsl = hexToHsl(baseColor);
+    if (!hsl) return [baseColor];
+
+    const scheme = [];
+    const lightnesses = [20, 40, hsl.l, 70, 85]; // Different lightness values
+
+    lightnesses.forEach(l => {
+        scheme.push(hslToHex(hsl.h, hsl.s, Math.min(95, Math.max(5, l))));
+    });
+
+    return scheme;
+}
+
+// Generate analogous color scheme
+function generateAnalogousScheme(baseColor) {
+    const hsl = hexToHsl(baseColor);
+    if (!hsl) return [baseColor];
+
+    const scheme = [];
+    const hueOffsets = [-30, -15, 0, 15, 30]; // Degrees on color wheel
+
+    hueOffsets.forEach(offset => {
+        const newHue = (hsl.h + offset + 360) % 360;
+        scheme.push(hslToHex(newHue, hsl.s, hsl.l));
+    });
+
+    return scheme;
+}
+
+// Generate triadic color scheme
+function generateTriadicScheme(baseColor) {
+    const hsl = hexToHsl(baseColor);
+    if (!hsl) return [baseColor];
+
+    return [
+        baseColor,
+        hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l),
+        hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l)
+    ];
+}
+
+// Generate color schemes from search results (Step 1)
+window.generateColorSchemesFromResults = function () {
+    console.log('Generating color schemes from search results');
+
+    if (!window.lastSearchResults || !Array.isArray(window.lastSearchResults) || window.lastSearchResults.length === 0) {
+        window.showError('Scheme Generation Error', 'No search results available. Please perform a search first.');
+        return;
+    }
+
+    // Create or find the color schemes section
+    let schemesSection = document.getElementById('colorSchemesSection');
+    if (!schemesSection) {
+        schemesSection = document.createElement('div');
+        schemesSection.id = 'colorSchemesSection';
+        schemesSection.style.marginTop = '30px';
+        schemesSection.style.padding = '20px';
+        schemesSection.style.background = 'var(--surface1)';
+        schemesSection.style.borderRadius = '12px';
+        schemesSection.style.border = '1px solid var(--surface2)';
+
+        // Insert after results section
+        const resultsSection = document.getElementById('resultsSection');
+        if (resultsSection && resultsSection.parentNode) {
+            resultsSection.parentNode.insertBefore(schemesSection, resultsSection.nextSibling);
+        }
+    }
+
+    // Clear existing content
+    schemesSection.innerHTML = '';
+
+    // Create header
+    const header = document.createElement('h3');
+    header.textContent = '🎨 Generated Color Schemes from Results';
+    header.style.color = 'var(--text)';
+    header.style.margin = '0 0 20px 0';
+    header.style.fontFamily = "'JetBrainsMono Nerd Font Mono', monospace";
+    schemesSection.appendChild(header);
+
+    // Extract dominant colors from top results
+    const topResults = window.lastSearchResults.slice(0, 5);
+    const allColors = [];
+
+    topResults.forEach(result => {
+        if (result.dominant_colors && Array.isArray(result.dominant_colors)) {
+            allColors.push(...result.dominant_colors);
+        }
+    });
+
+    if (allColors.length === 0) {
+        schemesSection.innerHTML = '<p style="color: var(--subtext1);">No dominant colors found in search results.</p>';
+        return;
+    }
+
+    // Generate different color schemes
+    const schemes = generateColorSchemes(allColors);
+
+    // Create schemes container
+    const schemesContainer = document.createElement('div');
+    schemesContainer.style.display = 'grid';
+    schemesContainer.style.gridTemplateColumns = 'repeat(auto-fit, minmax(300px, 1fr))';
+    schemesContainer.style.gap = '20px';
+
+    schemes.forEach(scheme => {
+        const schemeCard = createSchemeCard(scheme);
+        schemesContainer.appendChild(schemeCard);
+    });
+
+    schemesSection.appendChild(schemesContainer);
+
+    // Show success message
+    window.showSuccess('Color Schemes Generated', `Created ${schemes.length} color schemes from search results.`);
+};
+
+// Generate different types of color schemes
+function generateColorSchemes(colors) {
+    const schemes = [];
+
+    // Get unique colors (remove duplicates)
+    const uniqueColors = [...new Set(colors)];
+
+    // Take first 3-5 colors for base schemes
+    const baseColors = uniqueColors.slice(0, 5);
+
+    if (baseColors.length > 0) {
+        // Monochromatic scheme based on first color
+        schemes.push({
+            name: 'Monochromatic',
+            type: 'monochromatic',
+            colors: generateMonochromaticScheme(baseColors[0]),
+            description: 'Different shades and tints of the dominant color'
+        });
+
+        // Complementary scheme
+        if (baseColors.length >= 2) {
+            schemes.push({
+                name: 'Complementary',
+                type: 'complementary',
+                colors: [baseColors[0], getComplementaryColor(baseColors[0])],
+                description: 'Colors opposite on the color wheel'
+            });
+        }
+
+        // Analogous scheme
+        if (baseColors.length >= 3) {
+            schemes.push({
+                name: 'Analogous',
+                type: 'analogous',
+                colors: generateAnalogousScheme(baseColors[0]),
+                description: 'Colors adjacent on the color wheel'
+            });
+        }
+
+        // Triadic scheme
+        schemes.push({
+            name: 'Triadic',
+            type: 'triadic',
+            colors: generateTriadicScheme(baseColors[0]),
+            description: 'Three colors evenly spaced on the color wheel'
+        });
+
+        // Result-based palette (actual dominant colors)
+        schemes.push({
+            name: 'Result Palette',
+            type: 'result-based',
+            colors: baseColors,
+            description: 'Dominant colors from your search results'
+        });
+    }
+
+    return schemes;
+}
+
+// Create a visual card for a color scheme
+function createSchemeCard(scheme) {
+    const card = document.createElement('div');
+    card.style.background = 'var(--surface0)';
+    card.style.padding = '15px';
+    card.style.borderRadius = '8px';
+    card.style.border = '1px solid var(--surface2)';
+
+    // Scheme header
+    const header = document.createElement('div');
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.marginBottom = '10px';
+
+    const title = document.createElement('h4');
+    title.textContent = scheme.name;
+    title.style.margin = '0';
+    title.style.color = 'var(--text)';
+    title.style.fontSize = '16px';
+
+    const useBtn = document.createElement('button');
+    useBtn.textContent = 'Use Scheme';
+    useBtn.style.background = 'var(--blue)';
+    useBtn.style.color = 'white';
+    useBtn.style.border = 'none';
+    useBtn.style.padding = '6px 12px';
+    useBtn.style.borderRadius = '4px';
+    useBtn.style.cursor = 'pointer';
+    useBtn.style.fontSize = '12px';
+    useBtn.onclick = () => applyColorScheme(scheme);
+
+    header.appendChild(title);
+    header.appendChild(useBtn);
+    card.appendChild(header);
+
+    // Description
+    const description = document.createElement('p');
+    description.textContent = scheme.description;
+    description.style.margin = '0 0 15px 0';
+    description.style.color = 'var(--subtext1)';
+    description.style.fontSize = '14px';
+    card.appendChild(description);
+
+    // Color swatches
+    const swatchesContainer = document.createElement('div');
+    swatchesContainer.style.display = 'flex';
+    swatchesContainer.style.gap = '8px';
+    swatchesContainer.style.flexWrap = 'wrap';
+
+    scheme.colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'color-palette-swatch';
+        swatch.style.width = '40px';
+        swatch.style.height = '40px';
+        swatch.style.backgroundColor = color;
+        swatch.style.borderRadius = '6px';
+        swatch.style.border = '2px solid var(--surface2)';
+        swatch.style.cursor = 'pointer';
+        swatch.title = `${color} - ${getColorName(color)}`;
+
+        swatch.onclick = () => {
+            navigator.clipboard.writeText(color).then(() => {
+                swatch.style.transform = 'scale(1.1)';
+                setTimeout(() => swatch.style.transform = 'scale(1)', 200);
+            });
+        };
+
+        // Add color name below swatch
+        const colorName = document.createElement('div');
+        colorName.className = 'color-name';
+        colorName.textContent = getColorName(color);
+        colorName.style.fontSize = '11px';
+        colorName.style.color = 'var(--subtext0)';
+        colorName.style.textAlign = 'center';
+        colorName.style.marginTop = '2px';
+        swatch.appendChild(colorName);
+
+        swatchesContainer.appendChild(swatch);
+    });
+
+    card.appendChild(swatchesContainer);
+
+    // Color names
+    const namesContainer = document.createElement('div');
+    namesContainer.style.marginTop = '10px';
+    namesContainer.style.fontSize = '12px';
+    namesContainer.style.color = 'var(--subtext0)';
+
+    const colorNames = scheme.colors.map(color => getColorName(color));
+    namesContainer.textContent = colorNames.join(' • ');
+    card.appendChild(namesContainer);
+
+    return card;
+}
+
+// Apply a color scheme to the current search
+function applyColorScheme(scheme) {
+    console.log('Applying color scheme:', scheme.name);
+
+    // Clear existing color inputs
+    const colorInputs = document.getElementById('colorInputs');
+    if (!colorInputs) return;
+
+    colorInputs.innerHTML = '';
+
+    // Add colors from scheme
+    scheme.colors.forEach((color, index) => {
+        const weight = index === 0 ? 100 : Math.max(20, 100 - (index * 15)); // Decreasing weights
+        addColorRow(color, weight);
+    });
+
+    // Update the color palette
+    if (window.updateColorPalette) {
+        window.updateColorPalette();
+    }
+
+    window.showSuccess('Scheme Applied', `Applied "${scheme.name}" color scheme with ${scheme.colors.length} colors.`);
+}
+
+// Helper function to add a color row
+function addColorRow(color, weight = 100) {
+    console.log('Adding color row for:', color);
+    const colorInputs = document.getElementById('colorInputs');
+    if (!colorInputs) {
+        console.error('Color inputs container not found');
+        return;
+    }
+
+    // Make sure color names are loaded
+    if (!window.colorNamesLoaded) {
+        console.log('Color names not loaded, loading now...');
+        loadColorNames();
+    }
+
+    // Get color name and validate it
+    const resolvedColorName = getColorName(color);
+    console.log(`Color name for ${color}: "${resolvedColorName}"`);
+
+    const colorRow = document.createElement('div');
+    colorRow.className = 'color-row';
+
+    // Create elements individually for better control
+    const colorPicker = document.createElement('input');
+    colorPicker.type = 'color';
+    colorPicker.className = 'color-picker';
+    colorPicker.value = color;
+
+    const weightSlider = document.createElement('input');
+    weightSlider.type = 'range';
+    weightSlider.className = 'weight-slider';
+    weightSlider.min = '0';
+    weightSlider.max = '100';
+    weightSlider.value = weight;
+    weightSlider.step = '1';
+
+    const weightValue = document.createElement('span');
+    weightValue.className = 'weight-value';
+    weightValue.textContent = `${weight}%`;
+
+    const colorName = document.createElement('span');
+    colorName.className = 'color-name';
+    colorName.style.fontSize = '12px';
+    colorName.style.color = 'var(--subtext0)';
+    colorName.style.marginLeft = '10px';
+    colorName.style.fontStyle = 'italic';
+    colorName.style.display = 'inline-block';
+    colorName.textContent = resolvedColorName;
+
+    const removeButton = document.createElement('button');
+    removeButton.className = 'remove-btn';
+    removeButton.textContent = 'Remove';
+    removeButton.onclick = () => window.removeColor(removeButton);
+
+    // Append all elements to the color row
+    colorRow.appendChild(colorPicker);
+    colorRow.appendChild(weightSlider);
+    colorRow.appendChild(weightValue);
+    colorRow.appendChild(removeButton);
+    colorRow.appendChild(colorName);
+
+    // Add styles for color name
+    const colorNameElement = colorRow.querySelector('.color-name');
+    if (colorNameElement) {
+        colorNameElement.style.fontSize = '12px';
+        colorNameElement.style.color = 'var(--subtext0)';
+        colorNameElement.style.marginLeft = '10px';
+        colorNameElement.style.fontStyle = 'italic';
+        colorNameElement.style.display = 'inline-block'; // Ensure visibility
+    }
+
+    colorInputs.appendChild(colorRow);
+
+    // Add event listeners to new elements
+    const newColorPicker = colorRow.querySelector('.color-picker');
+    const newWeightSlider = colorRow.querySelector('.weight-slider');
+    const weightDisplay = colorRow.querySelector('.weight-value');
+    const colorNameDisplay = colorRow.querySelector('.color-name');
+
+    if (newColorPicker) {
+        newColorPicker.addEventListener('change', function () {
+            // Update the color name when color changes
+            if (colorNameDisplay) {
+                colorNameDisplay.textContent = getColorName(newColorPicker.value);
+            }
+            // Call the original updateColors function
+            if (window.updateColors) {
+                window.updateColors();
+            }
+        });
+    }
+
+    if (newWeightSlider && weightDisplay) {
+        newWeightSlider.addEventListener('input', () => {
+            weightDisplay.textContent = `${newWeightSlider.value}%`;
+            if (window.updateWeights) {
+                window.updateWeights();
+            }
+        });
+    }
+}
+
 // Initialize event listeners when the document is loaded
 document.addEventListener('DOMContentLoaded', function () {
     console.log('Document loaded, initializing event listeners');
+
+    // Load color names and initialize UI after loading
+    loadColorNames().then(() => {
+        // Add initial color if none exist
+        const colorInputs = document.getElementById('colorInputs');
+        if (colorInputs && !colorInputs.children.length) {
+            addColor();
+        }
+
+        // Update any existing color rows with names
+        const existingColorRows = document.querySelectorAll('.color-row');
+        existingColorRows.forEach(row => {
+            const colorPicker = row.querySelector('.color-picker');
+            let colorName = row.querySelector('.color-name');
+
+            if (colorPicker && !colorName) {
+                colorName = document.createElement('span');
+                colorName.className = 'color-name';
+                colorName.style.fontSize = '12px';
+                colorName.style.color = 'var(--subtext0)';
+                colorName.style.marginLeft = '10px';
+                colorName.style.fontStyle = 'italic';
+                colorName.textContent = getColorName(colorPicker.value);
+
+                // Insert before the remove button
+                const removeBtn = row.querySelector('.remove-btn');
+                if (removeBtn) {
+                    row.insertBefore(colorName, removeBtn);
+                } else {
+                    row.appendChild(colorName);
+                }
+
+                // Add color picker change listener
+                colorPicker.addEventListener('change', function () {
+                    colorName.textContent = getColorName(this.value);
+                    window.updateColorPalette();
+                });
+            }
+        });
+    });
 
     // Initialize modal close buttons
     const modalCloseButtons = document.querySelectorAll('.close, .image-close');
     modalCloseButtons.forEach(button => {
         button.addEventListener('click', function () {
             const modal = this.closest('.modal, .image-modal');
-            if (modal) modal.style.display = 'none';
+            if (modal) {
+                modal.style.display = 'none';
+            }
         });
     });
 
     // Initialize color inputs
     window.updateColorPalette();
-
-    // Add an initial color picker event listener if not already set
-    const initialColorPicker = document.querySelector('.color-picker');
-    if (initialColorPicker) {
-        initialColorPicker.addEventListener('change', window.updateColors || function () { });
-    }
-
-    // Add an initial weight slider event listener if not already set
-    const initialWeightSlider = document.querySelector('.weight-slider');
-    const initialWeightValue = document.querySelector('.weight-value');
-    if (initialWeightSlider && initialWeightValue) {
-        initialWeightSlider.addEventListener('input', () => {
-            initialWeightValue.textContent = `${initialWeightSlider.value}%`;
-            if (window.updateWeights) {
-                window.updateWeights();
-            }
-        });
-    }
 
     console.log('Event listeners initialized');
 });

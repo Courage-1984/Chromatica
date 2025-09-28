@@ -244,6 +244,25 @@
             <h2>🔍 Top Search Results</h2>
             <div class="results-grid" id="resultsGrid"></div>
 
+            <!-- Color Schemes Section -->
+            <div class="color-schemes-section"
+                style="margin-top: 30px; padding: 20px; background: var(--surface1); border-radius: 12px; border: 1px solid var(--surface2);">
+                <h3
+                    style="color: var(--text); margin: 0 0 15px 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                    🎨 Generate Color Schemes from Results
+                </h3>
+
+                <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
+                    <button onclick="generateColorSchemesFromResults()"
+                        style="background: var(--mauve); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        🎨 Generate Schemes
+                    </button>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 14px;">
+                        Create harmonious color palettes based on your search results
+                    </p>
+                </div>
+            </div>
+
             <!-- Results Collage Section -->
             <div class="collage-section"
                 style="margin-top: 30px; padding: 20px; background: var(--surface1); border-radius: 12px; border: 1px solid var(--surface2);">
@@ -251,7 +270,6 @@
                     style="color: var(--text); margin: 0 0 15px 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
                     🖼️ Results Collage
                 </h3>
-
                 <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
                     <div style="display: flex; align-items: center; gap: 10px;">
                         <label for="tileCount" style="color: var(--subtext1); font-size: 14px; font-weight: 500;">Tiles

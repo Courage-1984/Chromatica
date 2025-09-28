@@ -115,3 +115,78 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     border-radius: 15px !important;
 }
 
+#restartButton {
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+
+.color-row .remove-btn {
+background: #e53e3e !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+}
+
+.color-row .color-name {
+    flex: inherit !important;
+    min-width: 45px !important;
+}
+
+.viz-card {
+    padding: 20px !important;
+    border-radius: 15px !important;
+    ;
+}
+
+.color-swatch>.color-name {
+    display: none !important;
+}
+
+
+.color-swatch:hover .color-name {
+    display: inline-block !important;
+    font-size: 11px !important;
+    color: var(--mauve) !important;
+    text-align: center !important;
+    margin-top: -40px !important;
+    background: var(--crust) !important;
+    padding: 2px !important;
+    border-radius: 15px !important;
+    position: absolute !important;
+    z-index: 9999 !important;
+}
+
+
+.color-swatch:hover+.color-swatch {
+    z-index: -9 !important;
+}
+
+/* For the generated color scheme section */
+.color-palette-swatch .color-name {
+    display: none;
+}
+
+.color-palette-swatch:hover .color-name {
+    display: inline-block;
+    font-size: 11px !important;
+    color: var(--mauve) !important;
+    text-align: center !important;
+    margin-top: -10px !important;
+    background: var(--crust) !important;
+    padding: 2px !important;
+    border-radius: 15px !important;
+    position: absolute !important;
+    z-index: 9999 !important;
+}
+
+.color-palette-swatch {
+    display: flex !important;
+    align-content: center !important;
+    justify-content: center !important;
+}
+
