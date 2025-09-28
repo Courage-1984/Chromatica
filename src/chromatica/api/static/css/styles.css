@@ -1993,4 +1993,15 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
 
 }
 
+.color-swatch .color-label {
+    bottom: -5px !important;
+    color: #000 !important;
+    font-weight: 600 !important;
+    font-size: 1em !important;
+    background: #6c7086 !important;
+    padding: 1px !important;
+    z-index: 999 !important;
+    border-radius: 15px !important;
+}
+
 
