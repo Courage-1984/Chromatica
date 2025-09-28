@@ -19,6 +19,11 @@
     <link rel="apple-touch-icon"
         href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23cba6f7'/><circle cx='30' cy='30' r='15' fill='%23f5c2e7'/><circle cx='70' cy='30' r='15' fill='%23f2cdcd'/><circle cx='30' cy='70' r='15' fill='%23a6e3a1'/><circle cx='70' cy='70' r='15' fill='%23f9e2af'/></svg>">
 
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <link rel="manifest" href="/static/site.webmanifest">
+
     <link rel="stylesheet" type="text/css" href="/static/css/styles.css">
 
 </head>
@@ -39,6 +44,8 @@
                         style="background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Remove</button>
                 </div>
             </div>
+            <!-- Color Suggestions -->
+            <div id="colorSuggestions"></div>
             <button class="add-color-btn" onclick="addColor()">+ Add Another Color</button>
 
             <!-- Performance Tuning Options -->
@@ -230,10 +237,7 @@
                         <span>🔍</span>
                         <span>Compare Histograms</span>
                     </button>
-                    <button onclick="exportHistogramData()"
-                        style="background: linear-gradient(45deg, var(--yellow), var(--peach)); color: var(--base); border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(249, 226, 175, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
-                        <span>💾</span>
-                        <span>Export Data</span>
+                    <button onclick="exportHistogramData()" <span>Export Data</span>
                     </button>
                 </div>
             </div>

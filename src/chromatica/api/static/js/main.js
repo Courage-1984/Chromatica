@@ -9,83 +9,9 @@ window.weights = [100];
 // Explicitly expose functions to global scope
 window.addColor = function () {
     console.log('addColor called');
-    const colorInputs = document.getElementById('colorInputs');
-    if (!colorInputs) {
-        console.error('Color inputs container not found');
-        return;
-    }
-
-    const colorRow = document.createElement('div');
-    colorRow.className = 'color-row';
-
-    // Create elements for the color row
-    const colorPicker = document.createElement('input');
-    colorPicker.type = 'color';
-    colorPicker.className = 'color-picker';
-    colorPicker.value = '#00FF00';
-
-    const weightSlider = document.createElement('input');
-    weightSlider.type = 'range';
-    weightSlider.className = 'weight-slider';
-    weightSlider.min = '0';
-    weightSlider.max = '100';
-    weightSlider.value = '100';
-    weightSlider.step = '1';
-
-    const weightValue = document.createElement('span');
-    weightValue.className = 'weight-value';
-    weightValue.textContent = '100%';
-
-    const colorName = document.createElement('span');
-    colorName.className = 'color-name';
-    colorName.style.fontSize = '12px';
-    colorName.style.color = 'var(--subtext0)';
-    colorName.style.marginLeft = '10px';
-    colorName.style.fontStyle = 'italic';
-    colorName.textContent = getColorName('#00FF00');
-
-    const removeButton = document.createElement('button');
-    removeButton.className = 'remove-btn';
-    removeButton.textContent = 'Remove';
-    removeButton.onclick = () => window.removeColor(removeButton);
-
-    // Append all elements to the color row
-    colorRow.appendChild(colorPicker);
-    colorRow.appendChild(weightSlider);
-    colorRow.appendChild(weightValue);
-    colorRow.appendChild(colorName);
-    colorRow.appendChild(removeButton);
-
-    colorInputs.appendChild(colorRow);
-    console.log('Color row added');
-
-    // Add event listeners
-    const newColorPicker = colorRow.querySelector('.color-picker');
-    const newWeightSlider = colorRow.querySelector('.weight-slider');
-    const weightDisplay = colorRow.querySelector('.weight-value');
-    const colorNameDisplay = colorRow.querySelector('.color-name');
-
-    if (newColorPicker) {
-        newColorPicker.addEventListener('change', () => {
-            if (colorNameDisplay) {
-                colorNameDisplay.textContent = getColorName(newColorPicker.value);
-            }
-            window.updateColorPalette();
-        });
-    }
-
-    if (newWeightSlider && weightDisplay) {
-        newWeightSlider.addEventListener('input', () => {
-            weightDisplay.textContent = `${newWeightSlider.value}%`;
-            window.updateColorPalette();
-        });
-    }
-
-    if (window.updateColorPalette) {
-        window.updateColorPalette();
-    } else {
-        console.warn('updateColorPalette not available');
-    }
+    // Call the helper function to add a new row with default values
+    addColorRow('#00FF00', 100);
+    window.updateColorSuggestions();
 };
 
 // Update colors, weights, and color palette
@@ -107,6 +33,9 @@ window.updateColorPalette = function () {
     console.log('Updating color palette');
     window.updateColors();
     window.updateWeights();
+
+    // Update color suggestions whenever the palette changes
+    window.updateColorSuggestions();
 
     // Create a color palette visualization if there's a container for it
     const paletteContainer = document.getElementById('colorPalette');
@@ -1822,6 +1751,8 @@ function hexToHsl(hex) {
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
         switch (max) {
+
+
             case r: h = (g - b) / d + (g < b ? 6 : 0); break;
             case g: h = (b - r) / d + 2; break;
             case b: h = (r - g) / d + 4; break;
@@ -1868,54 +1799,55 @@ function hslToHex(h, s, l) {
 
 // Generate complementary color
 function getComplementaryColor(hex) {
+    // Convert hex to HSL
     const hsl = hexToHsl(hex);
-    if (!hsl) return hex;
 
-    const complementaryHue = (hsl.h + 180) % 360;
-    return hslToHex(complementaryHue, hsl.s, hsl.l);
+    // Add 180 degrees to hue for complementary color
+    hsl.h = (hsl.h + 180) % 360;
+
+    // Convert back to hex
+    return hslToHex(hsl.h, hsl.s, hsl.l);
 }
 
 // Generate monochromatic color scheme
 function generateMonochromaticScheme(baseColor) {
     const hsl = hexToHsl(baseColor);
-    if (!hsl) return [baseColor];
+    const colors = [];
 
-    const scheme = [];
-    const lightnesses = [20, 40, hsl.l, 70, 85]; // Different lightness values
+    // Generate variations by adjusting lightness and saturation
+    colors.push(baseColor); // Original color
+    colors.push(hslToHex(hsl.h, hsl.s, Math.max(0, hsl.l - 0.3))); // Darker
+    colors.push(hslToHex(hsl.h, Math.min(100, hsl.s + 0.2), hsl.l)); // More saturated
+    colors.push(hslToHex(hsl.h, hsl.s, Math.min(1, hsl.l + 0.3))); // Lighter
+    colors.push(hslToHex(hsl.h, Math.max(0, hsl.s - 0.2), hsl.l)); // Less saturated
 
-    lightnesses.forEach(l => {
-        scheme.push(hslToHex(hsl.h, hsl.s, Math.min(95, Math.max(5, l))));
-    });
-
-    return scheme;
+    return colors;
 }
 
 // Generate analogous color scheme
 function generateAnalogousScheme(baseColor) {
     const hsl = hexToHsl(baseColor);
-    if (!hsl) return [baseColor];
+    const colors = [];
 
-    const scheme = [];
-    const hueOffsets = [-30, -15, 0, 15, 30]; // Degrees on color wheel
+    // Generate analogous colors (30 degrees apart)
+    colors.push(baseColor); // Original color
+    colors.push(hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l));
+    colors.push(hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l));
 
-    hueOffsets.forEach(offset => {
-        const newHue = (hsl.h + offset + 360) % 360;
-        scheme.push(hslToHex(newHue, hsl.s, hsl.l));
-    });
-
-    return scheme;
+    return { name: 'Analogous', type: 'analogous', colors: colors };
 }
 
 // Generate triadic color scheme
 function generateTriadicScheme(baseColor) {
     const hsl = hexToHsl(baseColor);
-    if (!hsl) return [baseColor];
+    const colors = [];
 
-    return [
-        baseColor,
-        hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l),
-        hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l)
-    ];
+    // Generate triadic colors (120 degrees apart)
+    colors.push(baseColor); // Original color
+    colors.push(hslToHex((hsl.h + 120) % 360, hsl.s, hsl.l));
+    colors.push(hslToHex((hsl.h + 240) % 360, hsl.s, hsl.l));
+
+    return { name: 'Triadic', type: 'triadic', colors: colors };
 }
 
 // Generate color schemes from search results (Step 1)
@@ -2022,19 +1954,21 @@ function generateColorSchemes(colors) {
 
         // Analogous scheme
         if (baseColors.length >= 3) {
+            const analogousScheme = generateAnalogousScheme(baseColors[0]);
             schemes.push({
-                name: 'Analogous',
-                type: 'analogous',
-                colors: generateAnalogousScheme(baseColors[0]),
+                name: analogousScheme.name,
+                type: analogousScheme.type,
+                colors: analogousScheme.colors,
                 description: 'Colors adjacent on the color wheel'
             });
         }
 
         // Triadic scheme
+        const triadicScheme = generateTriadicScheme(baseColors[0]);
         schemes.push({
-            name: 'Triadic',
-            type: 'triadic',
-            colors: generateTriadicScheme(baseColors[0]),
+            name: triadicScheme.name,
+            type: triadicScheme.type,
+            colors: triadicScheme.colors,
             description: 'Three colors evenly spaced on the color wheel'
         });
 
@@ -2197,6 +2131,8 @@ function addColorRow(color, weight = 100) {
     colorPicker.type = 'color';
     colorPicker.className = 'color-picker';
     colorPicker.value = color;
+    // We'll handle the event listener in a unified way below
+    // Not adding event listener here to avoid duplicates
 
     const weightSlider = document.createElement('input');
     weightSlider.type = 'range';
@@ -2250,27 +2186,132 @@ function addColorRow(color, weight = 100) {
     const colorNameDisplay = colorRow.querySelector('.color-name');
 
     if (newColorPicker) {
-        newColorPicker.addEventListener('change', function () {
-            // Update the color name when color changes
-            if (colorNameDisplay) {
-                colorNameDisplay.textContent = getColorName(newColorPicker.value);
-            }
-            // Call the original updateColors function
-            if (window.updateColors) {
-                window.updateColors();
-            }
-        });
+        // Attach the unified handler
+        newColorPicker.addEventListener('change', window.handleColorPickerChange);
+        newColorPicker.addEventListener('input', window.handleColorPickerChange); // For live updates
     }
 
     if (newWeightSlider && weightDisplay) {
         newWeightSlider.addEventListener('input', () => {
             weightDisplay.textContent = `${newWeightSlider.value}%`;
-            if (window.updateWeights) {
-                window.updateWeights();
-            }
+            window.updateColorPalette(); // This will also update colors and suggestions
         });
     }
 }
+
+// Generate color suggestions based on current selection
+window.generateColorSuggestions = function () {
+    console.log('Generating color suggestions');
+    const currentColors = window.colors;
+    if (!currentColors || currentColors.length === 0) {
+        return [];
+    }
+
+    const suggestions = new Set();
+
+    // Consider all colors for generating suggestions, not just the last one
+    currentColors.forEach(color => {
+        // Add complementary color for each existing color
+        suggestions.add(getComplementaryColor(color));
+
+        // Add colors from analogous scheme
+        generateAnalogousScheme(color).colors.forEach(c => suggestions.add(c));
+
+        // Add some colors from triadic scheme
+        if (currentColors.length <= 4) {
+            generateTriadicScheme(color).colors.forEach(c => suggestions.add(c));
+        }
+
+        // Add some monochromatic variations
+        generateMonochromaticScheme(color).slice(0, 2).forEach(c => suggestions.add(c));
+    });
+
+    // Remove colors that are already selected
+    currentColors.forEach(color => suggestions.delete(color));
+
+    // Convert to array and limit to 5 suggestions
+    return Array.from(suggestions).slice(0, 5);
+};
+
+// Update the suggestion display
+window.updateColorSuggestions = function () {
+    console.log('Updating color suggestions display');
+    const container = document.getElementById('colorSuggestions');
+    if (!container) {
+        console.error('Color suggestions container not found');
+        return;
+    }
+
+    // Ensure colors array is up to date by reading from the DOM
+    window.updateColors();
+
+    // Log the colors being used for suggestions
+    console.log('Generating suggestions based on colors:', window.colors);
+
+    // Generate suggestions
+    const suggestions = window.generateColorSuggestions();
+    container.innerHTML = '';
+
+    if (suggestions.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'flex';
+    const label = document.createElement('span');
+    label.className = 'suggestion-label';
+    label.textContent = 'Suggested colors (based on first colour): ';
+    container.appendChild(label);
+
+    suggestions.forEach(color => {
+        const suggestionBtn = document.createElement('button');
+        suggestionBtn.className = 'color-suggestion';
+        suggestionBtn.style.backgroundColor = color;
+        suggestionBtn.title = `Add ${getColorName(color)}`;
+
+        // Add a tooltip with the color name
+        const colorName = document.createElement('span');
+        colorName.className = 'color-name-tooltip';
+        colorName.textContent = getColorName(color);
+        suggestionBtn.appendChild(colorName);
+
+        suggestionBtn.addEventListener('click', () => {
+            addColorRow(color);
+            window.updateColorPalette();
+            window.updateColorSuggestions();
+        });
+
+        container.appendChild(suggestionBtn);
+    });
+};
+
+// Extend the addColor function to update suggestions
+const originalAddColor = window.addColor;
+window.addColor = function () {
+    originalAddColor();
+    window.updateColorSuggestions();
+};
+
+// Extend the removeColor function to update suggestions
+const originalRemoveColor = window.removeColor;
+window.removeColor = function (buttonElement) {
+    originalRemoveColor(buttonElement);
+    window.updateColorSuggestions();
+};
+
+// Unified handler for color picker changes
+window.handleColorPickerChange = function () {
+    console.log('Color picker changed:', this.value);
+
+    // Update color name display in the current row
+    const colorNameDisplay = this.parentElement.querySelector('.color-name');
+    if (colorNameDisplay) {
+        colorNameDisplay.textContent = getColorName(this.value);
+    }
+
+    // Update global colors and trigger palette/suggestion updates
+    window.updateColorPalette();
+};
 
 // Initialize event listeners when the document is loaded
 document.addEventListener('DOMContentLoaded', function () {
@@ -2281,36 +2322,47 @@ document.addEventListener('DOMContentLoaded', function () {
         // Add initial color if none exist
         const colorInputs = document.getElementById('colorInputs');
         if (colorInputs && !colorInputs.children.length) {
+            addColorRow('#FF0000');
+            window.updateColorSuggestions();  // Initialize suggestions for the default color
             addColor();
         }
 
-        // Update any existing color rows with names
+        // Update any existing color rows with names and attach the unified handler
         const existingColorRows = document.querySelectorAll('.color-row');
         existingColorRows.forEach(row => {
             const colorPicker = row.querySelector('.color-picker');
             let colorName = row.querySelector('.color-name');
 
-            if (colorPicker && !colorName) {
-                colorName = document.createElement('span');
-                colorName.className = 'color-name';
-                colorName.style.fontSize = '12px';
-                colorName.style.color = 'var(--subtext0)';
-                colorName.style.marginLeft = '10px';
-                colorName.style.fontStyle = 'italic';
+            if (colorPicker) {
+                if (!colorName) {
+                    colorName = document.createElement('span');
+                    colorName.className = 'color-name';
+                    colorName.style.fontSize = '12px';
+                    colorName.style.color = 'var(--subtext0)';
+                    colorName.style.marginLeft = '10px';
+                    colorName.style.fontStyle = 'italic';
+                    colorName.style.display = 'inline-block'; // Ensure visibility
+                    // Insert before the remove button if it exists, otherwise append
+                    const removeBtn = row.querySelector('.remove-btn');
+                    if (removeBtn) {
+                        row.insertBefore(colorName, removeBtn);
+                    } else {
+                        row.appendChild(colorName);
+                    }
+                }
                 colorName.textContent = getColorName(colorPicker.value);
 
-                // Insert before the remove button
-                const removeBtn = row.querySelector('.remove-btn');
-                if (removeBtn) {
-                    row.insertBefore(colorName, removeBtn);
-                } else {
-                    row.appendChild(colorName);
-                }
+                // Attach the unified handler to existing color pickers
+                colorPicker.addEventListener('change', window.handleColorPickerChange);
+                colorPicker.addEventListener('input', window.handleColorPickerChange); // For live updates
+            }
 
-                // Add color picker change listener
-                colorPicker.addEventListener('change', function () {
-                    colorName.textContent = getColorName(this.value);
-                    window.updateColorPalette();
+            const weightSlider = row.querySelector('.weight-slider');
+            const weightDisplay = row.querySelector('.weight-value');
+            if (weightSlider && weightDisplay) {
+                weightSlider.addEventListener('input', () => {
+                    weightDisplay.textContent = `${weightSlider.value}%`;
+                    window.updateColorPalette(); // This will also update colors and suggestions
                 });
             }
         });
