@@ -121,7 +121,7 @@ h3,
 h4,
 button,
 .tool-icon {
-    font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'Android Emoji', 'EmojiSymbols', 'EmojiOne Mozilla', 'Twemoji Mozilla', 'Segoe UI Symbol', 'Arial Unicode MS', 'JetBrainsMono Nerd Font Mono', monospace;
+    font-family: 'Segoe UI Emoji', 'Segoe UI Symbol', 'Apple Color Emoji', 'Android Emoji', 'EmojiSymbols', 'EmojiOne Mozilla', 'Twemoji Mozilla', 'Segoe UI Symbol', 'Arial Unicode MS', 'JetBrainsMono Nerd Font Mono', monospace;
 }
 
 /* Headings with mixed fonts */
@@ -1699,5 +1699,29 @@ div.viz-card {
 #results-viz>div:nth-child(2)>div:nth-child(1)>div:nth-child(1) {
     height: 12rem !important;
     width: 12rem !important;
+}
+
+#results-viz>div:nth-child(3) {
+    margin-top: 40px !important;
+}
+
+div.preview-item>div:nth-child(n) {
+    position: absolute !important;
+    bottom: 5px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    display: inline-block !important;
+    border-radius: 4px !important;
+    height: fit-content !important;
+}
+
+div.preview-item:nth-child(1)>img:nth-child(1) {
+    width: inherit !important;
 }
 
