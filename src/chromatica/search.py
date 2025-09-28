@@ -420,12 +420,11 @@ def find_similar(
 
         for i, (distance, index_idx) in enumerate(zip(distances[0], indices[0])):
             if index_idx < len(image_ids):
-                image_id = image_ids[index_idx]
-                candidate_image_ids.append(image_id)
-                ann_scores.append(float(distance))
+                candidate_image_ids.append(image_ids[index_idx])
+                ann_scores.append(distance)
             else:
                 logger.warning(
-                    f"FAISS index {index_idx} out of range for metadata store"
+                    f"Index {index_idx} out of range for image_ids (len={len(image_ids)})"
                 )
 
         if not candidate_image_ids:
@@ -488,9 +487,12 @@ def find_similar(
             use_parallel=False,  # Disable parallel processing to avoid memory issues
             streaming_mode=True,  # Enable streaming mode for memory efficiency
             early_termination_count=min(
-                10, len(candidate_histograms)  # More aggressive early termination
-            ),  # Limit processing
-            early_termination_threshold=0.05,  # Higher threshold for faster termination
+                max_rerank,
+                len(candidate_histograms),  # Use max_rerank for early termination limit
+            ),  # Respect requested rerank count
+            early_termination_threshold=(
+                0.1 if use_approximate_reranking else 0.05
+            ),  # Adjust threshold based on mode
         )
 
         rerank_time = time.time() - rerank_start_time

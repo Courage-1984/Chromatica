@@ -469,6 +469,15 @@ window.updateVisualization = function (data) {
     }
 };
 
+// Function to play sound on search completion
+function playSearchCompleteSound() {
+    const audio = new Audio('/static/ding_sound.mp3');
+    audio.volume = 0.5; // Set volume to 50%
+    audio.play().catch(error => {
+        console.warn('Could not play search complete sound:', error);
+    });
+};
+
 // Create simple histogram visualization function
 function createSimpleHistogramVisualization(histogram, title) {
     if (!histogram || !Array.isArray(histogram)) {
@@ -505,36 +514,166 @@ function createSimpleHistogramVisualization(histogram, title) {
     return html;
 }
 
+// Create a color distribution histogram visualization
+function createColorDistributionHistogram(colors, options = {}) {
+    if (!Array.isArray(colors) || colors.length === 0) {
+        return '<div class="histogram-container">No color data available.</div>';
+    }
+
+    // Count occurrences of each color
+    const colorCounts = {};
+    colors.forEach(hex => {
+        const color = hex.toLowerCase();
+        colorCounts[color] = (colorCounts[color] || 0) + 1;
+    });
+
+    // Calculate total count for percentage calculation
+    const totalCount = Object.values(colorCounts).reduce((sum, count) => sum + count, 0);
+
+    // Sort colors by count descending, then by color value
+    const sortedColors = Object.keys(colorCounts).sort((a, b) => {
+        const countDiff = colorCounts[b] - colorCounts[a];
+        return countDiff !== 0 ? countDiff : a.localeCompare(b);
+    });
+
+    // Get max count for scaling
+    const maxCount = Math.max(...Object.values(colorCounts));
+
+    // Build histogram bars
+    let barsHtml = '';
+    sortedColors.forEach(color => {
+        const count = colorCounts[color];
+        const percentage = ((count / totalCount) * 100).toFixed(1);
+        const heightPercent = ((count / maxCount) * 100).toFixed(1);
+
+        barsHtml += `
+            <div class="histogram-bar" style="
+                flex: 1;
+                height: ${heightPercent}%;
+                background: ${color};
+                min-width: 4px;
+                border-radius: 2px 2px 0 0;
+                position: relative;
+                transition: transform 0.2s ease;
+            " title="${color} (${count} occurrences, ${percentage}%)"></div>
+        `;
+    });
+
+    // Create the histogram container with bars
+    return `
+        <div class="histogram-container" style="
+            padding: 10px;
+            background: var(--surface0);
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        ">
+            <div class="histogram-bars" style="
+                display: flex;
+                align-items: flex-end;
+                height: 100px;
+                gap: 2px;
+                background: var(--base);
+                border-radius: 4px;
+                padding: 4px;
+            ">
+                ${barsHtml}
+            </div>
+        </div>
+    `;
+}
+
+// Color conversion helper function for histogram
+function hexToHsl(hexColor) {
+    if (!hexColor) return null;
+
+    // Remove # if present and convert to RGB
+    const hex = hexColor.replace('#', '');
+    const r = parseInt(hex.substring(0, 2), 16) / 255;
+    const g = parseInt(hex.substring(2, 4), 16) / 255;
+    const b = parseInt(hex.substring(4, 6), 16) / 255;
+
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+
+    if (max === min) {
+        h = s = 0; // achromatic
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+
+    return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
 // Fix the histogram visualization function to use the defined function
 window.generateHistogramVisualization = function () {
     console.log('Generating histogram visualization');
 
-    // Store search results if they're available
-    if (window.lastSearchResults === undefined && window.searchResults) {
-        window.lastSearchResults = window.searchResults;
+    // Check if we have search results
+    if (!window.lastSearchResults || !Array.isArray(window.lastSearchResults) || window.lastSearchResults.length === 0) {
+        window.showError('No Search Results', 'Please perform a search first to generate histogram visualizations.');
+        return;
     }
 
-    // Generate mock histogram data
-    const generateMockHistogram = () => {
-        const length = 32;
-        return Array(length).fill(0).map(() => Math.random() * 0.8 + 0.1); // Values between 0.1 and 0.9
-    };
+    console.log('lastSearchResults:', window.lastSearchResults);
 
     const queryHistogram = document.getElementById('query-histogram');
     const resultHistogram = document.getElementById('result-histogram');
 
+    console.log('DOM elements:', { queryHistogram, resultHistogram });
+    console.log('Results exists:', window.lastSearchResults.length > 0);
+
+    // Create color distribution histogram from dominant colors
+    function createColorDistributionHistogram(colors) {
+        // Create 32 bins for hue values (0-360 degrees)
+        const histogram = new Array(32).fill(0);
+
+        colors.forEach(color => {
+            const hsl = hexToHsl(color);
+            if (!hsl) return;
+            // Map hue (0-360) to bin index (0-31)
+            const binIndex = Math.floor((hsl.h / 360) * 32);
+            // Weight by saturation and lightness to give more impact to vivid colors
+            const weight = (hsl.s / 100) * (1 - Math.abs((hsl.l - 50) / 100));
+            histogram[binIndex] += weight;
+        });
+
+        // Normalize histogram
+        const sum = histogram.reduce((a, b) => a + b, 0);
+        return histogram.map(v => v / (sum || 1));
+    }
+
     if (queryHistogram) {
-        // Generate histogram data
-        const histData = generateMockHistogram();
-        queryHistogram.innerHTML = createSimpleHistogramVisualization(histData, 'Query');
-        queryHistogram.style.display = 'block'; // Ensure it's visible
+        const currentColors = window.colors || [];
+        if (currentColors.length > 0) {
+            const queryColorHist = createColorDistributionHistogram(currentColors);
+            queryHistogram.innerHTML = createSimpleHistogramVisualization(queryColorHist, 'Query Colors');
+            queryHistogram.style.display = 'block';
+        } else {
+            queryHistogram.innerHTML = '<p style="text-align: center; color: var(--subtext0);">No query colors available</p>';
+            queryHistogram.style.display = 'block';
+        }
     }
 
     if (resultHistogram) {
-        // Generate different histogram data for result
-        const histData = generateMockHistogram();
-        resultHistogram.innerHTML = createSimpleHistogramVisualization(histData, 'Top Result');
-        resultHistogram.style.display = 'block'; // Ensure it's visible
+        const firstResult = window.lastSearchResults[0];
+        if (firstResult?.dominant_colors && firstResult.dominant_colors.length > 0) {
+            // Create histogram from dominant colors
+            const resultColorHist = createColorDistributionHistogram(firstResult.dominant_colors);
+            resultHistogram.innerHTML = createSimpleHistogramVisualization(resultColorHist, 'Result Colors');
+            resultHistogram.style.display = 'block';
+        } else {
+            resultHistogram.innerHTML = '<p style="text-align: center; color: var(--subtext0);">No dominant colors available</p>';
+            resultHistogram.style.display = 'block';
+        }
     }
 
     // Show the histogram section if it exists
@@ -546,171 +685,181 @@ window.generateHistogramVisualization = function () {
     window.showSuccess('Histogram Visualization', 'Generated histogram visualization successfully.');
 };
 
-// Compare histograms and display visual comparison
+// Compare histograms between query and result
 window.compareHistograms = function () {
-    console.log('Comparing histograms');
+    console.log('Comparing histograms - Start');
 
-    // Check if we have search results
-    if (!window.lastSearchResults || !Array.isArray(window.lastSearchResults) || window.lastSearchResults.length === 0) {
-        window.showError('Comparison Error', 'No search results available. Please perform a search first.');
+    // Get current search results and colors
+    if (!window.lastSearchResults || !window.lastSearchResults.length) {
+        window.showError('Comparison Error', 'No search results available');
+        return;
+    }
+    console.log('Last search results:', window.lastSearchResults);
+
+    // Get current colors from color inputs
+    const colors = [];
+    const colorInputs = document.querySelectorAll('.color-picker');
+    colorInputs.forEach(input => colors.push(input.value));
+    console.log('Current colors:', colors);
+
+    if (!colors.length) {
+        window.showError('Comparison Error', 'No query colors selected');
         return;
     }
 
-    // Find the histogram section and ensure it's displayed
+    // Find the histogram section
     const histogramSection = document.querySelector('.histogram-section');
     if (!histogramSection) {
-        window.showError('Comparison Error', 'Histogram section not found in the DOM.');
+        window.showError('Comparison Error', 'Histogram section not found');
+        return;
+    }
+    console.log('Found histogram section:', histogramSection);
+
+    // Get query histogram element
+    const queryHistogram = document.getElementById('query-histogram');
+    if (!queryHistogram) {
+        window.showError('Comparison Error', 'Query histogram element not found');
+        return;
+    }
+    console.log('Query histogram element:', queryHistogram);
+
+    // Generate query histogram
+    console.log('Current colors for query histogram:', colors);
+    console.log('Generating query histogram from colors');
+    const queryHistogramHtml = createColorDistributionHistogram(colors);
+    queryHistogram.innerHTML = queryHistogramHtml;
+    console.log('Query color histogram generated:', queryHistogramHtml);
+
+    // Get result histogram element
+    const resultHistogram = document.getElementById('result-histogram');
+    if (!resultHistogram) {
+        window.showError('Comparison Error', 'Result histogram element not found');
+        return;
+    }
+    console.log('Result histogram element:', resultHistogram);
+
+    // Get first search result's dominant colors
+    const firstResult = window.lastSearchResults[0];
+    console.log('First search result:', firstResult);
+
+    if (!firstResult || !firstResult.dominant_colors) {
+        window.showError('Comparison Error', 'No dominant colors found in search result');
         return;
     }
 
-    histogramSection.style.display = 'block';
+    // Generate result histogram
+    console.log('Generating result histogram from dominant colors:', firstResult.dominant_colors);
+    const resultHistogramHtml = createColorDistributionHistogram(firstResult.dominant_colors);
+    resultHistogram.innerHTML = resultHistogramHtml;
+    console.log('Result color histogram generated:', resultHistogramHtml);
 
-    // Generate mock query histogram data if not available
-    const queryHistogram = document.getElementById('query-histogram');
-    if (queryHistogram) {
-        // Either use existing histogram or generate mock data
-        const queryHistData = Array(32).fill(0).map(() => Math.random() * 0.8 + 0.1);
-        queryHistogram.innerHTML = createSimpleHistogramVisualization(queryHistData, 'Query');
-        queryHistogram.style.display = 'block';
+    // Get comparison container
+    const comparisonContainer = document.getElementById('histogram-comparison');
+    if (!comparisonContainer) {
+        window.showError('Comparison Error', 'Comparison container not found');
+        return;
     }
+    console.log('Found comparison container');
 
-    // Get top result histogram
-    const resultHistogram = document.getElementById('result-histogram');
-    if (resultHistogram) {
-        // Either use top result histogram or generate mock data
-        const resultHistData = window.lastSearchResults[0]?.histogram ||
-            Array(32).fill(0).map(() => Math.random() * 0.8 + 0.1);
+    try {
+        // Generate comparison data
+        const histogramData = {
+            queryData: colors,
+            resultData: firstResult.dominant_colors
+        };
+        console.log('Generated histogram data:', histogramData);
 
-        resultHistogram.innerHTML = createSimpleHistogramVisualization(resultHistData, 'Top Result');
-        resultHistogram.style.display = 'block';
-    }
+        // Calculate color similarity metrics
+        const metrics = calculateColorSimilarityMetrics(histogramData.queryData, histogramData.resultData);
 
-    // Create a comparison visualization
-    const comparisonSection = document.createElement('div');
-    comparisonSection.id = 'histogram-comparison';
-    comparisonSection.style.marginTop = '30px';
-    comparisonSection.style.padding = '20px';
-    comparisonSection.style.background = 'var(--surface0)';
-    comparisonSection.style.borderRadius = '12px';
-    comparisonSection.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-
-    let comparisonHTML = `
-        <h5 style="text-align: center; color: var(--text); margin-bottom: 20px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Histogram Comparison</h5>
-        <div style="position: relative; height: 200px; margin-bottom: 25px;">
-    `;
-
-    // Generate comparison data (either use real data or mock data)
-    const queryData = Array(32).fill(0).map(() => Math.random() * 0.8 + 0.1);
-    const resultData = Array(32).fill(0).map(() => Math.random() * 0.8 + 0.1);
-
-    // Calculate differences for comparison
-    const diffData = queryData.map((val, i) => Math.abs(val - (resultData[i] || 0)));
-    const maxDiff = Math.max(...diffData);
-
-    // Draw comparison visualization
-    comparisonHTML += `
-        <div style="display: flex; height: 150px; align-items: flex-end; gap: 2px;">
-    `;
-
-    for (let i = 0; i < queryData.length; i++) {
-        const queryHeight = queryData[i] * 150;
-        const resultHeight = resultData[i] * 150;
-        const diffHeight = (diffData[i] / maxDiff) * 50; // Scale difference to max 50px
-        const diffColor = diffHeight > 25 ? 'var(--red)' : diffHeight > 10 ? 'var(--yellow)' : 'var(--green)';
-
-        comparisonHTML += `
-            <div style="flex-grow: 1; position: relative;">
-                <div style="
-                    position: absolute;
-                    bottom: 0;
-                    height: ${queryHeight}px;
-                    width: 45%;
-                    left: 0;
-                    background: hsla(${Math.round((i / queryData.length) * 360)}, 70%, 60%, 0.7);
-                    border-radius: 3px 3px 0 0;
-                "></div>
-                <div style="
-                    position: absolute;
-                    bottom: 0;
-                    height: ${resultHeight}px;
-                    width: 45%;
-                    right: 0;
-                    background: hsla(${Math.round((i / resultData.length) * 360)}, 70%, 60%, 0.7);
-                    border-radius: 3px 3px 0 0;
-                "></div>
-                <div style="
-                    position: absolute;
-                    top: 0;
-                    height: ${diffHeight}px;
-                    width: 100%;
-                    background: ${diffColor};
-                    opacity: 0.4;
-                    border-radius: 0 0 3px 3px;
-                "></div>
+        // Create comparison visualization
+        const comparisonHtml = `
+            <div class="comparison-metrics" style="
+                margin: 20px 0;
+                padding: 15px;
+                background: var(--surface0);
+                border-radius: 8px;
+                border: 1px solid var(--surface2);
+            ">
+                <h4 style="margin: 0 0 10px 0; color: var(--text);">Color Distribution Analysis</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div class="metric-card">
+                        <div class="metric-title">Color Count</div>
+                        <div class="metric-value">Query: ${histogramData.queryData.length} / Result: ${histogramData.resultData.length}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Average Distance</div>
+                        <div class="metric-value">${metrics.averageDistance.toFixed(2)}</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-title">Similarity Score</div>
+                        <div class="metric-value">${(metrics.similarityScore * 100).toFixed(1)}%</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; font-size: 14px; color: var(--subtext0);">
+                    <strong>Analysis:</strong> ${metrics.analysis}
+                </div>
             </div>
         `;
+
+        comparisonContainer.innerHTML = comparisonHtml;
+        window.showSuccess('Comparison Complete', 'Histogram comparison generated successfully');
+    } catch (err) {
+        console.error('Error during histogram comparison:', err);
+        window.showError('Comparison Error', 'Error generating histogram comparison: ' + err.message);
     }
-
-    comparisonHTML += `
-        </div>
-        <div style="display: flex; justify-content: center; margin: 15px 0; padding: 10px; gap: 25px; background: var(--surface1); border-radius: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 18px; height: 18px; background: var(--blue); opacity: 0.8; border-radius: 3px;"></div>
-                <span style="font-size: 13px; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Query</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 18px; height: 18px; background: var(--mauve); opacity: 0.8; border-radius: 3px;"></div>
-                <span style="font-size: 13px; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Result</span>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <div style="width: 18px; height: 18px; background: var(--green); opacity: 0.5; border-radius: 3px;"></div>
-                <span style="font-size: 13px; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Difference</span>
-            </div>
-        </div>
-    `;
-
-    // Add histogram stats
-    const querySum = queryData.reduce((sum, val) => sum + val, 0);
-    const resultSum = resultData.reduce((sum, val) => sum + val, 0);
-    const totalDiff = diffData.reduce((sum, val) => sum + val, 0);
-    const similarity = 1 - (totalDiff / Math.max(querySum, resultSum));
-
-    comparisonHTML += `
-        <div style="margin-top: 20px; background: var(--surface0); padding: 15px; border-radius: 8px;">
-            <h5 style="margin-top: 0; color: var(--text); text-align: center;">Similarity Analysis</h5>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;">
-                <div>
-                    <div style="font-size: 14px; color: var(--subtext0);">Similarity Score:</div>
-                    <div style="font-size: 20px; font-weight: bold; color: var(--green);">${(similarity * 100).toFixed(2)}%</div>
-                </div>
-                <div>
-                    <div style="font-size: 14px; color: var(--subtext0);">Distance Score:</div>
-                    <div style="font-size: 20px; font-weight: bold, color: var(--text);">${totalDiff.toFixed(4)}</div>
-                </div>
-                <div>
-                    <div style="font-size: 14px; color: var(--subtext0);">Max Bin Difference:</div>
-                    <div style="font-size: 16px; color: var(--text);">${maxDiff.toFixed(4)}</div>
-                </div>
-                <div>
-                    <div style="font-size: 14px; color: var(--subtext0);">Avg Bin Difference:</div>
-                    <div style="font-size: 16px; color: var(--text);">${(totalDiff / diffData.length).toFixed(4)}</div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    comparisonSection.innerHTML = comparisonHTML;
-
-    // Add to the DOM if not already there
-    const existingComparison = document.getElementById('histogram-comparison');
-    if (existingComparison) {
-        existingComparison.innerHTML = comparisonHTML;
-    } else if (histogramSection) {
-        histogramSection.appendChild(comparisonSection);
-    }
-
-    window.showSuccess('Comparison Complete', 'Histogram comparison visualization generated.');
 };
+
+// Calculate color similarity metrics between two sets of colors
+function calculateColorSimilarityMetrics(queryColors, resultColors) {
+    // Convert colors to Lab color space for better comparison
+    const queryLab = queryColors.map(color => {
+        const rgb = hexToRgb(color);
+        return rgbToLab(rgb.r, rgb.g, rgb.b);
+    });
+
+    const resultLab = resultColors.map(color => {
+        const rgb = hexToRgb(color);
+        return rgbToLab(rgb.r, rgb.g, rgb.b);
+    });
+
+    // Calculate average color distance
+    let totalDistance = 0;
+    let minDistance = Infinity;
+    let maxDistance = 0;
+
+    queryLab.forEach(queryColor => {
+        resultLab.forEach(resultColor => {
+            const distance = calculateDeltaE(queryColor, resultColor);
+            totalDistance += distance;
+            minDistance = Math.min(minDistance, distance);
+            maxDistance = Math.max(maxDistance, distance);
+        });
+    });
+
+    const averageDistance = totalDistance / (queryLab.length * resultLab.length);
+    const similarityScore = Math.max(0, 1 - (averageDistance / 100));
+
+    // Generate analysis text
+    let analysis = '';
+    if (similarityScore > 0.8) {
+        analysis = 'Very high color similarity between query and result.';
+    } else if (similarityScore > 0.6) {
+        analysis = 'Good color similarity with some variations in distribution.';
+    } else if (similarityScore > 0.4) {
+        analysis = 'Moderate color similarity with significant differences.';
+    } else {
+        analysis = 'Low color similarity, suggesting distinct color distributions.';
+    }
+
+    return {
+        averageDistance,
+        similarityScore,
+        minDistance,
+        maxDistance,
+        analysis
+    };
+}
 
 // Generate a collage of search results
 window.generateResultsCollage = function () {
@@ -993,7 +1142,12 @@ function updateSearchStats(data) {
     if (totalResults) totalResults.textContent = resultCount;
     if (searchTime) searchTime.textContent = `${timeMs.toFixed(2)}ms`;
     if (avgDistance) avgDistance.textContent = avgDist.toFixed(3);
-    if (searchMode) searchMode.textContent = data.metadata?.fast_mode ? 'Fast' : 'Standard';
+    if (searchMode) {
+        // Check multiple possible locations for fast_mode flag
+        const isFastMode = data.metadata?.fast_mode || data.fast_mode || false;
+        searchMode.textContent = isFastMode ? 'Fast' : 'Standard';
+        console.log('Search mode:', isFastMode ? 'Fast' : 'Standard');
+    }
     if (indexSize) indexSize.textContent = data.metadata?.index_size?.toLocaleString() || 'N/A';
 
     // Show stats section
@@ -1053,13 +1207,26 @@ window.performSearch = async function () {
         const batchSize = parseInt(document.getElementById('batchSize')?.value || '10');
         const resultCount = parseInt(document.getElementById('resultCount')?.value || '10');
 
-        const searchParams = new URLSearchParams({
-            colors: colors.join(','),
-            weights: normalizedWeights.join(','),
-            k: resultCount,
-            fast_mode: fastMode,
-            batch_size: batchSize
+        // Log search configuration for debugging
+        console.log('Search configuration:', {
+            resultCount,
+            fastMode,
+            batchSize,
+            colors: colors.length,
+            weights: normalizedWeights.length
         });
+
+        const searchParams = new URLSearchParams();
+        // Add parameters one by one for better control
+        searchParams.append('colors', colors.join(','));
+        searchParams.append('weights', normalizedWeights.join(','));
+        searchParams.append('k', resultCount.toString());
+        searchParams.append('n_results', resultCount.toString());
+        searchParams.append('fast_mode', fastMode.toString());
+        searchParams.append('batch_size', batchSize.toString());
+
+        // Log the final URL parameters
+        console.log('Search URL parameters:', searchParams.toString());
 
         // Try to fetch search results
         const response = await fetch(`/search?${searchParams.toString()}`);
@@ -1071,6 +1238,9 @@ window.performSearch = async function () {
         }
 
         const data = await response.json();
+
+        // Add fast_mode to the response data for the stats display
+        data.fast_mode = fastMode;
 
         // Calculate search time if not provided by server
         const searchEndTime = performance.now();
@@ -1124,6 +1294,9 @@ window.showImageInModal = function (imageSrc) {
 
 // Function to update search results in the UI
 window.updateSearchResults = function (data) {
+    // Play the sound when results are ready
+    playSearchCompleteSound();
+
     const resultsGrid = document.getElementById('resultsGrid');
     if (!resultsGrid) return;
 
@@ -1654,10 +1827,10 @@ function getColorName(hexColor) {
         if (!rgb) continue;
 
         const lab = rgbToLab(rgb.r, rgb.g, rgb.b);
-        const deltaE = calculateDeltaE(targetLab, lab);
+        const distance = calculateDeltaE(targetLab, lab);
 
-        if (deltaE < minDeltaE) {
-            minDeltaE = deltaE;
+        if (distance < minDeltaE) {
+            minDeltaE = distance;
             closestColor = color;
         }
     }
@@ -1751,8 +1924,6 @@ function hexToHsl(hex) {
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
 
         switch (max) {
-
-
             case r: h = (g - b) / d + (g < b ? 6 : 0); break;
             case g: h = (b - r) / d + 2; break;
             case b: h = (r - g) / d + 4; break;
@@ -1859,9 +2030,12 @@ window.generateColorSchemesFromResults = function () {
         return;
     }
 
-    // Create or find the color schemes section
+    // Find or create the color schemes section
     let schemesSection = document.getElementById('colorSchemesSection');
+    const resultsSection = document.getElementById('resultsSection');
+
     if (!schemesSection) {
+        // Create new color schemes section if it doesn't exist
         schemesSection = document.createElement('div');
         schemesSection.id = 'colorSchemesSection';
         schemesSection.style.marginTop = '30px';
@@ -1869,16 +2043,17 @@ window.generateColorSchemesFromResults = function () {
         schemesSection.style.background = 'var(--surface1)';
         schemesSection.style.borderRadius = '12px';
         schemesSection.style.border = '1px solid var(--surface2)';
-
-        // Insert after results section
-        const resultsSection = document.getElementById('resultsSection');
-        if (resultsSection && resultsSection.parentNode) {
-            resultsSection.parentNode.insertBefore(schemesSection, resultsSection.nextSibling);
-        }
+    } else {
+        // Clear existing content
+        schemesSection.innerHTML = '';
+        // Remove it from its current position
+        schemesSection.remove();
     }
 
-    // Clear existing content
-    schemesSection.innerHTML = '';
+    // Insert after results section
+    if (resultsSection && resultsSection.parentNode) {
+        resultsSection.parentNode.insertBefore(schemesSection, resultsSection.nextSibling);
+    }
 
     // Create header
     const header = document.createElement('h3');
@@ -1934,11 +2109,14 @@ function generateColorSchemes(colors) {
     const baseColors = uniqueColors.slice(0, 5);
 
     if (baseColors.length > 0) {
+        // Ensure all color arrays are valid before adding to schemes
+        const ensureColorArray = (colors) => Array.isArray(colors) ? colors : [];
+
         // Monochromatic scheme based on first color
         schemes.push({
             name: 'Monochromatic',
             type: 'monochromatic',
-            colors: generateMonochromaticScheme(baseColors[0]),
+            colors: ensureColorArray(generateMonochromaticScheme(baseColors[0])),
             description: 'Different shades and tints of the dominant color'
         });
 
@@ -1948,7 +2126,7 @@ function generateColorSchemes(colors) {
                 name: 'Complementary',
                 type: 'complementary',
                 colors: [baseColors[0], getComplementaryColor(baseColors[0])],
-                description: 'Colors opposite on the color wheel'
+                description: 'Two colors opposite on the color wheel'
             });
         }
 
@@ -1957,7 +2135,7 @@ function generateColorSchemes(colors) {
             schemes.push({
                 name: 'Analogous',
                 type: 'analogous',
-                colors: generateAnalogousScheme(baseColors[0]),
+                colors: ensureColorArray(generateAnalogousScheme(baseColors[0])),
                 description: 'Colors adjacent on the color wheel'
             });
         }
@@ -1966,7 +2144,7 @@ function generateColorSchemes(colors) {
         schemes.push({
             name: 'Triadic',
             type: 'triadic',
-            colors: generateTriadicScheme(baseColors[0]),
+            colors: ensureColorArray(generateTriadicScheme(baseColors[0])),
             description: 'Three colors evenly spaced on the color wheel'
         });
 
@@ -2276,11 +2454,17 @@ window.generateColorSuggestions = function () {
         suggestions.add(getComplementaryColor(color));
 
         // Add colors from analogous scheme
-        generateAnalogousScheme(color).colors.forEach(c => suggestions.add(c));
+        const analogousScheme = generateAnalogousScheme(color);
+        if (analogousScheme && analogousScheme.colors) {
+            analogousScheme.colors.forEach(c => suggestions.add(c));
+        }
 
         // Add some colors from triadic scheme
         if (currentColors.length <= 4) {
-            generateTriadicScheme(color).colors.forEach(c => suggestions.add(c));
+            const triadicScheme = generateTriadicScheme(color);
+            if (triadicScheme && triadicScheme.colors) {
+                triadicScheme.colors.forEach(c => suggestions.add(c));
+            }
         }
 
         // Add some monochromatic variations
@@ -2321,7 +2505,7 @@ window.updateColorSuggestions = function () {
     container.style.display = 'flex';
     const label = document.createElement('span');
     label.className = 'suggestion-label';
-    label.textContent = 'Suggested colors (based on first colour): ';
+    label.textContent = 'Suggested colors : ';
     container.appendChild(label);
 
     suggestions.forEach(color => {
@@ -2365,8 +2549,18 @@ window.handleColorPickerChange = function () {
     console.log('Color picker changed:', this.value);
     const color = this.value;
 
+    // Get the color info container and color name element
+    const colorRow = this.parentElement;
+    const infoContainer = colorRow.querySelector('.color-info-container');
+    const colorNameElement = colorRow.querySelector('.color-name');
+
+    // Update the color name
+    if (colorNameElement) {
+        const newColorName = getColorName(color);
+        colorNameElement.textContent = newColorName;
+    }
+
     // Get the color info container
-    const infoContainer = this.parentElement.querySelector('.color-info-container');
     if (infoContainer) {
         // Update RGB values
         const rgb = hexToRgb(color);

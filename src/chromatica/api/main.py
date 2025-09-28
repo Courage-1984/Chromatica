@@ -159,9 +159,22 @@ def decrement_concurrent_searches() -> None:
 
 
 async def perform_search_async(
-    query_histogram: np.ndarray, k: int, fast_mode: bool, batch_size: int
+    query_histogram: np.ndarray,
+    k: int,
+    max_rerank: int,
+    fast_mode: bool,
+    batch_size: int,
 ) -> List[Any]:
-    """Perform search operation asynchronously using thread pool."""
+    """
+    Perform search operation asynchronously using thread pool.
+
+    Args:
+        query_histogram: The query histogram to search with
+        k: Number of candidates to retrieve from FAISS
+        max_rerank: Number of candidates to rerank
+        fast_mode: Whether to use fast L2 distance instead of Sinkhorn-EMD
+        batch_size: Batch size for reranking operations
+    """
     global index, store, thread_pool
 
     if thread_pool is None:
@@ -175,10 +188,10 @@ async def perform_search_async(
         query_histogram,
         index,
         store,
-        k,
-        k,  # max_rerank
-        fast_mode,
-        batch_size,
+        k,  # Number of candidates to retrieve from FAISS
+        max_rerank,  # Number of results to rerank
+        fast_mode,  # Whether to use fast L2 distance
+        batch_size,  # Batch size for reranking
     )
 
     return search_results
@@ -201,22 +214,59 @@ async def lifespan(app: FastAPI):
         )
         api_logger.info(f"Initialized thread pool with {max_workers} workers")
 
-        # Load the FAISS index
+        # Load the FAISS index - first check environment variables
         index_dir = os.getenv("CHROMATICA_INDEX_DIR", "index")
+        api_logger.info(f"Using index directory from env: {index_dir}")
+
+        # Also try the 85k directory if the default doesn't work
+        alternate_dirs = ["index", "85k", "data"]
+
+        # Log absolute paths for debugging
+        for dir_name in [index_dir] + alternate_dirs:
+            abs_path = os.path.abspath(dir_name)
+            api_logger.info(f"Checking directory: {dir_name} (absolute: {abs_path})")
+            api_logger.info(f"  Directory exists: {os.path.exists(abs_path)}")
+
+            # Check for index files
+            faiss_file = os.path.join(abs_path, "chromatica_index.faiss")
+            db_file = os.path.join(abs_path, "chromatica_metadata.db")
+            api_logger.info(f"  FAISS index exists: {os.path.exists(faiss_file)}")
+            api_logger.info(f"  Metadata DB exists: {os.path.exists(db_file)}")
+
+        # First try the env directory
         index_filename = os.getenv("CHROMATICA_INDEX_FILE", "chromatica_index.faiss")
         index_path = Path(index_dir) / index_filename
-
-        if not index_path.exists():
-            api_logger.warning(f"FAISS index not found at {index_path}")
-            return
-
-        # Load the DuckDB metadata store
         db_filename = os.getenv("CHROMATICA_DB_FILE", "chromatica_metadata.db")
         db_path = Path(index_dir) / db_filename
 
-        if not db_path.exists():
-            api_logger.warning(f"Metadata store not found at {db_path}")
-            return
+        # Check if files exist in primary location
+        if not index_path.exists() or not db_path.exists():
+            api_logger.warning(f"Files not found in primary location: {index_dir}")
+            api_logger.warning(f"FAISS index exists: {index_path.exists()}")
+            api_logger.warning(f"Metadata DB exists: {db_path.exists()}")
+
+            # Try alternate directories
+            for alt_dir in alternate_dirs:
+                if alt_dir != index_dir:  # Skip if it's the same as the primary
+                    alt_index_path = Path(alt_dir) / index_filename
+                    alt_db_path = Path(alt_dir) / db_filename
+
+                    if alt_index_path.exists() and alt_db_path.exists():
+                        api_logger.info(
+                            f"Found files in alternate directory: {alt_dir}"
+                        )
+                        index_path = alt_index_path
+                        db_path = alt_db_path
+                        break
+
+            # Still not found?
+            if not index_path.exists():
+                api_logger.error(f"FAISS index not found at {index_path} or alternates")
+                return
+
+            if not db_path.exists():
+                api_logger.error(f"Metadata store not found at {db_path} or alternates")
+                return
 
         # Initialize the search components
         from ..indexing.store import AnnIndex, MetadataStore
@@ -510,6 +560,12 @@ async def search_images(
         description="Comma-separated list of float weights, corresponding to colors",
     ),
     k: int = Query(50, description="Number of results to return", ge=1, le=200),
+    n_results: int = Query(
+        None,
+        description="Alternative parameter for number of results to return (will override k if provided)",
+        ge=1,
+        le=200,
+    ),
     fuzz: float = Query(
         1.0, description="Gaussian sigma multiplier for query fuzziness", ge=0.1, le=5.0
     ),
@@ -538,7 +594,10 @@ async def search_images(
         colors: Comma-separated hex color codes (e.g., "ea6a81,f6d727")
         weights: Comma-separated weights (e.g., "0.49,0.51")
         k: Number of results to return (default: 50, max: 200)
+        n_results: Alternative parameter for number of results (overrides k if provided)
         fuzz: Query fuzziness multiplier (default: 1.0)
+        fast_mode: Use fast approximate reranking (default: False)
+        batch_size: Batch size for reranking (default: 5)
 
     Returns:
         SearchResponse: Complete search results with performance metadata
@@ -548,11 +607,14 @@ async def search_images(
     """
     global index, store
 
+    # Use n_results if provided, otherwise use k
+    result_count = n_results if n_results is not None else k
+
     # Log search request
     search_logger.info(f"=== SEARCH REQUEST START ===")
     search_logger.info(f"Colors: {colors}")
     search_logger.info(f"Weights: {weights}")
-    search_logger.info(f"Results count (k): {k}")
+    search_logger.info(f"Results count (requested): {result_count}")
     search_logger.info(f"Fast mode: {fast_mode}")
     search_logger.info(f"Batch size: {batch_size}")
     search_logger.info(f"Fuzz: {fuzz}")
@@ -650,19 +712,41 @@ async def search_images(
             mode_str = (
                 "FAST MODE (L2 distance)" if fast_mode else "NORMAL MODE (Sinkhorn-EMD)"
             )
-            search_logger.info(f"Starting search with k={k} in {mode_str}")
+            search_logger.info(f"Starting search with k={result_count} in {mode_str}")
 
             # Track concurrent searches
             increment_concurrent_searches()
 
+            # For fast mode, we need to request more results than we'll actually rerank
+            # to ensure we have enough candidates
+            # In both modes, search for more candidates than we need for better results
+            search_k = max(
+                result_count * 2, 50
+            )  # Get more candidates for better quality
+
+            # In fast mode, we can rerank all results since L2 distance is fast
+            rerank_k = result_count  # Rerank exactly what was requested
+            search_logger.info(
+                f"{mode_str}: Will rerank top {rerank_k} results out of {search_k} candidates"
+            )
+
             search_start = time.time()
+            # Perform the search with correct parameters for both modes
             search_results = await perform_search_async(
                 query_histogram=query_histogram,
-                k=k,
+                k=search_k,  # Search for more candidates than needed
+                max_rerank=rerank_k,  # Rerank exactly what was requested
                 fast_mode=fast_mode,
                 batch_size=batch_size,
             )
             search_time = time.time() - search_start
+
+            # Limit to requested result count
+            if len(search_results) > result_count:
+                search_logger.info(
+                    f"Limiting {len(search_results)} results to requested {result_count}"
+                )
+                search_results = search_results[:result_count]
 
             # Update performance stats
             update_performance_stats(search_time)
@@ -699,24 +783,28 @@ async def search_images(
 
             for i, result in enumerate(search_results):
                 # Extract dominant colors from image
-                if result.file_path and Path(result.file_path).exists():
-                    dominant_colors = extract_dominant_colors(result.file_path)
-                else:
-                    dominant_colors = ["#000000"]  # Fallback if file not found
+                try:
+                    if result.file_path and Path(result.file_path).exists():
+                        dominant_colors = extract_dominant_colors(result.file_path)
+                    else:
+                        # Fallback dominant colors if file not accessible
+                        dominant_colors = ["#000000"] * 5
+                        search_logger.warning(
+                            f"Could not access file for image {result.image_id}, using fallback colors"
+                        )
 
-                formatted_result = SearchResult(
-                    image_id=result.image_id,
-                    distance=float(result.distance),
-                    dominant_colors=dominant_colors,
-                    file_path=result.file_path,
-                )
-                formatted_results.append(formatted_result)
-
-                # Log top 5 results
-                if i < 5:
-                    search_logger.info(
-                        f"Result {i+1}: {result.image_id} (distance: {result.distance:.6f})"
+                    formatted_results.append(
+                        SearchResult(
+                            image_id=result.image_id,
+                            distance=result.distance,
+                            dominant_colors=dominant_colors,
+                            file_path=result.file_path if result.file_path else None,
+                        )
                     )
+                except Exception as e:
+                    search_logger.error(f"Error processing result {i}: {e}")
+                    # Continue with next result instead of failing entire request
+                    continue
 
             # Calculate timing metadata
             total_time = time.time() - total_start_time
@@ -912,16 +1000,15 @@ async def visualize_results(
                 status_code=400, detail="Number of colors must match number of weights"
             )
 
-        # Perform search to get results
+        # Perform search to get results - use more candidates for visualization quality
         query_histogram = create_query_histogram(color_list, weight_list)
-        search_results = find_similar(
+        search_k = max(k * 2, 50)  # Get more candidates for better quality
+        search_results = await perform_search_async(
             query_histogram=query_histogram,
-            index=index,
-            store=store,
-            k=k,
-            max_rerank=k,
-            use_approximate_reranking=False,  # Use high-fidelity for visualization
-            rerank_batch_size=10,
+            k=search_k,
+            max_rerank=k,  # Rerank exactly what was requested
+            fast_mode=False,  # Always use high-fidelity for visualization
+            batch_size=10,
         )
 
         if not search_results:
@@ -1086,10 +1173,14 @@ async def parallel_search(request: ParallelSearchRequest):
                 # Create query histogram
                 query_histogram = create_query_histogram(color_list, weight_list)
 
+                # In both modes, search for more candidates than needed for better quality
+                search_k = max(k * 2, 50)
+
                 # Perform search
                 search_results = await perform_search_async(
                     query_histogram=query_histogram,
-                    k=k,
+                    k=search_k,  # Search for more candidates
+                    max_rerank=k,  # Rerank exactly what was requested
                     fast_mode=fast_mode,
                     batch_size=batch_size,
                 )
