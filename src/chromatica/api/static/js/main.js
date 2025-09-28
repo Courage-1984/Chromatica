@@ -465,7 +465,7 @@ window.updateVisualization = function (data) {
                     font-weight: 500;
                     font-size: 14px;
                     cursor: pointer;
-                ">💾 Download Grid</button>
+                ">Download Grid</button>
             </div>
         `;
 
@@ -864,7 +864,7 @@ window.generateResultsCollage = function () {
     downloadButton.style.transition = 'all 0.2s';
     downloadButton.disabled = true;
     downloadButton.style.opacity = '0.5';
-    downloadButton.textContent = '💾 Download';
+    downloadButton.textContent = 'Download';
     controls.appendChild(downloadButton);
 
     collageSection.appendChild(controls);
@@ -1159,225 +1159,138 @@ window.showImageInModal = function (imageSrc) {
 
 // Function to update search results in the UI
 window.updateSearchResults = function (data) {
-    console.log('Updating search results:', data);
-
-    // Get the results grid
     const resultsGrid = document.getElementById('resultsGrid');
-    if (!resultsGrid || !data || !data.results || !Array.isArray(data.results)) {
-        console.error('Missing required elements or data for updating search results');
-        return;
-    }
+    if (!resultsGrid) return;
 
-    // Clear existing results
     resultsGrid.innerHTML = '';
+    console.log('Processing search results:', data.results); // Debug log
 
-    if (data.results.length === 0) {
-        resultsGrid.innerHTML = `
-
-            <div class="no-results" style="
-                grid-column: span 3;
-                text-align: center;
-                padding: 40px 20px;
-                background: var(--surface0);
-                border-radius: 12px;
-                margin: 20px 0;
-            ">
-                <h3>No matching images found</h3>
-                <p>Try different colors or adjust your search parameters.</p>
-            </div>
-        `;
-        return;
-    }
-
-    // Loop through results and create result cards
     data.results.forEach((result, index) => {
         const imgSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
-        const distance = typeof result.distance === 'number' ? result.distance.toFixed(4) : 'N/A';
-        const filename = result.filename || result.image_id || `result-${index + 1}`;
+        const distance = typeof result.distance === 'number' ? result.distance.toFixed(6) : 'N/A';
 
-        // Create result card
-        const card = document.createElement('div');
-        card.className = 'result-card';
-        card.style.position = 'relative';
+        console.log('Result dominant colors:', result.dominant_colors); // Debug log
 
-        // Add rank badge for top 3 results
-        if (index < 3) {
-            const rankColors = ['var(--yellow)', 'var(--subtext0)', 'var(--peach)'];
-            const rankEmoji = ['🥇', '🥈', '🥉'];
+        const resultCard = document.createElement('div');
+        resultCard.className = 'result-card';
 
-            const rankBadge = document.createElement('div');
-            rankBadge.style.position = 'absolute';
-            rankBadge.style.top = '10px';
-            rankBadge.style.left = '10px';
-            rankBadge.style.backgroundColor = rankColors[index];
-            rankBadge.style.color = 'var(--crust)';
-            rankBadge.style.padding = '5px 10px';
-            rankBadge.style.borderRadius = '20px';
-            rankBadge.style.fontSize = '14px';
-            rankBadge.style.fontWeight = 'bold';
-            rankBadge.style.zIndex = '2';
-            rankBadge.style.display = 'flex';
-            rankBadge.style.alignItems = 'center';
-            rankBadge.style.gap = '4px';
-            rankBadge.innerHTML = `${rankEmoji[index]} ${index + 1}`;
+        // Add rank number as a badge
+        const rankBadge = document.createElement('div');
+        rankBadge.className = 'rank-badge';
+        rankBadge.textContent = `#${index + 1}`;
+        resultCard.appendChild(rankBadge);
 
-            card.appendChild(rankBadge);
-        }
-
-        // Image container with hover effect
+        // Image container
         const imageContainer = document.createElement('div');
-        imageContainer.className = 'image-container';
-        imageContainer.style.position = 'relative';
-        imageContainer.style.height = '200px';
-        imageContainer.style.overflow = 'hidden';
-        imageContainer.style.borderRadius = '8px 8px 0 0';
-        imageContainer.style.cursor = 'pointer';
-
+        imageContainer.className = 'result-image-container';
         const img = document.createElement('img');
         img.src = imgSrc;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        img.style.objectPosition = 'center';
-        img.style.transition = 'transform 0.3s ease';
-        img.crossOrigin = 'anonymous';
-
-        const overlay = document.createElement('div');
-        overlay.className = 'image-overlay';
-        overlay.style.position = 'absolute';
-        overlay.style.top = '0';
-        overlay.style.left = '0';
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.background = 'rgba(0, 0, 0, 0.5)';
-        overlay.style.opacity = '0';
-        overlay.style.transition = 'opacity 0.3s ease';
-        overlay.style.display = 'flex';
-        overlay.style.alignItems = 'center';
-        overlay.style.justifyContent = 'center';
-
-        const overlayText = document.createElement('div');
-        overlayText.className = 'overlay-text';
-        overlayText.style.color = 'white';
-        overlayText.style.fontSize = '14px';
-        overlayText.style.fontWeight = 'bold';
-        overlayText.innerHTML = 'Click to view';
-
-        overlay.appendChild(overlayText);
+        img.alt = `Result ${index + 1}`;
+        img.className = 'result-image';
         imageContainer.appendChild(img);
-        imageContainer.appendChild(overlay);
+        resultCard.appendChild(imageContainer);
 
-        // Add hover effects via event listeners
-        imageContainer.addEventListener('mouseover', () => {
-            img.style.transform = 'scale(1.05)';
-            overlay.style.opacity = '1';
-        });
+        // Info section
+        const infoSection = document.createElement('div');
+        infoSection.className = 'result-info';
 
-        imageContainer.addEventListener('mouseout', () => {
-            img.style.transform = 'scale(1)';
-            overlay.style.opacity = '0';
-        });
+        // Image ID
+        const idElement = document.createElement('p');
+        idElement.innerHTML = `<strong>ID:</strong> <span class="image-id">${result.image_id}</span>`;
+        infoSection.appendChild(idElement);
 
-        // Add click event to open image modal
-        imageContainer.addEventListener('click', () => {
-            window.showImageInModal(imgSrc);
-        });
+        // Distance score
+        const distanceElement = document.createElement('p');
+        distanceElement.innerHTML = `<strong>Distance:</strong> <span class="distance-score">${distance}</span>`;
+        infoSection.appendChild(distanceElement);
 
-        // Result info
-        const infoContainer = document.createElement('div');
-        infoContainer.className = 'result-info';
-        infoContainer.style.padding = '15px';
-        infoContainer.style.background = 'var(--surface0)';
-        infoContainer.style.borderRadius = '0 0 8px 8px';
-
-        // Format filename to be more readable
-        let displayName = filename;
-        if (displayName.length > 30) {
-            displayName = displayName.substring(0, 27) + '...';
-        }
-
-        infoContainer.innerHTML = `
-            <p style="margin: 0 0 10px 0; font-size: 14px; color: var(--text);">
-                <strong style="display: block; margin-bottom: 5px; font-size: 16px; color: var(--blue);">${displayName}</strong>
-                Distance: <span style="color: var(--green); font-weight: bold;">${distance}</span>
-            </p>
-        `;
-
-        // Color swatches if available
+        // Dominant colors section
         if (result.dominant_colors && Array.isArray(result.dominant_colors)) {
-            const swatchesContainer = document.createElement('div');
-            swatchesContainer.className = 'color-swatches';
-            swatchesContainer.style.display = 'flex';
-            swatchesContainer.style.marginTop = '10px';
-            swatchesContainer.style.gap = '5px';
+            const colorsContainer = document.createElement('div');
+            colorsContainer.className = 'dominant-colors';
+            const colorsTitle = document.createElement('p');
+            colorsTitle.innerHTML = '<strong>Dominant Colors:</strong>';
+            colorsContainer.appendChild(colorsTitle);
+
+            const colorSwatches = document.createElement('div');
+            colorSwatches.className = 'color-swatches';
+
+            // Debug log before processing colors
+            console.log('Processing colors for result:', result.image_id, result.dominant_colors);
 
             result.dominant_colors.forEach(color => {
+                console.log('Creating swatch for color:', color); // Debug log
                 const swatch = document.createElement('div');
                 swatch.className = 'color-swatch';
-                swatch.style.width = '20px';
-                swatch.style.height = '20px';
-                swatch.style.backgroundColor = `#${color}`;
-                swatch.style.borderRadius = '3px';
-                swatch.style.border = '1px solid var(--surface1)';
-                swatchesContainer.appendChild(swatch);
+                swatch.style.backgroundColor = color;
+                swatch.title = `Click to copy: ${color}`;
+
+                const colorLabel = document.createElement('span');
+                colorLabel.className = 'color-label';
+                colorLabel.textContent = color;
+                swatch.appendChild(colorLabel);
+
+                swatch.addEventListener('click', () => {
+                    navigator.clipboard.writeText(color)
+                        .then(() => {
+                            swatch.setAttribute('data-copied', 'true');
+                            setTimeout(() => swatch.removeAttribute('data-copied'), 1500);
+                        });
+                });
+                colorSwatches.appendChild(swatch);
             });
 
-            infoContainer.appendChild(swatchesContainer);
+            colorsContainer.appendChild(colorSwatches);
+            infoSection.appendChild(colorsContainer);
         }
 
-        // Action buttons
-        const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'action-buttons';
-        actionsContainer.style.display = 'flex';
-        actionsContainer.style.justifyContent = 'space-between';
-        actionsContainer.style.marginTop = '15px';
-
-        // Details button
-        const detailsButton = document.createElement('button');
-        detailsButton.className = 'details-btn action-btn';
-        detailsButton.innerHTML = '🔍 Details';
-        detailsButton.onclick = () => showImageDetails(result);
+        // Buttons container
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'result-buttons';
 
         // Download button
-        const downloadButton = document.createElement('button');
-        downloadButton.className = 'download-btn action-btn';
-        downloadButton.innerHTML = '💾 Download';
-        downloadButton.onclick = () => {
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'action-btn download-btn';
+        downloadBtn.innerHTML = 'Download';
+        downloadBtn.onclick = () => {
             const link = document.createElement('a');
             link.href = imgSrc;
-            link.download = filename;
+            link.download = result.image_id || 'image';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         };
+        buttonsContainer.appendChild(downloadBtn);
 
-        // Copy colors button
-        const copyButton = document.createElement('button');
-        copyButton.className = 'copy-btn action-btn';
-        copyButton.innerHTML = '📋 Copy Colors';
-        copyButton.onclick = () => {
-            if (result.dominant_colors && result.dominant_colors.length) {
-                const colorText = result.dominant_colors.map(c => `#${c}`).join(', ');
-                navigator.clipboard.writeText(colorText)
-                    .then(() => window.showSuccess('Copied', 'Colors copied to clipboard'))
-                    .catch(err => window.showError('Copy Failed', err.message));
-            } else {
-                window.showError('Copy Failed', 'No color data available');
-            }
+        // Copy Info button
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn copy-btn';
+        copyBtn.innerHTML = 'Copy Info';
+        copyBtn.onclick = () => {
+            const info = {
+                imageId: result.image_id,
+                distance: distance,
+                dominantColors: result.dominant_colors || [],
+                url: imgSrc
+            };
+            navigator.clipboard.writeText(JSON.stringify(info, null, 2))
+                .then(() => {
+                    copyBtn.innerHTML = '✓ Copied!';
+                    setTimeout(() => copyBtn.innerHTML = 'Copy Info', 1500);
+                });
         };
+        buttonsContainer.appendChild(copyBtn);
 
-        actionsContainer.appendChild(detailsButton);
-        actionsContainer.appendChild(copyButton);
-        actionsContainer.appendChild(downloadButton);
+        // Details button
+        const detailsBtn = document.createElement('button');
+        detailsBtn.className = 'action-btn details-btn';
+        detailsBtn.innerHTML = 'Details';
+        detailsBtn.onclick = () => showImageDetails(result);
+        buttonsContainer.appendChild(detailsBtn);
 
-        infoContainer.appendChild(actionsContainer);
-
-        // Assemble card
-        card.appendChild(imageContainer);
-        card.appendChild(infoContainer);
-
-        // Add to results grid
-        resultsGrid.appendChild(card);
+        infoSection.appendChild(buttonsContainer);
+        resultCard.appendChild(infoSection);
+        resultsGrid.appendChild(resultCard);
     });
 
     // Show the results section
@@ -1390,160 +1303,105 @@ window.updateSearchResults = function (data) {
 // Show detailed information about an image result
 function showImageDetails(result) {
     const modal = document.getElementById('detailsModal');
-    const content = document.getElementById('imageDetailsContent');
-
-    if (!modal || !content) return;
+    if (!modal) return;
 
     const imgSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
     const distance = typeof result.distance === 'number' ? result.distance.toFixed(6) : 'N/A';
     const filename = result.filename || result.image_id || 'image';
 
     let detailsHtml = `
-        <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 300px;">
-                <div class="image-preview" style="
-                    border-radius: 8px;
-                    overflow: hidden;
-                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-                    max-height: 400px;
-                ">
-                    <img src="${imgSrc}" alt="${filename}" style="width: 100%; height: auto;">
+        <div class="modal-header">
+            <h2>Image Details</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="details-grid">
+                <div class="image-section">
+                    <div class="image-preview">
+                        <img src="${imgSrc}" alt="${filename}" style="max-width: 100%; height: auto; border-radius: 8px;">
+                    </div>
                 </div>
-            </div>
-            
-            <div style="flex: 1; min-width: 300px;">
-                <h3 style="color: var(--blue); margin-top: 0;">${filename}</h3>
-                <p><strong>Distance Score:</strong> <span style="color: var(--green); font-weight: bold;">${distance}</span></p>
-    `;
+                <div class="info-section">
+                    <div class="info-group">
+                        <h3>Basic Information</h3>
+                        <p><strong>Image ID:</strong> ${result.image_id}</p>
+                        <p><strong>Filename:</strong> ${filename}</p>
+                        <p><strong>Distance Score:</strong> ${distance}</p>
+                    </div>`;
 
-    // Add file metadata if available
+    // Add metadata if available
     if (result.metadata) {
         detailsHtml += `
-            <h4 style="margin-bottom: 10px; color: var(--text);">File Metadata</h4>
-            <ul style="list-style: none; padding: 0; margin: 0 0 15px 0;">
-        `;
-
+                    <div class="info-group">
+                        <h3>Metadata</h3>`;
         for (const [key, value] of Object.entries(result.metadata)) {
-            if (key === 'dominant_colors' || key === 'histogram') continue;
-            detailsHtml += `<li><strong>${key}:</strong> ${value}</li>`;
+            detailsHtml += `<p><strong>${key}:</strong> ${value}</p>`;
         }
-
-        detailsHtml += `</ul>`;
+        detailsHtml += `</div>`;
     }
 
-    // Add dominant colors if available
+    // Add dominant colors with larger swatches
     if (result.dominant_colors && Array.isArray(result.dominant_colors)) {
         detailsHtml += `
-            <h4 style="margin-bottom: 10px; color: var(--text);">Dominant Colors</h4>
-            <div class="color-swatches" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
-        `;
-
+                    <div class="info-group">
+                        <h3>Dominant Colors</h3>
+                        <div class="modal-color-swatches">`;
         result.dominant_colors.forEach(color => {
             detailsHtml += `
-                <div style="text-align: center;">
-                    <div class="color-swatch" style="
-                        width: 40px;
-                        height: 40px;
-                        background-color: #${color};
-                        border-radius: 8px;
-                        border: 1px solid var(--surface2);
-                        margin-bottom: 5px;
-                    "></div>
-                    <span style="font-size: 12px; color: var(--text);">#${color}</span>
-                </div>
-            `;
+                            <div class="modal-color-swatch" style="background-color: ${color};" title="Click to copy: ${color}"
+                                 onclick="navigator.clipboard.writeText('${color}').then(() => this.title = 'Copied!')">
+                                <span class="color-hex">${color}</span>
+                            </div>`;
         });
-
-        detailsHtml += `</div>`;
+        detailsHtml += `</div>
+                    </div>`;
     }
 
-    // Add color histogram if available
+    // Add histogram visualization if available
     if (result.histogram && Array.isArray(result.histogram)) {
         detailsHtml += `
-            <h4 style="margin-bottom: 10px; color: var(--text);">Color Distribution</h4>
-            <div style="height: 100px; display: flex; align-items: flex-end; gap: 1px; margin-bottom: 15px;">
-        `;
-
-        const histogramLength = Math.min(32, result.histogram.length);
-        for (let i = 0; i < histogramLength; i++) {
-            const value = result.histogram[i];
-            const height = Math.max(5, value * 100);
-            const hue = Math.round((i / histogramLength) * 360);
-
-            detailsHtml += `
-                <div style="
-                    flex-grow: 1;
-                    height: ${height}px;
-                    background: hsl(${hue}, 70%, 60%);
-                    border-radius: 2px 2px 0 0;
-                "></div>
-            `;
-        }
-
-        detailsHtml += `</div>`;
+                    <div class="info-group">
+                        <h3>Color Distribution</h3>
+                        <div class="histogram-visualization">
+                            ${createSimpleHistogramVisualization(result.histogram, 'Color')}
+                        </div>
+                    </div>`;
     }
 
     // Add LAB color values if available
     if (result.lab_values && Array.isArray(result.lab_values)) {
         detailsHtml += `
-            <h4 style="margin-bottom: 10px; color: var(--text);">LAB Color Values</h4>
-            <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px;">
-        `;
-
-        result.lab_values.forEach((lab, index) => {
-            let color = '#CCCCCC';
-            if (result.dominant_colors && result.dominant_colors[index]) {
-                color = `#${result.dominant_colors[index]}`;
-            }
-
-            detailsHtml += `
-                <div style="text-align: center; background: var(--surface0); padding: 8px; border-radius: 8px;">
-                    <div style="
-                        width: 30px;
-                        height: 30px;
-                        border-radius: 50%;
-                        background-color: ${color};
-                        margin: 0 auto 5px;
-                        border: 1px solid var(--surface2);
-                    "></div>
-                    <div style="font-family: 'JetBrainsMono Nerd Font Mono', monospace; color: var(--text); font-size: 12px;">
-                        <div>L: ${lab.L?.toFixed(2) || 'N/A'}</div>
-                        <div>a: ${lab.a?.toFixed(2) || 'N/A'}</div>
-                        <div>b: ${lab.b?.toFixed(2) || 'N/A'}</div>
-                    </div>
-                </div>
-            `;
-        });
-
-        detailsHtml += `</div>`;
+                    <div class="info-group">
+                        <h3>LAB Color Values</h3>
+                        <p><strong>L*:</strong> ${result.lab_values[0].toFixed(2)} (Lightness)</p>
+                        <p><strong>a*:</strong> ${result.lab_values[1].toFixed(2)} (Green-Red)</p>
+                        <p><strong>b*:</strong> ${result.lab_values[2].toFixed(2)} (Blue-Yellow)</p>
+                    </div>`;
     }
 
-    // Add action buttons
     detailsHtml += `
+                </div>
             </div>
-        </div>
-        
-        <div class="action-buttons" style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-            <button class="action-btn copy-btn" onclick="navigator.clipboard.writeText('${imgSrc}')">📋 Copy URL</button>
-            <button class="action-btn download-btn" onclick="window.location.href='${imgSrc}' download='${filename}'">💾 Download Image</button>
-        </div>
-    `;
+            <div class="modal-actions">
+                <button class="action-btn download-btn" onclick="window.location.href='${imgSrc}' download='${filename}'">Download Image</button>
+                <button class="action-btn copy-btn" onclick="navigator.clipboard.writeText('${imgSrc}')">📋 Copy URL</button>
+                <button class="action-btn" onclick="document.getElementById('detailsModal').style.display='none'">Close</button>
+            </div>
+        </div>`;
 
-    content.innerHTML = detailsHtml;
-
-    // Show modal with fade in animation
+    modal.innerHTML = detailsHtml;
     modal.style.display = 'block';
 
-    // Add close button functionality
+    // Close button functionality
     const closeBtn = modal.querySelector('.close');
     if (closeBtn) {
-        closeBtn.onclick = function () {
+        closeBtn.onclick = () => {
             modal.style.display = 'none';
         };
     }
 
-    // Close when clicking outside the modal content
-    window.onclick = function (event) {
+    // Close when clicking outside
+    window.onclick = (event) => {
         if (event.target === modal) {
             modal.style.display = 'none';
         }

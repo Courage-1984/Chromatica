@@ -1,0 +1,101 @@
+#restartButton {
+    bottom: 20px !important;
+    left: 20px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+/* Fix histogram visualization styling */
+#query-histogram,
+#result-histogram {
+    background: var(--base);
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--surface2);
+    min-height: 200px;
+}
+
+.histogram-section {
+    margin-top: 60px !important;
+    padding: 20px !important;
+    background: linear-gradient(135deg, var(--surface1) 0%, var(--surface2) 100%);
+    border-radius: 12px;
+    border: 2px solid var(--green);
+    box-shadow: 0 8px 32px rgba(166, 227, 161, 0.1);
+}
+
+#results-viz>div:nth-child(2)>* {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(2)>div:nth-child(1)>div:nth-child(1) {
+    height: 12rem !important;
+    width: 12rem !important;
+}
+
+#results-viz>div:nth-child(3) {
+    margin-top: 40px !important;
+}
+
+div.preview-item>div:nth-child(n) {
+    position: absolute !important;
+    bottom: 5px !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: auto !important;
+    display: inline-block !important;
+    border-radius: 4px !important;
+    height: fit-content !important;
+}
+
+div.preview-item:nth-child(1)>img:nth-child(1) {
+    width: inherit !important;
+}
+
+#histogram-comparison>div:nth-child(2) {
+    margin-bottom: 275px !important;
+}
+
+#histogram-comparison>div:nth-child(2)>div:nth-child(2) {
+    margin-top: 60px !important;
+}
+
+
+
+
+/* --- PARENT CONTAINER: Creates 3 equal-width buttons --- */
+.result-buttons {
+    display: flex !Important;
+    /* Enables Flexbox */
+    gap: 10px !Important;
+    /* Puts space between the buttons */
+}
+
+/* --- CHILD BUTTONS: Makes them equal size, and centers content inline --- */
+.action-btn {
+    /* 1. Makes all three buttons the same width */
+    flex: 1 !Important;
+
+    /* 2. Makes the button itself a flex container to align content */
+    display: flex !Important;
+
+    /* 3. Centers the emoji and text horizontally (default direction is row) */
+    justify-content: center !Important;
+
+    /* 4. Centers the emoji and text vertically */
+    align-items: center !Important;
+
+    /* 5. Adds a small, clean gap between the emoji and the text */
+    gap: 5px !Important;
+
+    /* Optional: Standard button height and padding */
+    padding: 10px !Important;
+    height: 40px !Important;
+    border-radius: 5px !Important;
+}

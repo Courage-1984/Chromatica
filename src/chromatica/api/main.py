@@ -698,8 +698,11 @@ async def search_images(
             formatted_results = []
 
             for i, result in enumerate(search_results):
-                # Skip expensive dominant color extraction for performance
-                dominant_colors = ["#000000"]  # Placeholder to avoid breaking the API
+                # Extract dominant colors from image
+                if result.file_path and Path(result.file_path).exists():
+                    dominant_colors = extract_dominant_colors(result.file_path)
+                else:
+                    dominant_colors = ["#000000"]  # Fallback if file not found
 
                 formatted_result = SearchResult(
                     image_id=result.image_id,
