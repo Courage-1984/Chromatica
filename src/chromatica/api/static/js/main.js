@@ -1060,8 +1060,7 @@ window.performSearch = async function () {
         // Get color inputs
         const colorRows = document.querySelectorAll('.color-row');
         if (colorRows.length === 0) {
-            window.showError('Error', 'Please add at least one color to search for.');
-            return;
+            throw new Error('Please add at least one color before searching');
         }
 
         const colors = [];
@@ -1069,11 +1068,13 @@ window.performSearch = async function () {
         let totalWeight = 0;
 
         colorRows.forEach(row => {
-            const colorPicker = row.querySelector('.color-picker');
-            const weightSlider = row.querySelector('.weight-slider');
-            if (colorPicker && weightSlider) {
-                const weight = parseInt(weightSlider.value);
-                colors.push(colorPicker.value.substring(1)); // Remove # from hex color
+            const picker = row.querySelector('.color-picker');
+            const slider = row.querySelector('.weight-slider');
+
+            if (picker && slider) {
+                const color = picker.value.substring(1); // Remove # from hex color
+                const weight = parseInt(slider.value);
+                colors.push(color);
                 weights.push(weight);
                 totalWeight += weight;
             }
@@ -1095,9 +1096,14 @@ window.performSearch = async function () {
             batch_size: batchSize
         });
 
-        // Change endpoint from /api/search to /search
+        // Try to fetch search results
         const response = await fetch(`/search?${searchParams.toString()}`);
-        if (!response.ok) throw new Error(`Search failed with status: ${response.status}`);
+        if (!response.ok) {
+            if (response.status === 503) {
+                throw new Error('The search server is currently unavailable. Try clicking the "Restart Server" button in the top right corner and then search again.');
+            }
+            throw new Error(`Search failed with status: ${response.status}. ${await response.text()}`);
+        }
 
         const data = await response.json();
 
@@ -1107,8 +1113,7 @@ window.performSearch = async function () {
 
         // Add timing information to data if not present
         if (!data.search_time && !data.metadata?.search_time) {
-            if (!data.metadata) data.metadata = {};
-            data.metadata.search_time = clientSearchTime;
+            data.search_time = clientSearchTime;
         }
 
         // Store the search results for later use by histogram functions
@@ -1132,7 +1137,7 @@ window.performSearch = async function () {
         // Clear results on error
         const resultsGrid = document.getElementById('resultsGrid');
         if (resultsGrid) {
-            resultsGrid.innerHTML = '<div class="error-message">Search failed. Please try again.</div>';
+            resultsGrid.innerHTML = '';
         }
     } finally {
         searchBtn.disabled = false;
@@ -1549,7 +1554,7 @@ function showImageDetails(result) {
 window.downloadPreviewGrid = function () {
     const previewGrid = document.getElementById('previewGrid');
     if (!previewGrid) {
-        window.showError('Download Failed', 'Preview grid not found');
+        window.showError('Download Failed', 'Could not find preview grid');
         return;
     }
 
@@ -1593,96 +1598,81 @@ window.downloadPreviewGrid = function () {
     tempContainer.appendChild(gridContainer);
     document.body.appendChild(tempContainer);
 
-    // Deep clone the preview grid items into the temp container
-    Array.from(previewGrid.children).forEach(item => {
-        // Create a clean container for each image
-        const imgContainer = document.createElement('div');
-        imgContainer.style.position = 'relative';
-        imgContainer.style.aspectRatio = '1 / 1';
-        imgContainer.style.overflow = 'hidden';
-        imgContainer.style.borderRadius = '8px';
-        imgContainer.style.border = '1px solid #45475a'; // Using hex instead of var(--surface2)
-        imgContainer.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)';
-        imgContainer.style.backgroundColor = '#1e1e2e'; // Dark background matching theme
+    // Load and clone all images first
+    const imageLoadPromises = Array.from(previewGrid.children).map(item => {
+        return new Promise((resolve) => {
+            const clone = item.cloneNode(true);
+            const originalImg = item.querySelector('img');
+            const clonedImg = clone.querySelector('img');
 
-        // Get the original image element
-        const originalImg = item.querySelector('img');
-        if (originalImg && originalImg.src) {
-            const imgSrc = originalImg.src;
-
-            // Create an actual image element instead of using background-image
-            const imgElement = document.createElement('img');
-            imgElement.src = imgSrc;
-            imgElement.style.width = '100%';
-            imgElement.style.height = '100%';
-            imgElement.style.objectFit = 'cover';
-            imgElement.style.objectPosition = 'center';
-            imgElement.crossOrigin = 'anonymous'; // Enable cross-origin loading
-            imgContainer.appendChild(imgElement);
-
-            // Add the distance label if it exists
-            const distanceLabel = item.querySelector('div:last-child');
-            if (distanceLabel && distanceLabel.textContent) {
-                const distanceDiv = document.createElement('div');
-                distanceDiv.style.position = 'absolute';
-                distanceDiv.style.bottom = '0';
-                distanceDiv.style.left = '0';
-                distanceDiv.style.right = '0';
-                distanceDiv.style.padding = '4px';
-                distanceDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-                distanceDiv.style.color = 'white';
-                distanceDiv.style.fontSize = '10px';
-                distanceDiv.style.textAlign = 'center';
-                distanceDiv.textContent = distanceLabel.textContent;
-                imgContainer.appendChild(distanceDiv);
+            if (originalImg && clonedImg) {
+                // Create a new image to properly load with CORS
+                const newImg = new Image();
+                newImg.crossOrigin = 'anonymous';
+                newImg.onload = () => {
+                    // Once loaded, update the cloned image
+                    clonedImg.src = newImg.src;
+                    // Ensure the image size is maintained
+                    clonedImg.style.width = '100%';
+                    clonedImg.style.height = '100%';
+                    clonedImg.style.objectFit = 'cover';
+                    resolve(clone);
+                };
+                newImg.onerror = () => {
+                    // If image fails to load, still resolve but maybe with a placeholder
+                    clonedImg.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%23313244"/><text x="50" y="50" text-anchor="middle" fill="%23cdd6f4">No Image</text></svg>';
+                    resolve(clone);
+                };
+                newImg.src = originalImg.src;
+            } else {
+                resolve(clone);
             }
-
-            gridContainer.appendChild(imgContainer);
-        }
+        });
     });
 
-    // Use html2canvas to capture the temp container
-    html2canvas(tempContainer, {
-        backgroundColor: '#313244', // Using hex instead of var(--surface0)
-        scale: 2, // Higher quality
-        logging: true, // Enable logging to debug image loading issues
-        allowTaint: true,
-        useCORS: true,
-        imageTimeout: 15000, // Increase timeout for image loading
-        onclone: function (clonedDoc) {
-            console.log('HTML2Canvas cloned document:', clonedDoc);
-        }
-    }).then(canvas => {
-        // Create watermark text
-        const ctx = canvas.getContext('2d');
-        ctx.save();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-        ctx.font = '16px JetBrainsMono Nerd Font Mono';
-        ctx.textAlign = 'center';
-        ctx.translate(canvas.width / 2, canvas.height / 2);
-        ctx.rotate(-Math.PI / 8);
-        ctx.fillText('Chromatica', 0, 0);
-        ctx.restore();
+    // Wait for all images to load then create the canvas
+    Promise.all(imageLoadPromises).then(clones => {
+        // Add all clones to the grid
+        clones.forEach(clone => gridContainer.appendChild(clone));
 
-        // Create download link
-        const link = document.createElement('a');
-        link.download = `chromatica-results-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Use html2canvas with specific options for better image handling
+        html2canvas(tempContainer, {
+            backgroundColor: '#313244',
+            scale: 2,
+            logging: false,
+            allowTaint: true,
+            useCORS: true,
+            imageTimeout: 15000,
+            onclone: function (clonedDoc) {
+                // Additional styling fixes in the cloned document if needed
+                const clonedImages = clonedDoc.querySelectorAll('img');
+                clonedImages.forEach(img => {
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                });
+            }
+        }).then(canvas => {
+            // Create download link
+            const link = document.createElement('a');
+            link.download = `chromatica-results-${new Date().toISOString().slice(0, 10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
 
-        // Clean up
-        document.body.removeChild(tempContainer);
-        window.showSuccess('Download Complete', 'Results grid image downloaded successfully');
-    }).catch(err => {
-        // Clean up on error
-        document.body.removeChild(tempContainer);
-        window.showError('Download Failed', err.message);
+            // Clean up
+            document.body.removeChild(tempContainer);
+            window.showSuccess('Download Complete', 'Results grid image downloaded successfully');
+        }).catch(err => {
+            // Clean up on error
+            document.body.removeChild(tempContainer);
+            window.showError('Download Failed', err.message);
+        });
     });
 };
 
-// Function to restart the Chromatica server
+// Restart the server function
 window.restartServer = function () {
     console.log('Restarting Chromatica server...');
 
