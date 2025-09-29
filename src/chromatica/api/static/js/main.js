@@ -2406,13 +2406,6 @@ function createSchemeCard(scheme) {
         swatch.style.cursor = 'pointer';
         swatch.title = `${color} - ${getColorName(color)}`;
 
-        swatch.onclick = () => {
-            navigator.clipboard.writeText(color).then(() => {
-                swatch.style.transform = 'scale(1.1)';
-                setTimeout(() => swatch.style.transform = 'scale(1)', 200);
-            });
-        };
-
         // Add color name below swatch
         const colorName = document.createElement('div');
         colorName.className = 'color-name';
@@ -2422,6 +2415,13 @@ function createSchemeCard(scheme) {
         colorName.style.textAlign = 'center';
         colorName.style.marginTop = '2px';
         swatch.appendChild(colorName);
+
+        swatch.onclick = () => {
+            navigator.clipboard.writeText(color).then(() => {
+                swatch.style.transform = 'scale(1.1)';
+                setTimeout(() => swatch.style.transform = 'scale(1)', 200);
+            });
+        };
 
         swatchesContainer.appendChild(swatch);
     });
@@ -2715,139 +2715,194 @@ window.updateColorSuggestions = function () {
     });
 };
 
-// Extend the addColor function to update suggestions
-const originalAddColor = window.addColor;
-window.addColor = function () {
-    originalAddColor();
-    window.updateColorSuggestions();
+// Store the currently generated palette
+window.generatedPalette = null;
+
+// Show the suggest palette modal
+window.showSuggestPaletteModal = function () {
+    const modal = document.getElementById('suggestPaletteModal');
+    if (modal) {
+        // Reset any previously generated palette
+        const generatedPaletteDiv = document.getElementById('generatedPalette');
+        if (generatedPaletteDiv) {
+            generatedPaletteDiv.style.display = 'none';
+        }
+        window.generatedPalette = null;
+
+        // Add hover effects to scheme modes
+        const schemeModes = modal.querySelectorAll('.scheme-mode');
+        schemeModes.forEach(mode => {
+            mode.addEventListener('mouseover', () => {
+                mode.style.transform = 'scale(1.02)';
+                mode.style.borderColor = 'var(--mauve)';
+            });
+            mode.addEventListener('mouseout', () => {
+                mode.style.transform = 'scale(1)';
+                mode.style.borderColor = 'var(--surface2)';
+            });
+        });
+
+        modal.style.display = 'block';
+    }
 };
 
-// Extend the removeColor function to update suggestions
-const originalRemoveColor = window.removeColor;
-window.removeColor = function (buttonElement) {
-    originalRemoveColor(buttonElement);
-    window.updateColorSuggestions();
-};
+// Generate a new color palette based on the selected scheme
+window.generatePalette = function (scheme) {
+    console.log('Generating palette for scheme:', scheme);
 
-// Unified handler for color picker changes
-window.handleColorPickerChange = function () {
-    console.log('Color picker changed:', this.value);
-    const color = this.value;
-
-    // Get the color info container and color name element
-    const colorRow = this.parentElement;
-    const infoContainer = colorRow.querySelector('.color-info-container');
-    const colorNameElement = colorRow.querySelector('.color-name');
-
-    // Update the color name
-    if (colorNameElement) {
-        const newColorName = getColorName(color);
-        colorNameElement.textContent = newColorName;
+    // Get the currently selected colors
+    const currentColors = window.colors || [];
+    let baseColor = currentColors[0] || '#FF0000';
+    if (baseColor.startsWith('#')) {
+        baseColor = baseColor.substring(1);
     }
 
-    // Get the color info container
-    if (infoContainer) {
-        // Update RGB values
-        const rgb = hexToRgb(color);
-        const rgbInfo = infoContainer.querySelector('.color-rgb-info');
-        if (rgbInfo) {
-            rgbInfo.textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
-        }
-
-        // Update HSL values
-        const hsl = hexToHsl(color);
-        const hslInfo = infoContainer.querySelector('.color-hsl-info');
-        if (hslInfo) {
-            hslInfo.textContent = `HSL: ${Math.round(hsl.h)}°, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%`;
-        }
-
-        // Update complementary color info
-        const complementaryColor = getComplementaryColor(color);
-        const complementaryName = getColorName(complementaryColor);
-        const complementaryContainer = infoContainer.querySelector('.complementary-color');
-        if (complementaryContainer) {
-            const swatch = complementaryContainer.querySelector('div');
-            const info = complementaryContainer.querySelector('span');
-            if (swatch && info) {
-                swatch.style.backgroundColor = complementaryColor;
-                info.textContent = `Complementary: ${complementaryName} (${complementaryColor})`;
-            }
-        }
+    let newColors = [];
+    switch (scheme) {
+        case 'monochromatic':
+            newColors = generateMonochromaticScheme(baseColor);
+            break;
+        case 'complementary':
+            newColors = [baseColor, getComplementaryColor(baseColor)];
+            break;
+        case 'analogous':
+            newColors = generateAnalogousScheme(baseColor);
+            break;
+        case 'triadic':
+            newColors = generateTriadicScheme(baseColor);
+            break;
+        case 'split-complementary':
+            // Generate split complementary colors
+            const complementary = getComplementaryColor(baseColor);
+            const hsl = hexToHsl(complementary);
+            newColors = [
+                baseColor,
+                hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l),
+                hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l)
+            ];
+            break;
+        case 'random':
+            // Generate a random harmonious palette
+            const randomHue = Math.floor(Math.random() * 360);
+            newColors = [
+                hslToHex(randomHue, 70, 50),
+                hslToHex((randomHue + 120) % 360, 70, 50),
+                hslToHex((randomHue + 240) % 360, 70, 50),
+                hslToHex(randomHue, 85, 35),
+                hslToHex(randomHue, 60, 65)
+            ];
+            break;
     }
 
-    // Update global colors and trigger palette/suggestion updates
-    window.updateColorPalette();
+    // Store the generated palette
+    window.generatedPalette = newColors;
+
+    // Show the preview
+    const previewDiv = document.getElementById('palettePreview');
+    const generatedPaletteDiv = document.getElementById('generatedPalette');
+
+    if (previewDiv && generatedPaletteDiv) {
+        // Clear previous preview
+        previewDiv.innerHTML = '';
+
+        // Create swatches for each color
+        newColors.forEach(color => {
+            if (!color.startsWith('#')) color = '#' + color;
+
+            const swatch = document.createElement('div');
+            swatch.style.flex = '1';
+            swatch.style.height = '60px';
+            swatch.style.borderRadius = '6px';
+            swatch.style.backgroundColor = color;
+            swatch.style.position = 'relative';
+            swatch.style.border = '2px solid var(--surface2)';
+            swatch.style.cursor = 'pointer';
+            swatch.title = `${color} - ${getColorName(color)}`;
+
+            // Add color name and hex
+            const colorInfo = document.createElement('div');
+            colorInfo.style.position = 'absolute';
+            colorInfo.style.bottom = '0';
+            colorInfo.style.left = '0';
+            colorInfo.style.right = '0';
+            colorInfo.style.background = 'rgba(0, 0, 0, 0.7)';
+            colorInfo.style.color = 'white';
+            colorInfo.style.padding = '4px';
+            colorInfo.style.fontSize = '10px';
+            colorInfo.style.textAlign = 'center';
+            colorInfo.style.borderRadius = '0 0 4px 4px';
+            colorInfo.textContent = color;
+
+            swatch.appendChild(colorInfo);
+
+            // Click to copy
+            swatch.addEventListener('click', () => {
+                navigator.clipboard.writeText(color);
+                swatch.style.transform = 'scale(1.05)';
+                setTimeout(() => swatch.style.transform = 'scale(1)', 200);
+            });
+
+            previewDiv.appendChild(swatch);
+        });
+
+        // Show the generated palette section
+        generatedPaletteDiv.style.display = 'block';
+    }
 };
 
-// Initialize event listeners when the document is loaded
+// Apply the generated palette
+window.applyGeneratedPalette = function () {
+    if (!window.generatedPalette || !Array.isArray(window.generatedPalette)) {
+        window.showError('Palette Error', 'No palette has been generated yet.');
+        return;
+    }
+
+    // Clear existing colors
+    const colorInputs = document.getElementById('colorInputs');
+    if (colorInputs) {
+        colorInputs.innerHTML = '';
+
+        // Add each color from the generated palette
+        window.generatedPalette.forEach((color, index) => {
+            if (!color.startsWith('#')) color = '#' + color;
+            // Set decreasing weights for subsequent colors
+            const weight = Math.max(20, 100 - (index * 15));
+            addColorRow(color, weight);
+        });
+
+        // Update the palette
+        window.updateColorPalette();
+
+        // Hide the modal
+        const modal = document.getElementById('suggestPaletteModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+
+        window.showSuccess('Palette Applied', `Applied palette with ${window.generatedPalette.length} colors`);
+    }
+};
+
+// Add hover effects for scheme mode selection
 document.addEventListener('DOMContentLoaded', function () {
-    console.log('Document loaded, initializing event listeners');
-
-    // Load color names and initialize UI after loading
-    loadColorNames().then(() => {
-        // Add initial color if none exist
-        const colorInputs = document.getElementById('colorInputs');
-        if (colorInputs && !colorInputs.children.length) {
-            addColorRow('#FF0000');
-            window.updateColorSuggestions();  // Initialize suggestions for the default color
-            addColor();
-        }
-
-        // Update any existing color rows with names and attach the unified handler
-        const existingColorRows = document.querySelectorAll('.color-row');
-        existingColorRows.forEach(row => {
-            const colorPicker = row.querySelector('.color-picker');
-            let colorName = row.querySelector('.color-name');
-
-            if (colorPicker) {
-                if (!colorName) {
-                    colorName = document.createElement('span');
-                    colorName.className = 'color-name';
-                    colorName.style.fontSize = '12px';
-                    colorName.style.color = 'var(--subtext0)';
-                    colorName.style.marginLeft = '10px';
-                    colorName.style.fontStyle = 'italic';
-                    colorName.style.display = 'inline-block'; // Ensure visibility
-                    // Insert before the remove button if it exists, otherwise append
-                    const removeBtn = row.querySelector('.remove-btn');
-                    if (removeBtn) {
-                        row.insertBefore(colorName, removeBtn);
-                    } else {
-                        row.appendChild(colorName);
-                    }
-                }
-                colorName.textContent = getColorName(colorPicker.value);
-
-                // Attach the unified handler to existing color pickers
-                colorPicker.addEventListener('change', window.handleColorPickerChange);
-                colorPicker.addEventListener('input', window.handleColorPickerChange); // For live updates
-            }
-
-            const weightSlider = row.querySelector('.weight-slider');
-            const weightDisplay = row.querySelector('.weight-value');
-            if (weightSlider && weightDisplay) {
-                weightSlider.addEventListener('input', () => {
-                    weightDisplay.textContent = `${weightSlider.value}%`;
-                    window.updateColorPalette(); // This will also update colors and suggestions
-                });
-            }
+    // Add hover effects to scheme modes
+    const schemeModes = document.querySelectorAll('.scheme-mode');
+    schemeModes.forEach(mode => {
+        mode.addEventListener('mouseover', () => {
+            mode.style.transform = 'scale(1.02)';
+            mode.style.borderColor = 'var(--mauve)';
+            mode.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.1)';
+        });
+        mode.addEventListener('mouseout', () => {
+            mode.style.transform = 'scale(1)';
+            mode.style.borderColor = 'var(--surface2)';
+            mode.style.boxShadow = 'none';
+        });
+        mode.addEventListener('click', () => {
+            // Add a brief "active" effect
+            mode.style.transform = 'scale(0.98)';
+            setTimeout(() => mode.style.transform = 'scale(1)', 100);
         });
     });
-
-    // Initialize modal close buttons
-    const modalCloseButtons = document.querySelectorAll('.close, .image-close');
-    modalCloseButtons.forEach(button => {
-        button.addEventListener('click', function () {
-            const modal = this.closest('.modal, .image-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-
-    // Initialize color inputs
-    window.updateColorPalette();
-
-    console.log('Event listeners initialized');
 });
 

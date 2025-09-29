@@ -46,7 +46,14 @@
             </div>
             <!-- Color Suggestions -->
             <div id="colorSuggestions"></div>
-            <button class="add-color-btn" onclick="addColor()">+ Add Another Color</button>
+            <div style="display: flex; gap: 10px; margin: 15px 0;">
+                <button class="add-color-btn" onclick="addColor()">+ Add Another Color</button>
+                <button class="suggest-palette-btn" onclick="showSuggestPaletteModal()"
+                    style="background: var(--mauve); color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🎨</span>
+                    <span>Suggest Palette</span>
+                </button>
+            </div>
 
             <!-- Performance Tuning Options -->
             <div class="performance-options"
@@ -1621,6 +1628,75 @@
             <div class="modal-content">
                 <span class="close" onclick="closeToolModal()">&times;</span>
                 <div id="toolModalContent"></div>
+            </div>
+        </div>
+
+        <!-- Suggest Palette Modal -->
+        <div id="suggestPaletteModal" class="modal">
+            <div class="modal-content" style="width: 90%; max-width: 600px;">
+                <span class="close"
+                    onclick="document.getElementById('suggestPaletteModal').style.display='none'">&times;</span>
+                <h2 style="color: var(--text); margin-top: 0;">🎨 Suggest Color Palette</h2>
+
+                <div class="scheme-modes"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                    <!-- Monochromatic -->
+                    <div class="scheme-mode" onclick="generatePalette('monochromatic')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--mauve);">Monochromatic</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Different shades and tints of a
+                            single color</p>
+                    </div>
+
+                    <!-- Complementary -->
+                    <div class="scheme-mode" onclick="generatePalette('complementary')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--blue);">Complementary</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Two colors opposite on the color
+                            wheel</p>
+                    </div>
+
+                    <!-- Analogous -->
+                    <div class="scheme-mode" onclick="generatePalette('analogous')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--green);">Analogous</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Colors adjacent on the color
+                            wheel</p>
+                    </div>
+
+                    <!-- Triadic -->
+                    <div class="scheme-mode" onclick="generatePalette('triadic')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--red);">Triadic</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Three colors evenly spaced on the
+                            wheel</p>
+                    </div>
+
+                    <!-- Split Complementary -->
+                    <div class="scheme-mode" onclick="generatePalette('split-complementary')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--peach);">Split Complementary</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">One color and two adjacent to its
+                            complement</p>
+                    </div>
+
+                    <!-- Random Harmony -->
+                    <div class="scheme-mode" onclick="generatePalette('random')"
+                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                        <h3 style="margin: 0 0 10px 0; color: var(--yellow);">Random Harmony</h3>
+                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Randomly selected harmonious
+                            colors</p>
+                    </div>
+                </div>
+
+                <div id="generatedPalette" style="margin-top: 20px; display: none;">
+                    <h3 style="color: var(--text);">Generated Palette</h3>
+                    <div id="palettePreview" style="display: flex; gap: 10px; margin: 15px 0;"></div>
+                    <button onclick="applyGeneratedPalette()"
+                        style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                        Apply Palette
+                    </button>
+                </div>
             </div>
         </div>
     </div>
