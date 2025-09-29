@@ -1209,510 +1209,807 @@
                             <h6>Analysis Results</h6>
                             <div class="results-content" id="histogramAnalysisResultsContent">
                                 <!-- Results will be populated here -->
-                            </div>
+                            </div </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Distance Debugging Tool -->
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon">🐛</div>
-                        <h4 class="tool-title">Distance Debugger</h4>
-                    </div>
-                    <div class="tool-description">
-                        Debug and analyze Sinkhorn-EMD distance calculations, identify numerical stability issues, and
-                        validate distance metrics.
-                    </div>
-                    <div class="tool-features">
-                        <h4>Key Features:</h4>
-                        <ul class="feature-list">
-                            <li>Debug Sinkhorn-EMD distance calculations</li>
-                            <li>Identify numerical stability issues</li>
-                            <li>Validate distance metrics and fallbacks</li>
-                            <li>Compare different distance calculation methods</li>
-                            <li>Generate debugging reports</li>
-                        </ul>
-                    </div>
-                    <div class="tool-actions">
-                        <button class="tool-btn primary-btn" onclick="runDistanceDebugger()">Run Tool</button>
-                        <button class="tool-btn info-btn" onclick="showToolInfo('distance-debugger')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestDistanceDebugger()">Quick
-                            Test</button>
-                    </div>
-
-                    <!-- Expandable Tool Panel -->
-                    <div class="tool-panel" id="distanceDebuggerPanel" style="display: none;">
-                        <div class="panel-header">
-                            <h5>🐛 Distance Debugger Configuration</h5>
-                            <button class="panel-close" onclick="toggleToolPanel('distanceDebuggerPanel')">×</button>
+                    <!-- Distance Debugging Tool -->
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <div class="tool-icon">🐛</div>
+                            <h4 class="tool-title">Distance Debugger</h4>
+                        </div>
+                        <div class="tool-description">
+                            Debug and analyze Sinkhorn-EMD distance calculations, identify numerical stability issues,
+                            and
+                            validate distance metrics.
+                        </div>
+                        <div class="tool-features">
+                            <h4>Key Features:</h4>
+                            <ul class="feature-list">
+                                <li>Debug Sinkhorn-EMD distance calculations</li>
+                                <li>Identify numerical stability issues</li>
+                                <li>Validate distance metrics and fallbacks</li>
+                                <li>Compare different distance calculation methods</li>
+                                <li>Generate debugging reports</li>
+                            </ul>
+                        </div>
+                        <div class="tool-actions">
+                            <button class="tool-btn primary-btn" onclick="runDistanceDebugger()">Run Tool</button>
+                            <button class="tool-btn info-btn" onclick="showToolInfo('distance-debugger')">Info</button>
+                            <button class="tool-btn quick-test-btn" onclick="quickTestDistanceDebugger()">Quick
+                                Test</button>
                         </div>
 
-                        <div class="panel-content">
-                            <div class="input-section">
-                                <h6>Test Configuration</h6>
-                                <div class="input-group">
-                                    <label for="distanceDebuggerTestType">Test Type:</label>
-                                    <select id="distanceDebuggerTestType" class="select-input">
-                                        <option value="pairwise">Pairwise Comparison</option>
-                                        <option value="batch" selected>Batch Analysis</option>
-                                        <option value="stability">Numerical Stability</option>
-                                        <option value="performance">Performance Benchmarking</option>
-                                        <option value="fallback">Fallback Analysis</option>
-                                    </select>
-                                    <small>Choose the type of distance debugging to perform</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="distanceDebuggerDataset">Test Dataset:</label>
-                                    <select id="distanceDebuggerDataset" class="select-input">
-                                        <option value="test-dataset-20">Test Dataset 20 (20 images)</option>
-                                        <option value="test-dataset-50" selected>Test Dataset 50 (50 images)</option>
-                                        <option value="test-dataset-200">Test Dataset 200 (200 images)</option>
-                                        <option value="custom">Custom Path</option>
-                                    </select>
-                                    <small>Select dataset for distance debugging</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="distanceDebuggerCustomPath">Custom Path:</label>
-                                    <input type="text" id="distanceDebuggerCustomPath" class="text-input"
-                                        placeholder="datasets/custom-path" disabled>
-                                    <small>Enter custom dataset path (enabled when Custom Path is selected)</small>
-                                </div>
+                        <!-- Expandable Tool Panel -->
+                        <div class="tool-panel" id="distanceDebuggerPanel" style="display: none;">
+                            <div class="panel-header">
+                                <h5>🐛 Distance Debugger Configuration</h5>
+                                <button class="panel-close"
+                                    onclick="toggleToolPanel('distanceDebuggerPanel')">×</button>
                             </div>
 
-                            <div class="input-section">
-                                <h6>Distance Calculation Settings</h6>
-                                <div class="input-group">
-                                    <label for="distanceDebuggerEpsilon">Sinkhorn Epsilon:</label>
-                                    <select id="distanceDebuggerEpsilon" class="select-input">
-                                        <option value="0.1">0.1 (Aggressive)</option>
-                                        <option value="0.5">0.5 (Balanced)</option>
-                                        <option value="1.0" selected>1.0 (Stable - Current)</option>
-                                        <option value="2.0">2.0 (Conservative)</option>
-                                        <option value="5.0">5.0 (Very Conservative)</option>
-                                    </select>
-                                    <small>Epsilon value for Sinkhorn-EMD calculation (lower = more precise, higher =
-                                        more stable)</small>
-                                </div>
+                            <div class="panel-content">
+                                <div class="input-section">
+                                    <h6>Test Configuration</h6>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerTestType">Test Type:</label>
+                                        <select id="distanceDebuggerTestType" class="select-input">
+                                            <option value="pairwise">Pairwise Comparison</option>
+                                            <option value="batch" selected>Batch Analysis</option>
+                                            <option value="stability">Numerical Stability</option>
+                                            <option value="performance">Performance Benchmarking</option>
+                                            <option value="fallback">Fallback Analysis</option>
+                                        </select>
+                                        <small>Choose the type of distance debugging to perform</small>
+                                    </div>
 
-                                <div class="input-group">
-                                    <label for="distanceDebuggerMaxIterations">Max Iterations:</label>
-                                    <input type="number" id="distanceDebuggerMaxIterations" min="100" max="10000"
-                                        value="1000" class="number-input">
-                                    <small>Maximum iterations for Sinkhorn algorithm (100-10000)</small>
-                                </div>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerDataset">Test Dataset:</label>
+                                        <select id="distanceDebuggerDataset" class="select-input">
+                                            <option value="test-dataset-20">Test Dataset 20 (20 images)</option>
+                                            <option value="test-dataset-50" selected>Test Dataset 50 (50 images)
+                                            </option>
+                                            <option value="test-dataset-200">Test Dataset 200 (200 images)</option>
+                                            <option value="custom">Custom Path</option>
+                                        </select>
+                                        <small>Select dataset for distance debugging</small>
+                                    </div>
 
-                                <div class="input-group">
-                                    <label for="distanceDebuggerFallback">Fallback Strategy:</label>
-                                    <select id="distanceDebuggerFallback" class="select-input">
-                                        <option value="l2">L2 Distance (Fast)</option>
-                                        <option value="cosine">Cosine Similarity (Balanced)</option>
-                                        <option value="manhattan" selected>Manhattan Distance (Robust)</option>
-                                        <option value="chebyshev">Chebyshev Distance (Conservative)</option>
-                                    </select>
-                                    <small>Distance metric to use when Sinkhorn-EMD fails</small>
-                                </div>
-                            </div>
-
-                            <div class="input-section">
-                                <h6>Debugging Options</h6>
-                                <div class="input-group">
-                                    <label for="distanceDebuggerAnalysis">Analysis Depth:</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="distanceDebuggerNumerical" checked> Numerical
-                                            stability analysis</label>
-                                        <label><input type="checkbox" id="distanceDebuggerConvergence" checked>
-                                            Convergence tracking</label>
-                                        <label><input type="checkbox" id="distanceDebuggerError" checked> Error pattern
-                                            analysis</label>
-                                        <label><input type="checkbox" id="distanceDebuggerComparison" checked> Metric
-                                            comparison</label>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerCustomPath">Custom Path:</label>
+                                        <input type="text" id="distanceDebuggerCustomPath" class="text-input"
+                                            placeholder="datasets/custom-path" disabled>
+                                        <small>Enter custom dataset path (enabled when Custom Path is selected)</small>
                                     </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label for="distanceDebuggerOutput">Output Options:</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="distanceDebuggerDetailed" checked> Detailed
-                                            debug logs</label>
-                                        <label><input type="checkbox" id="distanceDebuggerSummary" checked> Summary
-                                            report</label>
-                                        <label><input type="checkbox" id="distanceDebuggerVisualization" checked> Debug
-                                            visualizations</label>
-                                        <label><input type="checkbox" id="distanceDebuggerExport" checked> Export debug
-                                            data</label>
+                                <div class="input-section">
+                                    <h6>Distance Calculation Settings</h6>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerEpsilon">Sinkhorn Epsilon:</label>
+                                        <select id="distanceDebuggerEpsilon" class="select-input">
+                                            <option value="0.1">0.1 (Aggressive)</option>
+                                            <option value="0.5">0.5 (Balanced)</option>
+                                            <option value="1.0" selected>1.0 (Stable - Current)</option>
+                                            <option value="2.0">2.0 (Conservative)</option>
+                                            <option value="5.0">5.0 (Very Conservative)</option>
+                                        </select>
+                                        <small>Epsilon value for Sinkhorn-EMD calculation (lower = more precise, higher
+                                            =
+                                            more stable)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerMaxIterations">Max Iterations:</label>
+                                        <input type="number" id="distanceDebuggerMaxIterations" min="100" max="10000"
+                                            value="1000" class="number-input">
+                                        <small>Maximum iterations for Sinkhorn algorithm (100-10000)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerFallback">Fallback Strategy:</label>
+                                        <select id="distanceDebuggerFallback" class="select-input">
+                                            <option value="l2">L2 Distance (Fast)</option>
+                                            <option value="cosine">Cosine Similarity (Balanced)</option>
+                                            <option value="manhattan" selected>Manhattan Distance (Robust)</option>
+                                            <option value="chebyshev">Chebyshev Distance (Conservative)</option>
+                                        </select>
+                                        <small>Distance metric to use when Sinkhorn-EMD fails</small>
                                     </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label for="distanceDebuggerOutputFormat">Output Format:</label>
-                                    <select id="distanceDebuggerOutputFormat" class="select-input">
-                                        <option value="json">JSON Report</option>
-                                        <option value="html" selected>HTML Report</option>
-                                        <option value="pdf">PDF Report</option>
-                                        <option value="csv">CSV Data</option>
-                                        <option value="text">Plain Text</option>
-                                    </select>
-                                </div>
-                            </div>
+                                <div class="input-section">
+                                    <h6>Debugging Options</h6>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerAnalysis">Analysis Depth:</label>
+                                        <div class="checkbox-group">
+                                            <label><input type="checkbox" id="distanceDebuggerNumerical" checked>
+                                                Numerical
+                                                stability analysis</label>
+                                            <label><input type="checkbox" id="distanceDebuggerConvergence" checked>
+                                                Convergence tracking</label>
+                                            <label><input type="checkbox" id="distanceDebuggerError" checked> Error
+                                                pattern
+                                                analysis</label>
+                                            <label><input type="checkbox" id="distanceDebuggerComparison" checked>
+                                                Metric
+                                                comparison</label>
+                                        </div>
+                                    </div>
 
-                            <div class="panel-actions">
-                                <button class="action-btn primary-btn" onclick="executeDistanceDebugger()">Run
-                                    Debugger</button>
-                                <button class="action-btn secondary-btn"
-                                    onclick="resetDistanceDebuggerForm()">Reset</button>
-                                <button class="action-btn info-btn" onclick="showDistanceDebuggerHelp()">Help</button>
-                            </div>
-                        </div>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerOutput">Output Options:</label>
+                                        <div class="checkbox-group">
+                                            <label><input type="checkbox" id="distanceDebuggerDetailed" checked>
+                                                Detailed
+                                                debug logs</label>
+                                            <label><input type="checkbox" id="distanceDebuggerSummary" checked> Summary
+                                                report</label>
+                                            <label><input type="checkbox" id="distanceDebuggerVisualization" checked>
+                                                Debug
+                                                visualizations</label>
+                                            <label><input type="checkbox" id="distanceDebuggerExport" checked> Export
+                                                debug
+                                                data</label>
+                                        </div>
+                                    </div>
 
-                        <!-- Results Display Area -->
-                        <div class="results-area" id="distanceDebuggerResults" style="display: none;">
-                            <h6>Debug Results</h6>
-                            <div class="results-content" id="distanceDebuggerResultsContent">
-                                <!-- Results will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Query Visualization Tool -->
-                <div class="tool-card">
-                    <div class="tool-header">
-                        <div class="tool-icon">🎭</div>
-                        <h4 class="tool-title">Query Visualizer</h4>
-                    </div>
-                    <div class="tool-description">
-                        Create visual representations of color queries with weighted color bars, color palettes, and
-                        comprehensive query summaries.
-                    </div>
-                    <div class="tool-features">
-                        <h4>Key Features:</h4>
-                        <ul class="feature-list">
-                            <li>Generate weighted color bars representing query colors</li>
-                            <li>Create color palette visualizations with weights</li>
-                            <li>Build comprehensive query summary images</li>
-                            <li>Export query visualizations</li>
-                            <li>Customizable color representations</li>
-                        </ul>
-                    </div>
-                    <div class="tool-actions">
-                        <button class="tool-btn primary-btn" onclick="runQueryVisualizer()">Run Tool</button>
-                        <button class="tool-btn info-btn" onclick="showToolInfo('query-visualizer')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestQueryVisualizer()">Quick Test</button>
-                    </div>
-
-                    <!-- Expandable Tool Panel -->
-                    <div class="tool-panel" id="queryVisualizerPanel" style="display: none;">
-                        <div class="panel-header">
-                            <h5>🎭 Query Visualizer Configuration</h5>
-                            <button class="panel-close" onclick="toggleToolPanel('queryVisualizerPanel')">×</button>
-                        </div>
-
-                        <div class="panel-content">
-                            <div class="input-section">
-                                <h6>Query Configuration</h6>
-                                <div class="input-group">
-                                    <label for="queryVisualizerColors">Color Query:</label>
-                                    <input type="text" id="queryVisualizerColors" class="text-input"
-                                        placeholder="FF0000,00FF00,0000FF" value="FF0000,00FF00">
-                                    <small>Enter hex colors separated by commas (without #)</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerWeights">Color Weights:</label>
-                                    <input type="text" id="queryVisualizerWeights" class="text-input"
-                                        placeholder="0.6,0.4" value="0.6,0.4">
-                                    <small>Enter weights separated by commas (will be normalized to sum to 1.0)</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerQueryType">Query Type:</label>
-                                    <select id="queryVisualizerQueryType" class="select-input">
-                                        <option value="single">Single Color</option>
-                                        <option value="dual" selected>Dual Color</option>
-                                        <option value="multi">Multi-Color</option>
-                                        <option value="gradient">Color Gradient</option>
-                                        <option value="palette">Color Palette</option>
-                                    </select>
-                                    <small>Choose the type of color query to visualize</small>
-                                </div>
-                            </div>
-
-                            <div class="input-section">
-                                <h6>Visualization Settings</h6>
-                                <div class="input-group">
-                                    <label for="queryVisualizerStyle">Visualization Style:</label>
-                                    <select id="queryVisualizerStyle" class="select-input">
-                                        <option value="bars">Weighted Color Bars</option>
-                                        <option value="circles" selected>Color Circles</option>
-                                        <option value="squares">Color Squares</option>
-                                        <option value="hexagons">Color Hexagons</option>
-                                        <option value="gradient">Gradient Bar</option>
-                                    </select>
-                                    <small>Choose the visual representation style</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerLayout">Layout:</label>
-                                    <select id="queryVisualizerLayout" class="select-input">
-                                        <option value="horizontal">Horizontal</option>
-                                        <option value="vertical" selected>Vertical</option>
-                                        <option value="radial">Radial</option>
-                                        <option value="grid">Grid</option>
-                                        <option value="flow">Flow</option>
-                                    </select>
-                                    <small>Choose the layout arrangement</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerSize">Visualization Size:</label>
-                                    <select id="queryVisualizerSize" class="select-input">
-                                        <option value="small">Small (400x300)</option>
-                                        <option value="medium" selected>Medium (600x450)</option>
-                                        <option value="large">Large (800x600)</option>
-                                        <option value="custom">Custom Dimensions</option>
-                                    </select>
-                                    <small>Choose the output size</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerCustomWidth">Custom Width:</label>
-                                    <input type="number" id="queryVisualizerCustomWidth" class="number-input"
-                                        placeholder="800" min="200" max="2000" disabled>
-                                    <small>Custom width in pixels (enabled when Custom Dimensions selected)</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerCustomHeight">Custom Height:</label>
-                                    <input type="number" id="queryVisualizerCustomHeight" class="number-input"
-                                        placeholder="600" min="150" max="1500" disabled>
-                                    <small>Custom height in pixels (enabled when Custom Dimensions selected)</small>
-                                </div>
-                            </div>
-
-                            <div class="input-section">
-                                <h6>Advanced Options</h6>
-                                <div class="input-group">
-                                    <label for="queryVisualizerFeatures">Additional Features:</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="queryVisualizerLabels" checked> Color labels
-                                            and hex codes</label>
-                                        <label><input type="checkbox" id="queryVisualizerWeights" checked> Weight
-                                            percentages</label>
-                                        <label><input type="checkbox" id="queryVisualizerColorNames" checked> Color
-                                            names (if available)</label>
-                                        <label><input type="checkbox" id="queryVisualizerHarmony" checked> Color harmony
-                                            indicators</label>
-                                        <label><input type="checkbox" id="queryVisualizerAccessibility" checked>
-                                            Accessibility information</label>
+                                    <div class="input-group">
+                                        <label for="distanceDebuggerOutputFormat">Output Format:</label>
+                                        <select id="distanceDebuggerOutputFormat" class="select-input">
+                                            <option value="json">JSON Report</option>
+                                            <option value="html" selected>HTML Report</option>
+                                            <option value="pdf">PDF Report</option>
+                                            <option value="csv">CSV Data</option>
+                                            <option value="text">Plain Text</option>
+                                        </select>
                                     </div>
                                 </div>
 
-                                <div class="input-group">
-                                    <label for="queryVisualizerBackground">Background Style:</label>
-                                    <select id="queryVisualizerBackground" class="select-input">
-                                        <option value="transparent">Transparent</option>
-                                        <option value="white" selected>White</option>
-                                        <option value="black">Black</option>
-                                        <option value="gradient">Gradient</option>
-                                        <option value="custom">Custom Color</option>
-                                    </select>
-                                    <small>Choose background style for the visualization</small>
-                                </div>
-
-                                <div class="input-group">
-                                    <label for="queryVisualizerCustomBackground">Custom Background Color:</label>
-                                    <input type="color" id="queryVisualizerCustomBackground" class="file-input"
-                                        value="#F5F5F5" disabled>
-                                    <small>Custom background color (enabled when Custom Color selected)</small>
+                                <div class="panel-actions">
+                                    <button class="action-btn primary-btn" onclick="executeDistanceDebugger()">Run
+                                        Debugger</button>
+                                    <button class="action-btn secondary-btn"
+                                        onclick="resetDistanceDebuggerForm()">Reset</button>
+                                    <button class="action-btn info-btn"
+                                        onclick="showDistanceDebuggerHelp()">Help</button>
                                 </div>
                             </div>
 
-                            <div class="input-section">
-                                <h6>Output Configuration</h6>
-                                <div class="input-group">
-                                    <label for="queryVisualizerOutputFormat">Output Format:</label>
-                                    <select id="queryVisualizerOutputFormat" class="select-input">
-                                        <option value="png">PNG Image</option>
-                                        <option value="svg" selected>SVG Vector</option>
-                                        <option value="pdf">PDF Document</option>
-                                        <option value="html">Interactive HTML</option>
-                                        <option value="json">JSON Data</option>
-                                    </select>
-                                    <small>Choose the output format for the visualization</small>
+                            <!-- Results Display Area -->
+                            <div class="results-area" id="distanceDebuggerResults" style="display: none;">
+                                <h6>Debug Results</h6>
+                                <div class="results-content" id="distanceDebuggerResultsContent">
+                                    <!-- Results will be populated here -->
                                 </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                <div class="input-group">
-                                    <label for="queryVisualizerQuality">Image Quality:</label>
-                                    <select id="queryVisualizerQuality" class="select-input">
-                                        <option value="low">Low (Fast)</option>
-                                        <option value="medium" selected>Medium (Balanced)</option>
-                                        <option value="high">High (Quality)</option>
-                                        <option value="ultra">Ultra (Best)</option>
-                                    </select>
-                                    <small>Choose image quality (affects file size and generation time)</small>
-                                </div>
+                    <!-- Query Visualization Tool -->
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <div class="tool-icon">🎭</div>
+                            <h4 class="tool-title">Query Visualizer</h4>
+                        </div>
+                        <div class="tool-description">
+                            Create visual representations of color queries with weighted color bars, color palettes, and
+                            comprehensive query summaries.
+                        </div>
+                        <div class="tool-features">
+                            <h4>Key Features:</h4>
+                            <ul class="feature-list">
+                                <li>Generate weighted color bars representing query colors</li>
+                                <li>Create color palette visualizations with weights</li>
+                                <li>Build comprehensive query summary images</li>
+                                <li>Export query visualizations</li>
+                                <li>Customizable color representations</li>
+                            </ul>
+                        </div>
+                        <div class="tool-actions">
+                            <button class="tool-btn primary-btn" onclick="runQueryVisualizer()">Run Tool</button>
+                            <button class="tool-btn info-btn" onclick="showToolInfo('query-visualizer')">Info</button>
+                            <button class="tool-btn quick-test-btn" onclick="quickTestQueryVisualizer()">Quick
+                                Test</button>
+                        </div>
 
-                                <div class="input-group">
-                                    <label for="queryVisualizerIncludeMetadata">Include Metadata:</label>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="queryVisualizerQueryInfo" checked> Query
-                                            information</label>
-                                        <label><input type="checkbox" id="queryVisualizerGenerationInfo" checked>
-                                            Generation details</label>
-                                        <label><input type="checkbox" id="queryVisualizerColorInfo" checked> Color
-                                            analysis</label>
-                                        <label><input type="checkbox" id="queryVisualizerExportInfo" checked> Export
-                                            options</label>
+                        <!-- Expandable Tool Panel -->
+                        <div class="tool-panel" id="queryVisualizerPanel" style="display: none;">
+                            <div class="panel-header">
+                                <h5>🎭 Query Visualizer Configuration</h5>
+                                <button class="panel-close" onclick="toggleToolPanel('queryVisualizerPanel')">×</button>
+                            </div>
+
+                            <div class="panel-content">
+                                <div class="input-section">
+                                    <h6>Query Configuration</h6>
+                                    <div class="input-group">
+                                        <label for="queryVisualizerColors">Color Query:</label>
+                                        <input type="text" id="queryVisualizerColors" class="text-input"
+                                            placeholder="FF0000,00FF00,0000FF" value="FF0000,00FF00">
+                                        <small>Enter hex colors separated by commas (without #)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerWeights">Color Weights:</label>
+                                        <input type="text" id="queryVisualizerWeights" class="text-input"
+                                            placeholder="0.6,0.4" value="0.6,0.4">
+                                        <small>Enter weights separated by commas (will be normalized to sum to
+                                            1.0)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerQueryType">Query Type:</label>
+                                        <select id="queryVisualizerQueryType" class="select-input">
+                                            <option value="single">Single Color</option>
+                                            <option value="dual" selected>Dual Color</option>
+                                            <option value="multi">Multi-Color</option>
+                                            <option value="gradient">Color Gradient</option>
+                                            <option value="palette">Color Palette</option>
+                                        </select>
+                                        <small>Choose the type of color query to visualize</small>
                                     </div>
                                 </div>
+
+                                <div class="input-section">
+                                    <h6>Visualization Settings</h6>
+                                    <div class="input-group">
+                                        <label for="queryVisualizerStyle">Visualization Style:</label>
+                                        <select id="queryVisualizerStyle" class="select-input">
+                                            <option value="bars">Weighted Color Bars</option>
+                                            <option value="circles" selected>Color Circles</option>
+                                            <option value="squares">Color Squares</option>
+                                            <option value="hexagons">Color Hexagons</option>
+                                            <option value="gradient">Gradient Bar</option>
+                                        </select>
+                                        <small>Choose the visual representation style</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerLayout">Layout:</label>
+                                        <select id="queryVisualizerLayout" class="select-input">
+                                            <option value="horizontal">Horizontal</option>
+                                            <option value="vertical" selected>Vertical</option>
+                                            <option value="radial">Radial</option>
+                                            <option value="grid">Grid</option>
+                                            <option value="flow">Flow</option>
+                                        </select>
+                                        <small>Choose the layout arrangement</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerSize">Visualization Size:</label>
+                                        <select id="queryVisualizerSize" class="select-input">
+                                            <option value="small">Small (400x300)</option>
+                                            <option value="medium" selected>Medium (600x450)</option>
+                                            <option value="large">Large (800x600)</option>
+                                            <option value="custom">Custom Dimensions</option>
+                                        </select>
+                                        <small>Choose the output size</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerCustomWidth">Custom Width:</label>
+                                        <input type="number" id="queryVisualizerCustomWidth" class="number-input"
+                                            placeholder="800" min="200" max="2000" disabled>
+                                        <small>Custom width in pixels (enabled when Custom Dimensions selected)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerCustomHeight">Custom Height:</label>
+                                        <input type="number" id="queryVisualizerCustomHeight" class="number-input"
+                                            placeholder="600" min="150" max="1500" disabled>
+                                        <small>Custom height in pixels (enabled when Custom Dimensions selected)</small>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Advanced Options</h6>
+                                    <div class="input-group">
+                                        <label for="queryVisualizerFeatures">Additional Features:</label>
+                                        <div class="checkbox-group">
+                                            <label><input type="checkbox" id="queryVisualizerLabels" checked> Color
+                                                labels
+                                                and hex codes</label>
+                                            <label><input type="checkbox" id="queryVisualizerWeights" checked> Weight
+                                                percentages</label>
+                                            <label><input type="checkbox" id="queryVisualizerColorNames" checked> Color
+                                                names (if available)</label>
+                                            <label><input type="checkbox" id="queryVisualizerHarmony" checked> Color
+                                                harmony
+                                                indicators</label>
+                                            <label><input type="checkbox" id="queryVisualizerAccessibility" checked>
+                                                Accessibility information</label>
+                                        </div>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerBackground">Background Style:</label>
+                                        <select id="queryVisualizerBackground" class="select-input">
+                                            <option value="transparent">Transparent</option>
+                                            <option value="white" selected>White</option>
+                                            <option value="black">Black</option>
+                                            <option value="gradient">Gradient</option>
+                                            <option value="custom">Custom Color</option>
+                                        </select>
+                                        <small>Choose background style for the visualization</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerCustomBackground">Custom Background Color:</label>
+                                        <input type="color" id="queryVisualizerCustomBackground" class="file-input"
+                                            value="#F5F5F5" disabled>
+                                        <small>Custom background color (enabled when Custom Color selected)</small>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Output Configuration</h6>
+                                    <div class="input-group">
+                                        <label for="queryVisualizerOutputFormat">Output Format:</label>
+                                        <select id="queryVisualizerOutputFormat" class="select-input">
+                                            <option value="png">PNG Image</option>
+                                            <option value="svg" selected>SVG Vector</option>
+                                            <option value="pdf">PDF Document</option>
+                                            <option value="html">Interactive HTML</option>
+                                            <option value="json">JSON Data</option>
+                                        </select>
+                                        <small>Choose the output format for the visualization</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerQuality">Image Quality:</label>
+                                        <select id="queryVisualizerQuality" class="select-input">
+                                            <option value="low">Low (Fast)</option>
+                                            <option value="medium" selected>Medium (Balanced)</option>
+                                            <option value="high">High (Quality)</option>
+                                            <option value="ultra">Ultra (Best)</option>
+                                        </select>
+                                        <small>Choose image quality (affects file size and generation time)</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="queryVisualizerIncludeMetadata">Include Metadata:</label>
+                                        <div class="checkbox-group">
+                                            <label><input type="checkbox" id="queryVisualizerQueryInfo" checked> Query
+                                                information</label>
+                                            <label><input type="checkbox" id="queryVisualizerGenerationInfo" checked>
+                                                Generation details</label>
+                                            <label><input type="checkbox" id="queryVisualizerColorInfo" checked> Color
+                                                analysis</label>
+                                            <label><input type="checkbox" id="queryVisualizerExportInfo" checked> Export
+                                                options</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="panel-actions">
+                                    <button class="action-btn primary-btn" onclick="executeQueryVisualizer()">Generate
+                                        Visualization</button>
+                                    <button class="action-btn secondary-btn"
+                                        onclick="resetQueryVisualizerForm()">Reset</button>
+                                    <button class="action-btn info-btn"
+                                        onclick="showQueryVisualizerHelp()">Help</button>
+                                </div>
                             </div>
 
-                            <div class="panel-actions">
-                                <button class="action-btn primary-btn" onclick="executeQueryVisualizer()">Generate
-                                    Visualization</button>
-                                <button class="action-btn secondary-btn"
-                                    onclick="resetQueryVisualizerForm()">Reset</button>
-                                <button class="action-btn info-btn" onclick="showQueryVisualizerHelp()">Help</button>
+                            <!-- Results Display Area -->
+                            <div class="results-area" id="queryVisualizerResults" style="display: none;">
+                                <h6>Visualization Results</h6>
+                                <div class="results-content" id="queryVisualizerResultsContent">
+                                    <!-- Results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Analysis Tool -->
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <div class="tool-icon">🎨</div>
+                            <h4 class="tool-title">Color Analysis</h4>
+                        </div>
+                        <div class="tool-description">
+                            Analyze color relationships, harmony scores, and palette characteristics with comprehensive
+                            metrics and visual feedback.
+                        </div>
+                        <div class="tool-features">
+                            <h4>Key Features:</h4>
+                            <ul class="feature-list">
+                                <li>Color harmony score calculation</li>
+                                <li>Color relationship analysis</li>
+                                <li>Complementary color detection</li>
+                                <li>Contrast ratio evaluation</li>
+                                <li>Accessibility compliance checks</li>
+                                <li>Color scheme suggestions</li>
+                            </ul>
+                        </div>
+                        <div class="tool-actions">
+                            <button class="tool-btn primary-btn" onclick="runColorAnalysis()">Run Tool</button>
+                            <button class="tool-btn info-btn" onclick="showToolInfo('color-analysis')">Info</button>
+                            <button class="tool-btn quick-test-btn" onclick="quickTestColorAnalysis()">Quick
+                                Test</button>
+                        </div>
+
+                        <!-- Expandable Tool Panel -->
+                        <div class="tool-panel" id="colorAnalysisPanel" style="display: none;">
+                            <div class="panel-header">
+                                <h5>🎨 Color Analysis Configuration</h5>
+                                <button class="panel-close" onclick="toggleToolPanel('colorAnalysisPanel')">×</button>
+                            </div>
+
+                            <div class="panel-content">
+                                <div class="input-section">
+                                    <h6>Color Input</h6>
+                                    <div class="input-group">
+                                        <label for="colorAnalysisInput">Colors to Analyze:</label>
+                                        <input type="text" id="colorAnalysisInput" class="text-input"
+                                            placeholder="Enter hex colors (e.g., #FF0000, #00FF00)" value="">
+                                        <small>Enter hex colors separated by commas or spaces</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="colorAnalysisMode">Analysis Mode:</label>
+                                        <select id="colorAnalysisMode" class="select-input">
+                                            <option value="basic">Basic Analysis</option>
+                                            <option value="advanced" selected>Advanced Analysis</option>
+                                            <option value="comprehensive">Comprehensive Analysis</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Analysis Options</h6>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" id="analyzeHarmony" checked> Color Harmony</label>
+                                        <label><input type="checkbox" id="analyzeRelationships" checked> Color
+                                            Relationships</label>
+                                        <label><input type="checkbox" id="analyzeContrast" checked> Contrast
+                                            Ratios</label>
+                                        <label><input type="checkbox" id="analyzeAccessibility" checked>
+                                            Accessibility</label>
+                                        <label><input type="checkbox" id="analyzePsychology" checked> Color
+                                            Psychology</label>
+                                        <label><input type="checkbox" id="generateSuggestions" checked> Generate
+                                            Suggestions</label>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Harmony Metrics</h6>
+                                    <div class="input-group">
+                                        <label for="harmonyThreshold">Harmony Threshold:</label>
+                                        <input type="range" id="harmonyThreshold" min="0" max="100" value="75"
+                                            class="range-input">
+                                        <span id="harmonyThresholdValue">75%</span>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="harmonyRules">Harmony Rules:</label>
+                                        <select id="harmonyRules" class="select-input" multiple>
+                                            <option value="complementary" selected>Complementary</option>
+                                            <option value="analogous" selected>Analogous</option>
+                                            <option value="triadic" selected>Triadic</option>
+                                            <option value="split-complementary" selected>Split Complementary</option>
+                                            <option value="tetradic" selected>Tetradic</option>
+                                            <option value="monochromatic" selected>Monochromatic</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Output Options</h6>
+                                    <div class="input-group">
+                                        <label for="outputFormat">Output Format:</label>
+                                        <select id="outputFormat" class="select-input">
+                                            <option value="visual">Visual Report</option>
+                                            <option value="detailed">Detailed Text Report</option>
+                                            <option value="json">JSON Data</option>
+                                            <option value="all" selected>All Formats</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" id="includeVisualizations" checked> Include
+                                            Visualizations</label>
+                                        <label><input type="checkbox" id="includeMetrics" checked> Include
+                                            Metrics</label>
+                                        <label><input type="checkbox" id="includeSuggestions" checked> Include
+                                            Suggestions</label>
+                                        <label><input type="checkbox" id="includeExplanations" checked> Include
+                                            Explanations</label>
+                                    </div>
+                                </div>
+
+                                <div class="panel-actions">
+                                    <button class="action-btn primary-btn" onclick="executeColorAnalysis()">Run
+                                        Analysis</button>
+                                    <button class="action-btn secondary-btn"
+                                        onclick="resetColorAnalysisForm()">Reset</button>
+                                    <button class="action-btn info-btn" onclick="showColorAnalysisHelp()">Help</button>
+                                </div>
+                            </div>
+
+                            <!-- Results Display Area -->
+                            <div class="results-area" id="colorAnalysisResults" style="display: none;">
+                                <h6>Analysis Results</h6>
+                                <div class="results-content" id="colorAnalysisResultsContent">
+                                    <!-- Results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Color Analysis Tool -->
+                    <div class="tool-card">
+                        <div class="tool-header">
+                            <div class="tool-icon">🎨</div>
+                            <h4 class="tool-title">Color Analysis</h4>
+                        </div>
+                        <div class="tool-description">
+                            Analyze color relationships, harmony scores, and palette characteristics with comprehensive
+                            metrics and visual feedback.
+                        </div>
+                        <div class="tool-features">
+                            <h4>Key Features:</h4>
+                            <ul class="feature-list">
+                                <li>Color harmony score calculation</li>
+                                <li>Color relationship analysis</li>
+                                <li>Complementary color detection</li>
+                                <li>Contrast ratio evaluation</li>
+                                <li>Accessibility compliance checks</li>
+                                <li>Color scheme suggestions</li>
+                            </ul>
+                        </div>
+                        <div class="tool-actions">
+                            <button class="tool-btn primary-btn" onclick="runColorAnalysis()">Run Tool</button>
+                            <button class="tool-btn info-btn" onclick="showToolInfo('color-analysis')">Info</button>
+                            <button class="tool-btn quick-test-btn" onclick="quickTestColorAnalysis()">Quick
+                                Test</button>
+                        </div>
+
+                        <!-- Expandable Tool Panel -->
+                        <div class="tool-panel" id="colorAnalysisPanel" style="display: none;">
+                            <div class="panel-header">
+                                <h5>🎨 Color Analysis Configuration</h5>
+                                <button class="panel-close" onclick="toggleToolPanel('colorAnalysisPanel')">×</button>
+                            </div>
+
+                            <div class="panel-content">
+                                <div class="input-section">
+                                    <h6>Color Input</h6>
+                                    <div class="input-group">
+                                        <label for="colorAnalysisInput">Colors to Analyze:</label>
+                                        <input type="text" id="colorAnalysisInput" class="text-input"
+                                            placeholder="Enter hex colors (e.g., #FF0000, #00FF00)" value="">
+                                        <small>Enter hex colors separated by commas or spaces</small>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="colorAnalysisMode">Analysis Mode:</label>
+                                        <select id="colorAnalysisMode" class="select-input">
+                                            <option value="basic">Basic Analysis</option>
+                                            <option value="advanced" selected>Advanced Analysis</option>
+                                            <option value="comprehensive">Comprehensive Analysis</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Analysis Options</h6>
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" id="analyzeHarmony" checked> Color Harmony</label>
+                                        <label><input type="checkbox" id="analyzeRelationships" checked> Color
+                                            Relationships</label>
+                                        <label><input type="checkbox" id="analyzeContrast" checked> Contrast
+                                            Ratios</label>
+                                        <label><input type="checkbox" id="analyzeAccessibility" checked>
+                                            Accessibility</label>
+                                        <label><input type="checkbox" id="analyzePsychology" checked> Color
+                                            Psychology</label>
+                                        <label><input type="checkbox" id="generateSuggestions" checked> Generate
+                                            Suggestions</label>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Harmony Metrics</h6>
+                                    <div class="input-group">
+                                        <label for="harmonyThreshold">Harmony Threshold:</label>
+                                        <input type="range" id="harmonyThreshold" min="0" max="100" value="75"
+                                            class="range-input">
+                                        <span id="harmonyThresholdValue">75%</span>
+                                    </div>
+
+                                    <div class="input-group">
+                                        <label for="harmonyRules">Harmony Rules:</label>
+                                        <select id="harmonyRules" class="select-input" multiple>
+                                            <option value="complementary" selected>Complementary</option>
+                                            <option value="analogous" selected>Analogous</option>
+                                            <option value="triadic" selected>Triadic</option>
+                                            <option value="split-complementary" selected>Split Complementary</option>
+                                            <option value="tetradic" selected>Tetradic</option>
+                                            <option value="monochromatic" selected>Monochromatic</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="input-section">
+                                    <h6>Output Options</h6>
+                                    <div class="input-group">
+                                        <label for="outputFormat">Output Format:</label>
+                                        <select id="outputFormat" class="select-input">
+                                            <option value="visual">Visual Report</option>
+                                            <option value="detailed">Detailed Text Report</option>
+                                            <option value="json">JSON Data</option>
+                                            <option value="all" selected>All Formats</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="checkbox-group">
+                                        <label><input type="checkbox" id="includeVisualizations" checked> Include
+                                            Visualizations</label>
+                                        <label><input type="checkbox" id="includeMetrics" checked> Include
+                                            Metrics</label>
+                                        <label><input type="checkbox" id="includeSuggestions" checked> Include
+                                            Suggestions</label>
+                                        <label><input type="checkbox" id="includeExplanations" checked> Include
+                                            Explanations</label>
+                                    </div>
+                                </div>
+
+                                <div class="panel-actions">
+                                    <button class="action-btn primary-btn" onclick="executeColorAnalysis()">Run
+                                        Analysis</button>
+                                    <button class="action-btn secondary-btn"
+                                        onclick="resetColorAnalysisForm()">Reset</button>
+                                    <button class="action-btn info-btn" onclick="showColorAnalysisHelp()">Help</button>
+                                </div>
+                            </div>
+
+                            <!-- Results Display Area -->
+                            <div class="results-area" id="colorAnalysisResults" style="display: none;">
+                                <h6>Analysis Results</h6>
+                                <div class="results-content" id="colorAnalysisResultsContent">
+                                    <!-- Results will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tool Usage Instructions -->
+                    <div class="tool-category">
+                        <h3>📖 How to Use These Tools</h3>
+                        <p>All visualization tools are available as Python scripts in the <code>tools/</code> directory.
+                            You can
+                            run them directly from the command line or use the web interface buttons above to execute
+                            them with
+                            sample data.</p>
+                        <p><strong>Note:</strong> Some tools require the Chromatica API to be running and may need
+                            additional
+                            dependencies. Check the tool documentation for specific requirements.</p>
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div class="error" id="error" style="display: none;"></div>
+
+                <!-- Image Popup Modal -->
+                <div id="imageModal" class="image-modal" style="display: none;">
+                    <div class="image-modal-content">
+                        <span class="image-close">&times;</span>
+                        <img id="modalImage" src="" alt="Full size image">
+                    </div>
+                </div>
+
+                <!-- Enhanced Details Modal -->
+                <div id="detailsModal" class="modal">
+                    <div class="modal-content details-modal">
+                        <span class="close">&times;</span>
+                        <h2>Image Details</h2>
+                        <div id="imageDetailsContent">
+                            <!-- Content will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tool Information Modal -->
+                <div id="toolModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close" onclick="closeToolModal()">&times;</span>
+                        <div id="toolModalContent"></div>
+                    </div>
+                </div>
+
+                <!-- Suggest Palette Modal -->
+                <div id="suggestPaletteModal" class="modal">
+                    <div class="modal-content" style="width: 90%; max-width: 600px;">
+                        <span class="close"
+                            onclick="document.getElementById('suggestPaletteModal').style.display='none'">&times;</span>
+                        <h2 style="color: var(--text); margin-top: 0;">🎨 Suggest Color Palette</h2>
+
+                        <div class="scheme-modes"
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                            <!-- Monochromatic -->
+                            <div class="scheme-mode" onclick="generatePalette('monochromatic')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--mauve);">Monochromatic</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Different shades and
+                                    tints of a
+                                    single color</p>
+                            </div>
+
+                            <!-- Complementary -->
+                            <div class="scheme-mode" onclick="generatePalette('complementary')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--blue);">Complementary</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Two colors opposite on
+                                    the color
+                                    wheel</p>
+                            </div>
+
+                            <!-- Analogous -->
+                            <div class="scheme-mode" onclick="generatePalette('analogous')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--green);">Analogous</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Colors adjacent on the
+                                    color
+                                    wheel</p>
+                            </div>
+
+                            <!-- Triadic -->
+                            <div class="scheme-mode" onclick="generatePalette('triadic')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--red);">Triadic</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Three colors evenly
+                                    spaced on the
+                                    wheel</p>
+                            </div>
+
+                            <!-- Split Complementary -->
+                            <div class="scheme-mode" onclick="generatePalette('split-complementary')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--peach);">Split Complementary</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">One color and two
+                                    adjacent to its
+                                    complement</p>
+                            </div>
+
+                            <!-- Random Harmony -->
+                            <div class="scheme-mode" onclick="generatePalette('random')"
+                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--yellow);">Random Harmony</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Randomly selected
+                                    harmonious
+                                    colors</p>
                             </div>
                         </div>
 
-                        <!-- Results Display Area -->
-                        <div class="results-area" id="queryVisualizerResults" style="display: none;">
-                            <h6>Visualization Results</h6>
-                            <div class="results-content" id="queryVisualizerResultsContent">
-                                <!-- Results will be populated here -->
-                            </div>
+                        <div id="generatedPalette" style="margin-top: 20px; display: none;">
+                            <h3 style="color: var(--text);">Generated Palette</h3>
+                            <div id="palettePreview" style="display: flex; gap: 10px; margin: 15px 0;"></div>
+                            <button onclick="applyGeneratedPalette()"
+                                style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                                Apply Palette
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Tool Usage Instructions -->
-            <div class="tool-category">
-                <h3>📖 How to Use These Tools</h3>
-                <p>All visualization tools are available as Python scripts in the <code>tools/</code> directory. You can
-                    run them directly from the command line or use the web interface buttons above to execute them with
-                    sample data.</p>
-                <p><strong>Note:</strong> Some tools require the Chromatica API to be running and may need additional
-                    dependencies. Check the tool documentation for specific requirements.</p>
+            <!-- Sticky Restart Button -->
+            <div id="restartButton"
+                style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: white; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
+                onclick="restartServer()" title="Restart Chromatica Server">
+                🔄 Restart Server
             </div>
-        </div>
 
-        <!-- Error Display -->
-        <div class="error" id="error" style="display: none;"></div>
+            <script src="/static/js/main.js" type="text/javascript"></script>
 
-        <!-- Image Popup Modal -->
-        <div id="imageModal" class="image-modal" style="display: none;">
-            <div class="image-modal-content">
-                <span class="image-close">&times;</span>
-                <img id="modalImage" src="" alt="Full size image">
-            </div>
-        </div>
+            <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-        <!-- Enhanced Details Modal -->
-        <div id="detailsModal" class="modal">
-            <div class="modal-content details-modal">
-                <span class="close">&times;</span>
-                <h2>Image Details</h2>
-                <div id="imageDetailsContent">
-                    <!-- Content will be populated dynamically -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Tool Information Modal -->
-        <div id="toolModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeToolModal()">&times;</span>
-                <div id="toolModalContent"></div>
-            </div>
-        </div>
-
-        <!-- Suggest Palette Modal -->
-        <div id="suggestPaletteModal" class="modal">
-            <div class="modal-content" style="width: 90%; max-width: 600px;">
-                <span class="close"
-                    onclick="document.getElementById('suggestPaletteModal').style.display='none'">&times;</span>
-                <h2 style="color: var(--text); margin-top: 0;">🎨 Suggest Color Palette</h2>
-
-                <div class="scheme-modes"
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
-                    <!-- Monochromatic -->
-                    <div class="scheme-mode" onclick="generatePalette('monochromatic')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--mauve);">Monochromatic</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Different shades and tints of a
-                            single color</p>
-                    </div>
-
-                    <!-- Complementary -->
-                    <div class="scheme-mode" onclick="generatePalette('complementary')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--blue);">Complementary</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Two colors opposite on the color
-                            wheel</p>
-                    </div>
-
-                    <!-- Analogous -->
-                    <div class="scheme-mode" onclick="generatePalette('analogous')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--green);">Analogous</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Colors adjacent on the color
-                            wheel</p>
-                    </div>
-
-                    <!-- Triadic -->
-                    <div class="scheme-mode" onclick="generatePalette('triadic')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--red);">Triadic</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Three colors evenly spaced on the
-                            wheel</p>
-                    </div>
-
-                    <!-- Split Complementary -->
-                    <div class="scheme-mode" onclick="generatePalette('split-complementary')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--peach);">Split Complementary</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">One color and two adjacent to its
-                            complement</p>
-                    </div>
-
-                    <!-- Random Harmony -->
-                    <div class="scheme-mode" onclick="generatePalette('random')"
-                        style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                        <h3 style="margin: 0 0 10px 0; color: var(--yellow);">Random Harmony</h3>
-                        <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Randomly selected harmonious
-                            colors</p>
-                    </div>
-                </div>
-
-                <div id="generatedPalette" style="margin-top: 20px; display: none;">
-                    <h3 style="color: var(--text);">Generated Palette</h3>
-                    <div id="palettePreview" style="display: flex; gap: 10px; margin: 15px 0;"></div>
-                    <button onclick="applyGeneratedPalette()"
-                        style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                        Apply Palette
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Sticky Restart Button -->
-    <div id="restartButton"
-        style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: white; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
-        onclick="restartServer()" title="Restart Chromatica Server">
-        🔄 Restart Server
-    </div>
-
-    <script src="/static/js/main.js" type="text/javascript"></script>
-
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-
-    <!-- <script type="module" src="/static/js/main.js"></script> -->
+            <!-- <script type="module" src="/static/js/main.js"></script> -->
 </body>
 
 </html>

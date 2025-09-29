@@ -2884,6 +2884,540 @@ window.applyGeneratedPalette = function () {
 };
 
 // Add hover effects for scheme mode selection
+// Function to run Color Analysis tool
+window.runColorAnalysis = function () {
+    console.log('Running Color Analysis tool');
+    const panel = document.getElementById('colorAnalysisPanel');
+    if (panel) {
+        panel.style.display = 'block';
+
+        // Initialize the color input with current colors if available
+        const colorAnalysisInput = document.getElementById('colorAnalysisInput');
+        if (colorAnalysisInput && window.colors && window.colors.length > 0) {
+            colorAnalysisInput.value = window.colors.join(', ');
+        }
+    } else {
+        window.showError('Tool Error', 'Color Analysis panel not found');
+    }
+};
+
+// Function to run a quick test of the Color Analysis tool
+window.quickTestColorAnalysis = function () {
+    console.log('Running quick test of Color Analysis tool');
+
+    // Set some sample colors for the test
+    const testColors = ['#F5C2E7', '#CBA6F7', '#F2CDCD', '#A6E3A1', '#F9E2AF'];
+
+    // Set up the color analysis input
+    const colorAnalysisInput = document.getElementById('colorAnalysisInput');
+    if (colorAnalysisInput) {
+        colorAnalysisInput.value = testColors.join(', ');
+    }
+
+    // Display the panel if it's not already visible
+    const panel = document.getElementById('colorAnalysisPanel');
+    if (panel) {
+        panel.style.display = 'block';
+    }
+
+    // Execute the analysis with sample data
+    executeColorAnalysis();
+};
+
+// Function to execute color analysis
+function executeColorAnalysis() {
+    console.log('Executing color analysis');
+
+    // Get input values
+    const colorInput = document.getElementById('colorAnalysisInput')?.value;
+    if (!colorInput) {
+        window.showError('Analysis Error', 'Please enter at least one color');
+        return;
+    }
+
+    // Parse color input (expecting hex colors separated by commas or spaces)
+    const colors = colorInput.split(/[\s,]+/).filter(c => c).map(c => {
+        // Ensure colors start with # 
+        return c.startsWith('#') ? c : `#${c}`;
+    });
+
+    if (colors.length === 0) {
+        window.showError('Analysis Error', 'No valid colors found');
+        return;
+    }
+
+    // Get analysis options (if elements exist)
+    const analyzeHarmony = document.getElementById('analyzeHarmony')?.checked ?? true;
+    const analyzeRelationships = document.getElementById('analyzeRelationships')?.checked ?? true;
+    const analyzeContrast = document.getElementById('analyzeContrast')?.checked ?? true;
+
+    // Analyze colors
+    const results = analyzeColors(colors, {
+        harmony: analyzeHarmony,
+        relationships: analyzeRelationships,
+        contrast: analyzeContrast
+    });
+
+    // Display results
+    displayColorAnalysisResults(results);
+}
+
+// Function to analyze colors
+function analyzeColors(colors, options) {
+    const results = {
+        colors: colors,
+        colorNames: colors.map(c => getColorName(c)),
+        harmonyScore: 0,
+        relationships: [],
+        contrastScores: [],
+        suggestions: []
+    };
+
+    // Calculate harmony score (simple implementation)
+    if (options.harmony) {
+        const hslColors = colors.map(c => hexToHsl(c));
+
+        // Check hue distances for harmony
+        let totalHarmony = 0;
+        let pairs = 0;
+
+        for (let i = 0; i < hslColors.length; i++) {
+            for (let j = i + 1; j < hslColors.length; j++) {
+                const hue1 = hslColors[i].h;
+                const hue2 = hslColors[j].h;
+
+                // Calculate smallest distance between hues (0-180 degrees)
+                const hueDiff = Math.min(
+                    Math.abs(hue1 - hue2),
+                    360 - Math.abs(hue1 - hue2)
+                );
+
+                // Different harmony rules
+                // - Complementary: ~180 degrees
+                // - Analogous: <30 degrees
+                // - Triadic: ~120 degrees
+
+                // Calculate harmony contribution (higher = more harmonious)
+                const complementaryScore = 1 - Math.abs(hueDiff - 180) / 180;
+                const analogousScore = 1 - Math.min(hueDiff, 60) / 60;
+                const triadicScore = 1 - Math.abs(hueDiff - 120) / 120;
+
+                // Take the highest harmony score
+                const harmonyContribution = Math.max(
+                    complementaryScore,
+                    analogousScore,
+                    triadicScore
+                );
+
+                totalHarmony += harmonyContribution;
+                pairs++;
+
+                // Add relationship
+                let relationship = "Mixed";
+                if (complementaryScore > 0.8) relationship = "Complementary";
+                else if (analogousScore > 0.8) relationship = "Analogous";
+                else if (triadicScore > 0.8) relationship = "Triadic";
+
+                results.relationships.push({
+                    color1: colors[i],
+                    color2: colors[j],
+                    relationship: relationship,
+                    harmonyScore: harmonyContribution
+                });
+            }
+        }
+
+        // Calculate overall harmony (0-100%)
+        results.harmonyScore = pairs > 0 ? (totalHarmony / pairs) * 100 : 100;
+    }
+
+    // Calculate contrast ratios
+    if (options.contrast && colors.length >= 2) {
+        for (let i = 0; i < colors.length; i++) {
+            for (let j = i + 1; j < colors.length; j++) {
+                // Simple luminance calculation for contrast (not fully WCAG compliant)
+                const rgb1 = hexToRgb(colors[i]);
+                const rgb2 = hexToRgb(colors[j]);
+
+                // Simplified relative luminance calculation
+                const lum1 = 0.2126 * rgb1.r / 255 + 0.7152 * rgb1.g / 255 + 0.0722 * rgb1.b / 255;
+                const lum2 = 0.2126 * rgb2.r / 255 + 0.7152 * rgb2.g / 255 + 0.0722 * rgb2.b / 255;
+
+                // Calculate contrast ratio
+                const ratio = (Math.max(lum1, lum2) + 0.05) / (Math.min(lum1, lum2) + 0.05);
+
+                results.contrastScores.push({
+                    color1: colors[i],
+                    color2: colors[j],
+                    ratio: ratio.toFixed(2),
+                    isAccessible: ratio >= 4.5
+                });
+            }
+        }
+    }
+
+    // Generate suggestions based on harmony analysis
+    const baseColor = colors[0];
+
+    // Add complementary color suggestion
+    results.suggestions.push({
+        type: "Complementary",
+        colors: [baseColor, getComplementaryColor(baseColor)]
+    });
+
+    // Add analogous suggestion
+    results.suggestions.push({
+        type: "Analogous",
+        colors: generateAnalogousScheme(baseColor)
+    });
+
+    // Add triadic suggestion
+    results.suggestions.push({
+        type: "Triadic",
+        colors: generateTriadicScheme(baseColor)
+    });
+
+    return results;
+}
+
+// Function to display color analysis results
+function displayColorAnalysisResults(results) {
+    const resultsContainer = document.getElementById('colorAnalysisResultsContent');
+    const resultsArea = document.getElementById('colorAnalysisResults');
+
+    if (!resultsContainer || !resultsArea) {
+        window.showError('Display Error', 'Results container not found');
+        return;
+    }
+
+    // Show results area
+    resultsArea.style.display = 'block';
+
+    // Build HTML for results
+    let html = `
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: var(--text); margin-bottom: 10px;">Color Palette Analysis</h3>
+            
+            <!-- Color Swatches -->
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap;">
+                ${results.colors.map((color, idx) => `
+                    <div style="text-align: center;">
+                        <div style="
+                            width: 60px;
+                            height: 60px;
+                            background-color: ${color};
+                            border-radius: 8px;
+                            margin-bottom: 5px;
+                            border: 2px solid var(--surface2);
+                        "></div>
+                        <div style="font-size: 12px; color: var(--text);">${color}</div>
+                        <div style="font-size: 11px; color: var(--subtext0);">${results.colorNames[idx]}</div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <!-- Harmony Score -->
+            <div style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="color: var(--text); margin: 0 0 10px 0;">Harmony Score</h4>
+                <div style="position: relative; height: 20px; background: var(--surface2); border-radius: 10px; overflow: hidden;">
+                    <div style="position: absolute; top: 0; left: 0; height: 100%; width: ${results.harmonyScore.toFixed(1)}%; background: var(--green); border-radius: 10px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 5px;">
+                    <span style="font-size: 12px; color: var(--subtext1);">0%</span>
+                    <span style="font-size: 12px; font-weight: bold; color: var(--text);">${results.harmonyScore.toFixed(1)}%</span>
+                    <span style="font-size: 12px; color: var(--subtext1);">100%</span>
+                </div>
+                <div style="text-align: center; margin-top: 10px; font-size: 14px; color: var(--text);">
+                    ${results.harmonyScore > 80 ? 'Very Harmonious' :
+            results.harmonyScore > 60 ? 'Good Harmony' :
+                results.harmonyScore > 40 ? 'Moderate Harmony' : 'Low Harmony'}
+                </div>
+            </div>
+    `;
+
+    // Color Relationships
+    if (results.relationships.length > 0) {
+        html += `
+            <div style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="color: var(--text); margin: 0 0 10px 0;">Color Relationships</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 5px; color: var(--subtext0);">Colors</th>
+                            <th style="text-align: left; padding: 5px; color: var(--subtext0);">Relationship</th>
+                            <th style="text-align: right; padding: 5px; color: var(--subtext0);">Harmony</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        results.relationships.forEach(rel => {
+            html += `
+                <tr>
+                    <td style="padding: 5px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 15px; height: 15px; background-color: ${rel.color1}; border-radius: 3px;"></div>
+                            <div style="width: 15px; height: 15px; background-color: ${rel.color2}; border-radius: 3px;"></div>
+                        </div>
+                    </td>
+                    <td style="padding: 5px; color: var(--text);">${rel.relationship}</td>
+                    <td style="padding: 5px; text-align: right; color: var(--text);">${(rel.harmonyScore * 100).toFixed(0)}%</td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Contrast Analysis
+    if (results.contrastScores.length > 0) {
+        html += `
+            <div style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                <h4 style="color: var(--text); margin: 0 0 10px 0;">Contrast Analysis</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr>
+                            <th style="text-align: left; padding: 5px; color: var(--subtext0);">Colors</th>
+                            <th style="text-align: center; padding: 5px; color: var(--subtext0);">Ratio</th>
+                            <th style="text-align: right; padding: 5px; color: var(--subtext0);">Accessibility</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        results.contrastScores.forEach(score => {
+            html += `
+                <tr>
+                    <td style="padding: 5px;">
+                        <div style="display: flex; align-items: center; gap: 5px;">
+                            <div style="width: 15px; height: 15px; background-color: ${score.color1}; border-radius: 3px;"></div>
+                            <div style="width: 15px; height: 15px; background-color: ${score.color2}; border-radius: 3px;"></div>
+                        </div>
+                    </td>
+                    <td style="padding: 5px; text-align: center; color: var(--text);">${score.ratio}:1</td>
+                    <td style="padding: 5px; text-align: right; color: ${score.isAccessible ? 'var(--green)' : 'var(--red)'};">
+                        ${score.isAccessible ? '✓ WCAG AA' : '✗ Failed'}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    // Suggestions
+    html += `
+        <div style="background: var(--surface0); padding: 15px; border-radius: 8px;">
+            <h4 style="color: var(--text); margin: 0 0 15px 0;">Color Scheme Suggestions</h4>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+    `;
+
+    results.suggestions.forEach(suggestion => {
+        html += `
+            <div style="background: var(--surface1); padding: 10px; border-radius: 6px;">
+                <h5 style="margin: 0 0 10px 0; color: var(--text);">${suggestion.type}</h5>
+                <div style="height: 30px; display: flex; border-radius: 4px; overflow: hidden; margin-bottom: 10px;">
+                    ${suggestion.colors.map(color => `
+                        <div style="flex: 1; background-color: ${color};"></div>
+                    `).join('')}
+                </div>
+                <button onclick="applySuggestion('${suggestion.colors.join(',')}')" style="
+                    background: var(--blue);
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    border-radius: 4px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    width: 100%;
+                ">Apply</button>
+            </div>
+        `;
+    });
+
+    html += `
+            </div>
+        </div>
+    `;
+
+    // Set the HTML content
+    resultsContainer.innerHTML = html;
+}
+
+// Function to apply a suggested color scheme
+window.applySuggestion = function (colorsStr) {
+    const colors = colorsStr.split(',');
+    if (colors.length === 0) return;
+
+    // Clear existing color inputs
+    const colorInputs = document.getElementById('colorInputs');
+    if (!colorInputs) return;
+    colorInputs.innerHTML = '';
+
+    // Add colors from suggestion
+    colors.forEach((color, index) => {
+        const weight = index === 0 ? 100 : Math.max(20, 100 - (index * 15));
+        addColorRow(color, weight);
+    });
+
+    // Update color palette
+    window.updateColorPalette();
+
+    window.showSuccess('Colors Applied', `Applied ${colors.length} colors from suggestion`);
+};
+
+// Function to show tool information
+window.showToolInfo = function (toolId) {
+    console.log('Showing info for tool:', toolId);
+
+    const modal = document.getElementById('toolModal');
+    const modalContent = document.getElementById('toolModalContent');
+
+    if (!modal || !modalContent) {
+        console.error('Tool modal not found');
+        return;
+    }
+
+    // Set content based on tool ID
+    let content = '';
+
+    switch (toolId) {
+        case 'color-analysis':
+            content = `
+                <h2>Color Analysis Tool</h2>
+                <p>The Color Analysis tool helps you analyze relationships, harmony scores, and palette characteristics of colors with comprehensive metrics and visual feedback.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Color harmony score calculation</strong> - Evaluates how well colors work together based on color theory principles</li>
+                    <li><strong>Color relationship analysis</strong> - Identifies complementary, analogous, triadic, and other relationships</li>
+                    <li><strong>Contrast ratio evaluation</strong> - Calculates contrast ratios between colors for accessibility compliance</li>
+                    <li><strong>Color scheme suggestions</strong> - Generates harmonious color scheme alternatives</li>
+                </ul>
+                
+                <h3>How to Use</h3>
+                <ol>
+                    <li>Enter hex colors separated by commas or spaces</li>
+                    <li>Select the analysis options you need</li>
+                    <li>Click "Run Analysis" to generate results</li>
+                    <li>Review the harmony scores, relationships, and suggestions</li>
+                    <li>Apply suggested color schemes with a single click</li>
+                </ol>
+                
+                <p>This tool is part of Chromatica's comprehensive color analysis and visualization toolkit.</p>
+            `;
+            break;
+
+        case 'query-visualizer':
+            content = `
+                <h2>Query Visualizer Tool</h2>
+                <p>The Query Visualizer tool creates visual representations of color queries with weighted color bars, color palettes, and comprehensive query summaries.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Generate weighted color bars</strong> representing query colors</li>
+                    <li><strong>Create color palette visualizations</strong> with weights</li>
+                    <li><strong>Build comprehensive query summary images</strong></li>
+                    <li><strong>Export query visualizations</strong> in various formats</li>
+                    <li><strong>Customizable color representations</strong></li>
+                </ul>
+                
+                <h3>How to Use</h3>
+                <ol>
+                    <li>Enter your query colors or use the current search colors</li>
+                    <li>Adjust visualization options as needed</li>
+                    <li>Generate the visualization</li>
+                    <li>Export or save the results</li>
+                </ol>
+            `;
+            break;
+
+        case 'histogram-analysis':
+            content = `
+                <h2>Histogram Analysis Tool</h2>
+                <p>The Histogram Analysis tool provides comprehensive testing and visualization of histogram generation, including validation, performance benchmarking, and distribution analysis.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Visual histogram representation</strong> of color distribution</li>
+                    <li><strong>Histogram comparison</strong> between query and results</li>
+                    <li><strong>Performance metrics</strong> for histogram generation</li>
+                    <li><strong>Distribution analysis</strong> of color histograms</li>
+                    <li><strong>Visual validation</strong> of histogram accuracy</li>
+                </ul>
+                
+                <h3>Technical Details</h3>
+                <p>Chromatica uses 512-bin LAB color histograms with Hellinger transformation for primary indexing and Earth Mover's Distance for refined ranking.</p>
+            `;
+            break;
+
+        case 'distance-debugger':
+            content = `
+                <h2>Distance Debugger Tool</h2>
+                <p>The Distance Debugger tool helps analyze Sinkhorn-EMD distance calculations, identify numerical stability issues, and validate distance metrics.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Debug Sinkhorn-EMD calculations</strong></li>
+                    <li><strong>Analyze numerical stability</strong> of distance metrics</li>
+                    <li><strong>Compare different distance metrics</strong></li>
+                    <li><strong>Visualize distance calculations</strong></li>
+                    <li><strong>Performance benchmarking</strong> of distance calculations</li>
+                </ul>
+                
+                <h3>Technical Background</h3>
+                <p>The Earth Mover's Distance (EMD) is approximated using the Sinkhorn algorithm, providing a balance of accuracy and performance. This tool helps visualize and debug those calculations.</p>
+            `;
+            break;
+
+        case 'color-explorer':
+            content = `
+                <h2>Interactive Color Explorer Tool</h2>
+                <p>The Interactive Color Explorer provides a powerful interface for exploring color combinations, analyzing color relationships, and experimenting with different color schemes and harmonies.</p>
+                
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Interactive color wheel</strong> for exploring harmonious combinations</li>
+                    <li><strong>Color scheme generation</strong> based on color theory principles</li>
+                    <li><strong>Real-time color relationship analysis</strong></li>
+                    <li><strong>Color accessibility testing</strong></li>
+                    <li><strong>Export color schemes</strong> in various formats</li>
+                </ul>
+                
+                <h3>How to Use</h3>
+                <ol>
+                    <li>Select a base color on the color wheel</li>
+                    <li>Choose a harmony rule to generate related colors</li>
+                    <li>Fine-tune the generated colors</li>
+                    <li>Apply the colors to your search or export the scheme</li>
+                </ol>
+            `;
+            break;
+
+        default:
+            content = `<h2>Tool Information</h2><p>No specific information available for this tool.</p>`;
+    }
+
+    modalContent.innerHTML = content;
+    modal.style.display = 'block';
+};
+
+// Function to close the tool modal
+window.closeToolModal = function () {
+    const modal = document.getElementById('toolModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function () {
     // Add hover effects to scheme modes
     const schemeModes = document.querySelectorAll('.scheme-mode');
