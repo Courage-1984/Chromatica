@@ -95,3 +95,40 @@ cmd /c "set FIRECRAWL_API_KEY=17511dcdf1114e2eb5adb76eb6b12fc2 && npx -y firecra
 $env:FIRECRAWL_API_KEY = "fc-17511dcdf1114e2eb5adb76eb6b12fc2"
 
 & "C:/Users/anon/AppData/Roaming/npm/firecrawl-mcp.cmd" http://localhost:8000 -o crawl_results.json --max-depth 3 -d
+
+
+
+
+
+
+
+
+Now you can process your 60 million images in chunks! Here's how to use it:
+
+First chunk (first million images):
+
+python scripts/build_index.py ./your-image-dir --output-dir C:/Users/anon/github/Chromatica/covers_index --start-index 0 --end-index 1000000 --batch-size 1000
+
+Next chunk (append to existing index):
+
+python scripts/build_index.py ./your-image-dir --output-dir C:/Users/anon/github/Chromatica/covers_index --start-index 1000000 --end-index 2000000 --batch-size 1000 --append
+
+
+
+python scripts/build_index.py C:/Users/anon/github/cover-dl/covers1_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000
+
+python scripts/build_index.py C:/Users/anon/github/cover-dl/covers2_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000 --append
+
+
+
+
+
+### ngrok
+
+ngrok.exe authtoken YOUR_AUTH_TOKEN_HERE
+
+python -m src.chromatica.api.main
+
+ngrok.exe http 8000
+
+

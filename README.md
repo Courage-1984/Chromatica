@@ -1,5 +1,7 @@
 # Chromatica
 
+## client-side JavaScript codebase for a color search and visualization tool.
+
 A high-performance, two-stage color-based image search engine built with Python, FAISS, and DuckDB.
 
 ## 🎯 Overview

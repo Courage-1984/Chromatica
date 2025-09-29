@@ -33,3 +33,5 @@ datasets/**/*.json
 .codacy/
 .github/
 
+covers_index/
+

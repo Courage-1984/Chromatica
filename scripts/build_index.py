@@ -235,6 +235,7 @@ Examples:
   python scripts/build_index.py ./datasets/test-dataset-20
   python scripts/build_index.py ./datasets/test-dataset-5000 --output-dir ./index --batch-size 200
   python scripts/build_index.py ./data/unsplash-lite --verbose
+  python scripts/build_index.py ./huge-dataset --start-index 0 --end-index 1000000 --append
         """,
     )
 
@@ -261,6 +262,24 @@ Examples:
         "-v",
         action="store_true",
         help="Enable verbose logging (DEBUG level)",
+    )
+
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        help="Starting index in the image list (for chunked processing)",
+    )
+
+    parser.add_argument(
+        "--end-index",
+        type=int,
+        help="Ending index in the image list (for chunked processing)",
+    )
+
+    parser.add_argument(
+        "--append",
+        action="store_true",
+        help="Append to existing index instead of creating new ones",
     )
 
     args = parser.parse_args()
@@ -291,7 +310,24 @@ Examples:
         image_files = get_image_files(image_dir)
         total_images = len(image_files)
 
-        logger.info(f"Total images to process: {total_images}")
+        logger.info(f"Total images found: {total_images}")
+
+        # Handle chunked processing
+        start_idx = args.start_index if args.start_index is not None else 0
+        end_idx = args.end_index if args.end_index is not None else total_images
+
+        if start_idx < 0 or end_idx > total_images or start_idx >= end_idx:
+            raise ValueError(
+                f"Invalid start/end indices. Must be: 0 <= start ({start_idx}) < end ({end_idx}) <= total ({total_images})"
+            )
+
+        # Adjust image files list for chunked processing
+        image_files = image_files[start_idx:end_idx]
+        chunk_total = len(image_files)
+
+        logger.info(
+            f"Processing chunk: images {start_idx} to {end_idx} (total: {chunk_total} images)"
+        )
 
         # Initialize index and metadata store
         logger.info("Initializing FAISS index and metadata store...")
@@ -302,17 +338,20 @@ Examples:
         # DuckDB database file path
         db_path = output_dir / "chromatica_metadata.db"
 
-        # Initialize components
-        # Use simple index for small datasets to avoid training requirements
-        # IndexIVFPQ requires at least 1950 training points for proper clustering
-        use_simple_index = total_images < 2000
+        # Initialize components with append mode if specified
+        use_simple_index = chunk_total < 2000 and not args.append
         if use_simple_index:
-            logger.info(f"Using IndexFlatL2 for small dataset ({total_images} images)")
+            logger.info(f"Using IndexFlatL2 for small dataset ({chunk_total} images)")
         else:
-            logger.info(f"Using IndexIVFPQ for large dataset ({total_images} images)")
+            logger.info(f"Using IndexIVFPQ for dataset")
 
-        ann_index = AnnIndex(dimension=TOTAL_BINS, use_simple_index=use_simple_index)
-        metadata_store = MetadataStore(db_path=str(db_path))
+        ann_index = AnnIndex(
+            dimension=TOTAL_BINS,
+            use_simple_index=use_simple_index,
+            load_existing=args.append,
+            index_path=str(faiss_index_path) if args.append else None,
+        )
+        metadata_store = MetadataStore(db_path=str(db_path), create_new=not args.append)
 
         logger.info("Components initialized successfully")
 
