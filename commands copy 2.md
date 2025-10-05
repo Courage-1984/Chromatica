@@ -114,11 +114,13 @@ Next chunk (append to existing index):
 python scripts/build_index.py ./your-image-dir --output-dir C:/Users/anon/github/Chromatica/covers_index --start-index 1000000 --end-index 2000000 --batch-size 1000 --append
 
 
+IN MY CASE:
+
+use different input folders:
 
 python scripts/build_index.py C:/Users/anon/github/cover-dl/covers1_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000
 
 python scripts/build_index.py C:/Users/anon/github/cover-dl/covers2_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000 --append
-
 
 
 
@@ -133,4 +135,61 @@ ngrok.exe http 8000
 
 
 
+
+uvx --from git+https://github.com/oraios/serena serena project index
+
+
+venv311\Scripts\activate
+
+10,003 items
+
+
+python scripts/build_index.py C:/Users/anon/github/cover-dl/covers1_10000 --output-dir C:/Users/anon/github/Chromatica/_covers_index --batch-size 1000
+
+
+
+python scripts/build_index.py C:/Users/anon/github/cover-dl/covers2_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000 --append
+
+
+
+
+venv311\Scripts\activate
+
+$env:CHROMATICA_INDEX_DIR="C:\Users\anon\github\Chromatica\85k"
+echo $env:CHROMATICA_INDEX_DIR
+
+python -m src.chromatica.api.main
+
+
+
+venv311\Scripts\activate
+
+taskkill /F /IM python.exe
+
+$env:CHROMATICA_INDEX_DIR="C:\Users\anon\github\Chromatica\85k"
+
+uvicorn src.chromatica.api.main:app --host 0.0.0.0 --port 8000 --reload --reload-dirs src --reload-exclude logs --reload-exclude venv311 --reload-exclude datasets --reload-exclude "**/pycache"
+
+
+
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\85k"
+
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\85k"
+$env:CHROMATICA_INDEX_FILE = "chromatica_index.faiss"
+$env:CHROMATICA_DB_FILE    = "chromatica_metadata.db"
+python -m src.chromatica.api.main
+
+
+venv311\Scripts\activate
+
+Get-ChildItem -Path $env:CHROMATICA_INDEX_DIR | Where-Object {$_.Name -match '\.faiss|\.db|\.duckdb'}
+Test-Path (Join-Path $env:CHROMATICA_INDEX_DIR $env:CHROMATICA_INDEX_FILE)
+Test-Path (Join-Path $env:CHROMATICA_INDEX_DIR $env:CHROMATICA_DB_FILE)
+
+
+$env:CHROMATICA_INDEX_DIR = (Resolve-Path .\85k).Path
+$env:CHROMATICA_INDEX_FILE = "chromatica_index.faiss"   # adjust if different
+$env:CHROMATICA_DB_FILE    = "chromatica_metadata.db"   # adjust if different
 

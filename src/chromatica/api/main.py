@@ -271,20 +271,15 @@ async def lifespan(app: FastAPI):
         # Initialize the search components
         from ..indexing.store import AnnIndex, MetadataStore
 
-        index = AnnIndex()
-        index.load(str(index_path))
+        index = AnnIndex(index_path=str(index_path), dimension=TOTAL_BINS)
         store = MetadataStore(db_path=str(db_path))
 
-        # Set search components for 3D visualization
+        # Make components available to 3D viz router
         set_search_components(index, store)
 
-        api_logger.info("Search components initialized successfully")
-        api_logger.info(
-            f"Global variables after init: index={index is not None}, store={store is not None}"
-        )
-
+        api_logger.info("Search components loaded successfully")
     except Exception as e:
-        api_logger.error(f"Failed to initialize search components: {e}")
+        api_logger.exception("Failed to initialize search components")
 
     yield
 
@@ -499,34 +494,29 @@ async def health_check():
 
     try:
         if index is not None:
-            # Test FAISS index
-            test_vector = np.random.random((1, 1152)).astype(np.float32)
-            distances, indices = index.search(test_vector, 1)
+            # Log index details
+            api_logger.info(f"FAISS index stats - ntotal: {index.index.ntotal}")
             faiss_status = "loaded"
     except Exception as e:
         api_logger.warning(f"FAISS index test failed: {e}")
 
     try:
         if store is not None:
-            # Test metadata store
+            # Test metadata store by getting image count
             count = store.get_image_count()
-            faiss_status = "loaded"
+            api_logger.info(f"Metadata store stats - image count: {count}")
             metadata_status = "loaded"
     except Exception as e:
         api_logger.warning(f"Metadata store test failed: {e}")
 
+    # Get actual component status
+    components_healthy = faiss_status == "loaded" and metadata_status == "loaded"
+
     return {
-        "status": (
-            "healthy"
-            if faiss_status == "loaded" and metadata_status == "loaded"
-            else "unhealthy"
-        ),
+        "status": "healthy" if components_healthy else "unhealthy",
         "message": "Chromatica Color Search Engine API",
         "version": "1.0.0",
-        "components": {
-            "faiss_index": faiss_status,
-            "metadata_store": metadata_status,
-        },
+        "components": {"faiss_index": faiss_status, "metadata_store": metadata_status},
         "timestamp": time.time(),
     }
 

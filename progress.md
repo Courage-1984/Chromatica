@@ -9,8 +9,8 @@ Below are the eight planned enhancements and their status.
 | 3 | Add extra info about query colors in the Query Visualization     | ✅ Complete |
 | 4 | Compute and show complementary colors for better palette building| ✅ Complete |
 | 5 | "Suggest Palette" button (scheme mode selection + generation)   | ✅ Complete |
-| 6 | New "Color Analysis" panel (relationships & harmony scores)     | Pending |
-| 7 | Export color palettes (names, relationships, schemes, CSS/SCSS)   | Pending |
+| 6 | New "Color Analysis" panel (relationships & harmony scores)     | ✅ Complete |
+| 7 | Export color palettes (names, relationships, schemes, CSS/SCSS)   | ✅ Complete |
 | 8 | Integrate `colornames.json` for color-name lookup                | Pending |
 
 ---

@@ -35,3 +35,6 @@ datasets/**/*.json
 
 covers_index/
 
+.serena/
+_covers_index/
+

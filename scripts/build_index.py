@@ -31,8 +31,9 @@ import logging
 import os
 import sys
 import time
+import json
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import numpy as np
 
 # Add src directory to Python path for imports
@@ -225,6 +226,95 @@ def process_image_batch(
     }
 
 
+INDEX_CONFIG_FILENAME = "chromatica_index_config.json"
+
+
+def prompt_index_type(total_images: int) -> str:
+    """
+    Prompt the user to select index type based on dataset size.
+    Returns: "small" or "large"
+    """
+    print("\n[Chromatica] Indexing strategy selection:")
+    print(f"  Detected {total_images} images in this batch.")
+    print("  [S]mall: HNSW/Flat (recommended for <100,000 images)")
+    print("  [L]arge: IVFPQ (recommended for >100,000 images, required for millions)")
+    while True:
+        user_input = input("Select index type ([S]mall/[L]arge): ").strip().upper()
+        if user_input in ("S", "SMALL"):
+            return "small"
+        elif user_input in ("L", "LARGE"):
+            return "large"
+        else:
+            print("Invalid input. Please type 'S' or 'L'.")
+
+
+def save_index_config(output_dir: Path, config: dict) -> None:
+    """
+    Save index configuration to a JSON file in the output directory.
+    """
+    config_path = output_dir / INDEX_CONFIG_FILENAME
+    with open(config_path, "w") as f:
+        json.dump(config, f, indent=2)
+
+
+def load_index_config(output_dir: Path) -> Optional[dict]:
+    """
+    Load index configuration from the output directory if it exists.
+    """
+    config_path = output_dir / INDEX_CONFIG_FILENAME
+    if config_path.exists():
+        with open(config_path, "r") as f:
+            return json.load(f)
+    return None
+
+
+def prompt_ivfpq_params(num_training_vectors: int) -> dict:
+    """
+    Prompt for IVFPQ parameters, ensuring nlist <= num_training_vectors.
+    """
+    print(f"\n[Chromatica] IVFPQ parameter selection:")
+    print(f"  Number of training vectors: {num_training_vectors}")
+    max_nlist = max(2, 2 ** (num_training_vectors.bit_length() - 1))
+    suggested_nlist = min(16384, max_nlist, num_training_vectors)
+    print(f"  Recommended nlist: {suggested_nlist} (must be <= {num_training_vectors})")
+    while True:
+        try:
+            nlist = int(
+                input(f"Enter nlist (clusters) [default {suggested_nlist}]: ")
+                or suggested_nlist
+            )
+            if nlist > num_training_vectors:
+                print(
+                    f"nlist must be <= number of training vectors ({num_training_vectors})"
+                )
+            elif nlist < 2:
+                print("nlist must be at least 2")
+            else:
+                break
+        except ValueError:
+            print("Please enter a valid integer.")
+    M = 32
+    nbits = 8
+    return {"type": "IVFPQ", "nlist": nlist, "M": M, "nbits": nbits}
+
+
+def auto_ivfpq_params(num_training_vectors: int) -> dict:
+    """
+    Automatically select IVFPQ parameters based on available training vectors.
+    Ensures nlist <= num_training_vectors and is a power of two.
+    """
+    # Use largest power of two <= num_training_vectors, but cap at 16384
+    max_nlist = max(2, 2 ** (num_training_vectors.bit_length() - 1))
+    nlist = min(16384, max_nlist, num_training_vectors)
+    if nlist < 16384:
+        print(
+            f"[Chromatica] Warning: nlist set to {nlist} due to limited training vectors ({num_training_vectors})."
+        )
+    M = 32
+    nbits = 8
+    return {"type": "IVFPQ", "nlist": nlist, "M": M, "nbits": nbits}
+
+
 def main():
     """Main function for the offline indexing script."""
     parser = argparse.ArgumentParser(
@@ -334,24 +424,98 @@ Examples:
 
         # FAISS index file path
         faiss_index_path = output_dir / "chromatica_index.faiss"
-
         # DuckDB database file path
         db_path = output_dir / "chromatica_metadata.db"
+        # Config file path
+        config_path = output_dir / INDEX_CONFIG_FILENAME
 
-        # Initialize components with append mode if specified
-        use_simple_index = chunk_total < 2000 and not args.append
-        if use_simple_index:
-            logger.info(f"Using IndexFlatL2 for small dataset ({chunk_total} images)")
+        index_exists = faiss_index_path.exists() or db_path.exists()
+        append_mode = False
+
+        # Load or prompt for index config
+        index_config = load_index_config(output_dir)
+        if not index_exists or not index_config:
+            # New index: prompt for type
+            index_type = prompt_index_type(chunk_total)
+            if index_type == "small":
+                index_params = {"type": "HNSW", "M": 32}
+            else:
+                # For IVFPQ, use recommended params for large datasets
+                index_params = {"type": "IVFPQ", "nlist": 16384, "M": 32, "nbits": 8}
+            index_config = index_params
+            save_index_config(output_dir, index_config)
         else:
-            logger.info(f"Using IndexIVFPQ for dataset")
+            # Existing index: prompt for append/replace/quit
+            print(f"\n[Chromatica] Existing index or metadata found in {output_dir}:")
+            if faiss_index_path.exists():
+                print(f"  - FAISS index: {faiss_index_path}")
+            if db_path.exists():
+                print(f"  - DuckDB metadata: {db_path}")
+            print(
+                "Would you like to (A)ppend to the existing index, (D)elete/replace it, or (Q)uit?"
+            )
+            while True:
+                user_input = (
+                    input("Type 'A' to append, 'D' to delete/replace, or 'Q' to quit: ")
+                    .strip()
+                    .upper()
+                )
+                if user_input == "A":
+                    append_mode = True
+                    print(
+                        "[Chromatica] Append mode selected. Will add to existing index."
+                    )
+                    break
+                elif user_input == "D":
+                    print("[Chromatica] Deleting existing index and metadata...")
+                    if faiss_index_path.exists():
+                        faiss_index_path.unlink()
+                    if db_path.exists():
+                        db_path.unlink()
+                    if config_path.exists():
+                        config_path.unlink()
+                    append_mode = False
+                    # Prompt again for index type
+                    index_type = prompt_index_type(chunk_total)
+                    if index_type == "small":
+                        index_params = {"type": "HNSW", "M": 32}
+                    else:
+                        index_params = {
+                            "type": "IVFPQ",
+                            "nlist": 16384,
+                            "M": 32,
+                            "nbits": 8,
+                        }
+                    index_config = index_params
+                    save_index_config(output_dir, index_config)
+                    break
+                elif user_input == "Q":
+                    print("[Chromatica] Aborting as requested by user.")
+                    sys.exit(0)
+                else:
+                    print("Invalid input. Please type 'A', 'D', or 'Q'.")
 
-        ann_index = AnnIndex(
-            dimension=TOTAL_BINS,
-            use_simple_index=use_simple_index,
-            load_existing=args.append,
-            index_path=str(faiss_index_path) if args.append else None,
-        )
-        metadata_store = MetadataStore(db_path=str(db_path), create_new=not args.append)
+        # Initialize FAISS index according to config
+        if index_config["type"] == "HNSW":
+            ann_index = AnnIndex(
+                dimension=TOTAL_BINS,
+                use_simple_index=True,
+                index_path=str(faiss_index_path) if append_mode else None,
+                M=index_config.get("M", 32),
+            )
+        elif index_config["type"] == "IVFPQ":
+            ann_index = AnnIndex(
+                dimension=TOTAL_BINS,
+                use_simple_index=False,
+                index_path=str(faiss_index_path) if append_mode else None,
+                nlist=index_config.get("nlist", 16384),
+                M=index_config.get("M", 32),
+                nbits=index_config.get("nbits", 8),
+            )
+        else:
+            raise ValueError(f"Unknown index type: {index_config['type']}")
+
+        metadata_store = MetadataStore(db_path=str(db_path))
 
         logger.info("Components initialized successfully")
 
@@ -383,7 +547,25 @@ Examples:
 
         # Convert to numpy array and train the index
         training_data = np.array(training_histograms)
-        ann_index.train(training_data)
+
+        # If using IVFPQ, prompt for nlist after knowing training_data size
+        if index_config["type"] == "IVFPQ":
+            ivfpq_params = auto_ivfpq_params(len(training_data))
+            index_config.update(ivfpq_params)
+            save_index_config(output_dir, index_config)
+            ann_index = AnnIndex(
+                dimension=TOTAL_BINS,
+                use_simple_index=False,
+                index_path=str(faiss_index_path) if append_mode else None,
+                nlist=index_config["nlist"],
+                M=index_config["M"],
+                nbits=index_config["nbits"],
+            )
+
+        # Incorrect:
+        # if not ann_index.is_trained:
+        if hasattr(ann_index.index, "is_trained") and not ann_index.index.is_trained:
+            ann_index.train(training_data)
 
         logger.info(
             f"FAISS index training completed with {len(training_histograms)} histograms"

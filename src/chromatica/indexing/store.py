@@ -25,6 +25,7 @@ from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 from functools import lru_cache
 import threading
+import os
 
 from ..utils.config import TOTAL_BINS, IVFPQ_NLIST, IVFPQ_M, IVFPQ_NBITS, IVFPQ_NPROBE
 
@@ -34,167 +35,93 @@ logger = logging.getLogger(__name__)
 
 class AnnIndex:
     """
-    Wrapper class for FAISS IndexIVFPQ with automatic Hellinger transformation.
-
-    This class manages a FAISS Inverted File with Product Quantization (IndexIVFPQ)
-    that stores color histograms transformed using the Hellinger transform and
-    compressed using Product Quantization (PQ). The Hellinger transform (element-wise
-    square root) converts normalized histograms into vectors compatible with L2
-    distance metrics used by FAISS, while PQ dramatically reduces memory usage.
-
-    Product Quantization (PQ) is a compression technique that:
-    1. Divides each vector into M subvectors (subquantizers)
-    2. Quantizes each subvector independently using k-means clustering
-    3. Stores only the cluster indices (codes) instead of full vectors
-    4. Reduces memory from O(d) to O(M * log2(k)) per vector
-
-    For our 1152-dimensional histograms with M=8 and nbits=8:
-    - Memory per vector: 8 * 8 = 64 bits = 8 bytes (vs 4608 bytes for full vectors)
-    - Compression ratio: ~576x reduction in memory usage
-    - Trade-off: Slight accuracy loss due to quantization
-
-    The IndexIVFPQ provides excellent memory efficiency while maintaining
-    good search quality, making it ideal for large-scale color search applications.
-
-    Attributes:
-        index: The underlying FAISS IndexIVFPQ index
-        dimension: The dimensionality of the indexed vectors (1152 for Lab histograms)
-        total_vectors: The total number of vectors currently indexed
-        is_trained: Whether the index has been trained (required for IVFPQ)
-        nlist: Number of Voronoi cells for coarse quantization
-        M: Number of subquantizers for Product Quantization
-        nbits: Number of bits per subquantizer
-        nprobe: Number of clusters to probe during search
+    Wrapper for FAISS index used in Chromatica.
+    Supports HNSW, Flat, and IVFPQ indices.
     """
 
-    def __init__(self, dimension: int = TOTAL_BINS, use_simple_index: bool = False):
+    def __init__(
+        self,
+        dimension: int,
+        use_simple_index: bool = False,
+        index_path: str = None,
+        nlist: int = 16384,
+        M: int = 32,
+        nbits: int = 8,
+    ):
         """
         Initialize the FAISS index.
 
         Args:
-            dimension: The dimensionality of the vectors to be indexed.
-                      Defaults to TOTAL_BINS (1152) for Lab color histograms.
-            use_simple_index: If True, use IndexFlatL2 instead of IndexIVFPQ.
-                             Useful for small datasets that don't meet training requirements.
-
-        Raises:
-            ValueError: If dimension is not positive or not divisible by M.
+            dimension: Number of dimensions for the vectors.
+            use_simple_index: If True, use IndexFlatL2 or HNSW; else use IVFPQ.
+            index_path: Optional path to load an existing index.
+            nlist: Number of coarse clusters (IVFPQ only).
+            M: Number of subquantizers (IVFPQ only).
+            nbits: Number of bits per subquantizer (IVFPQ only).
         """
-        if dimension <= 0:
-            raise ValueError(f"Dimension must be positive, got {dimension}")
-
         self.dimension = dimension
-        self.total_vectors = 0
-        self.is_trained = False
         self.use_simple_index = use_simple_index
+        self.index_type = None
 
-        if use_simple_index:
-            # Use simple IndexFlatL2 for small datasets
-            self.index = faiss.IndexFlatL2(dimension)
-            self.nlist = 0
-            self.M = 0
-            self.nbits = 0
-            self.nprobe = 0
-
-            logger.info(f"Initialized FAISS IndexFlatL2 with dimension {dimension}")
+        if index_path and os.path.exists(index_path):
+            self.index = faiss.read_index(index_path)
+            self.index_type = type(self.index).__name__
+            logging.getLogger(__name__).info(
+                f"Loaded existing FAISS index from {index_path}"
+            )
         else:
-            # Use IndexIVFPQ for larger datasets
-            if dimension % IVFPQ_M != 0:
-                raise ValueError(
-                    f"Dimension {dimension} must be divisible by IVFPQ_M {IVFPQ_M}"
-                )
-
-            # Store IVFPQ parameters for reference
-            self.nlist = IVFPQ_NLIST
-            self.M = IVFPQ_M
-            self.nbits = IVFPQ_NBITS
-            self.nprobe = IVFPQ_NPROBE
-
-            # Create coarse quantizer (used for first-level clustering)
-            # IndexFlatL2 provides exact L2 distance for coarse quantization
-            self.quantizer = faiss.IndexFlatL2(dimension)
-
-            # Create IndexIVFPQ with Product Quantization
-            # Parameters:
-            # - quantizer: Coarse quantizer for first-level clustering
-            # - dimension: Vector dimensionality (1152)
-            # - nlist: Number of Voronoi cells (50)
-            # - M: Number of subquantizers (8)
-            # - nbits: Bits per subquantizer (8)
-            self.index = faiss.IndexIVFPQ(
-                self.quantizer, dimension, self.nlist, self.M, self.nbits
+            if use_simple_index:
+                self.index = faiss.IndexHNSWFlat(dimension, M)
+                self.index_type = "IndexHNSWFlat"
+            else:
+                quantizer = faiss.IndexFlatL2(dimension)
+                self.index = faiss.IndexIVFPQ(quantizer, dimension, nlist, M, nbits)
+                self.index_type = "IndexIVFPQ"
+                self.M = M
+                self.nbits = nbits
+                self.nlist = nlist
+            logging.getLogger(__name__).info(
+                f"Created new FAISS {self.index_type} index"
             )
 
-            # Set the number of clusters to probe during search
-            # Higher nprobe = better recall but slower search
-            self.index.nprobe = self.nprobe
-
-            logger.info(
-                f"Initialized FAISS IndexIVFPQ with dimension {dimension}, "
-                f"nlist={self.nlist}, M={self.M}, nbits={self.nbits}, nprobe={self.nprobe}"
-            )
-
-    def train(self, training_vectors: np.ndarray) -> None:
+    @property
+    def is_trained(self) -> bool:
         """
-        Train the index with representative data.
+        Returns True if the underlying FAISS index is trained, False otherwise.
+        """
+        return getattr(self.index, "is_trained", True)
 
-        For IndexIVFPQ, this method is REQUIRED before adding vectors to the index.
-        For IndexFlatL2, training is not required but this method sets the trained flag.
+    @property
+    def total_vectors(self) -> int:
+        """Get total number of vectors in the index."""
+        return self.index.ntotal
+
+    def train(self, data: np.ndarray) -> None:
+        """
+        Train the FAISS index if required.
 
         Args:
-            training_vectors: Array of shape (n_training, dimension) containing
-                            representative histograms for training. Must be float32
-                            or float64 and already Hellinger-transformed.
-
-        Raises:
-            ValueError: If training_vectors have incorrect shape or dtype.
-            RuntimeError: If FAISS training fails.
+            data: Training data (N, D)
         """
-        if not isinstance(training_vectors, np.ndarray):
-            raise ValueError(
-                f"Training vectors must be numpy array, got {type(training_vectors)}"
+        import faiss
+
+        logger = logging.getLogger(__name__)
+        if hasattr(self.index, "is_trained") and not self.index.is_trained:
+            logger.info(f"Training {self.index_type} with {len(data)} vectors...")
+            try:
+                self.index.train(data)
+                # Only log memory usage for IVFPQ
+                if self.index_type == "IndexIVFPQ":
+                    logger.info(
+                        f"Memory usage per vector: ~{self.M * self.nbits / 8} bytes "
+                        f"(M={self.M}, nbits={self.nbits})"
+                    )
+            except Exception as e:
+                raise RuntimeError(f"Index training failed: {e}")
+        else:
+            logger.info(
+                f"{self.index_type} does not require training or is already trained."
             )
-
-        if training_vectors.ndim != 2:
-            raise ValueError(
-                f"Training vectors must be 2D array, got shape {training_vectors.shape}"
-            )
-
-        if training_vectors.shape[1] != self.dimension:
-            raise ValueError(
-                f"Training vector dimension {training_vectors.shape[1]} doesn't match "
-                f"index dimension {self.dimension}"
-            )
-
-        # Ensure vectors are float32 for optimal FAISS performance
-        training_vectors_float32 = training_vectors.astype(np.float32)
-
-        # Train the index
-        try:
-            if self.use_simple_index:
-                # IndexFlatL2 doesn't require training, just mark as trained
-                logger.info(
-                    f"IndexFlatL2 doesn't require training, marking as trained with {training_vectors.shape[0]} vectors..."
-                )
-                self.is_trained = True
-                logger.info("IndexFlatL2 ready for use")
-            else:
-                # Train IndexIVFPQ
-                logger.info(
-                    f"Training IndexIVFPQ with {training_vectors.shape[0]} vectors..."
-                )
-                self.index.train(training_vectors_float32)
-                self.is_trained = True
-
-                logger.info(
-                    f"IndexIVFPQ training completed successfully. "
-                    f"Memory usage per vector: ~{self.M * self.nbits / 8} bytes "
-                    f"(vs {self.dimension * 4} bytes for full vectors)"
-                )
-
-        except Exception as e:
-            logger.error(f"Failed to train index: {e}")
-            raise RuntimeError(f"Index training failed: {e}")
 
     def add(self, vectors: np.ndarray) -> int:
         """
@@ -235,21 +162,14 @@ class AnnIndex:
                 f"Vector dimension {vectors.shape[1]} doesn't match index dimension {self.dimension}"
             )
 
-        # Ensure vectors are float32 for optimal FAISS performance
         vectors_float32 = vectors.astype(np.float32)
-
-        # Apply Hellinger transform: φ(h) = √h
-        # This makes histograms compatible with L2 distance metrics
         vectors_hellinger = np.sqrt(vectors_float32)
 
-        # Add transformed vectors to the index
         try:
             self.index.add(vectors_hellinger)
             added_count = vectors.shape[0]
-            self.total_vectors += added_count
-
             logger.info(
-                f"Added {added_count} vectors to IndexIVFPQ (total: {self.total_vectors})"
+                f"Added {added_count} vectors to IndexIVFPQ (total: {self.get_total_vectors()})"
             )
             return added_count
 
@@ -317,12 +237,9 @@ class AnnIndex:
 
     def get_total_vectors(self) -> int:
         """
-        Get the total number of vectors currently indexed.
-
-        Returns:
-            The total number of vectors in the index.
+        Returns the total number of vectors currently in the FAISS index.
         """
-        return self.total_vectors
+        return getattr(self.index, "ntotal", 0)
 
     def get_memory_usage_estimate(self) -> Dict[str, float]:
         """
