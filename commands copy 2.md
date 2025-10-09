@@ -179,6 +179,7 @@ $env:CHROMATICA_INDEX_DIR = "$PWD\85k"
 $env:CHROMATICA_INDEX_DIR = "$PWD\85k"
 $env:CHROMATICA_INDEX_FILE = "chromatica_index.faiss"
 $env:CHROMATICA_DB_FILE    = "chromatica_metadata.db"
+
 python -m src.chromatica.api.main
 
 
@@ -192,4 +193,23 @@ Test-Path (Join-Path $env:CHROMATICA_INDEX_DIR $env:CHROMATICA_DB_FILE)
 $env:CHROMATICA_INDEX_DIR = (Resolve-Path .\85k).Path
 $env:CHROMATICA_INDEX_FILE = "chromatica_index.faiss"   # adjust if different
 $env:CHROMATICA_DB_FILE    = "chromatica_metadata.db"   # adjust if different
+
+
+venv311\Scripts\activate
+
+pytest tests/
+
+$env:PYTHONPATH="$pwd;$env:PYTHONPATH"; pytest tests/
+
+venv311\Scripts\activate
+
+python scripts/build_index.py C:/Users/anon/github/Chromatica/_test_data --output-dir C:/Users/anon/github/Chromatica/_test_data_db --batch-size 1000
+
+python scripts/build_index.py C:/Users/anon/github/cover-dl/covers2_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000 --append
+
+$env:CHROMATICA_INDEX_DIR = (Resolve-Path .\_test_data_db).Path
+
+python -m src.chromatica.api.main
+
+python scripts/build_index.py C:/Users/anon/github/Chromatica/_test_data --output-dir C:/Users/anon/github/Chromatica/_test_data_db --batch-size 1000 --verbose
 

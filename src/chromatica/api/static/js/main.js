@@ -3440,3 +3440,33 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+
+// Add this in the window.showImageInModal function:
+window.showImageInModal = function (imageSrc) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    const closeButton = modal.querySelector('.image-close');
+
+    if (modal && modalImage) {
+        modalImage.src = imageSrc;
+        modal.style.display = 'flex';
+
+        // Add click handlers for closing
+        closeButton.onclick = () => {
+            modal.style.display = 'none';
+        };
+
+        // Close on clicking outside the image
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        };
+
+        // Prevent image click from closing modal
+        modalImage.onclick = (e) => {
+            e.stopPropagation();
+        };
+    }
+};
+

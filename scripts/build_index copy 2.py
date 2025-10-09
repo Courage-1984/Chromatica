@@ -24,7 +24,6 @@ Features:
 - Validation of processed histograms
 - Performance monitoring and timing
 - Automatic output directory creation
-- **ADDED: Duplicate image detection in append mode to prevent duplicate indexing.**
 """
 
 import argparse
@@ -34,7 +33,7 @@ import sys
 import time
 import json
 from pathlib import Path
-from typing import List, Dict, Any, Optional, Set
+from typing import List, Dict, Any, Optional
 import numpy as np
 
 # Add src directory to Python path for imports
@@ -128,20 +127,15 @@ def process_image_batch(
     batch_size: int,
     ann_index: AnnIndex,
     metadata_store: MetadataStore,
-    is_append_mode: bool = False,  # Added is_append_mode flag
 ) -> Dict[str, Any]:
     """
     Process a batch of images and add them to the index and metadata store.
-
-    In append mode, this function uses the metadata_store.check_existence()
-    method to skip images that are already indexed, preventing duplicates.
 
     Args:
         image_files: List of image file paths to process
         batch_size: Number of images to process in this batch
         ann_index: FAISS index for storing transformed histograms
         metadata_store: DuckDB store for metadata and raw histograms
-        is_append_mode: If True, check for and skip images already in the store.
 
     Returns:
         Dictionary with batch processing statistics
@@ -153,43 +147,15 @@ def process_image_batch(
     error_count = 0
     total_processing_time = 0
 
-    files_to_process = image_files[:batch_size]
-
-    # 1. Check for existing images if in append mode
-    existing_ids: Set[str] = set()
-    if is_append_mode and files_to_process:
-        image_ids_to_check = [p.stem for p in files_to_process]
-        try:
-            existing_ids = metadata_store.check_existence(image_ids_to_check)
-            logger.info(
-                f"Found {len(existing_ids)} images already indexed in this batch."
-            )
-        except AttributeError:
-            logger.error(
-                "MetadataStore is missing required 'check_existence' method for de-duplication. Indexing all images."
-            )
-        except Exception as e:
-            logger.error(
-                f"Error checking for existing images: {str(e)}. Indexing all images."
-            )
-
     # Prepare batch data for metadata store
     metadata_batch = []
 
-    # 2. Process images, skipping duplicates if in append mode
-    for i, image_path in enumerate(files_to_process):
-        image_id = image_path.stem
-
-        # Skip if already exists in append mode
-        if is_append_mode and image_id in existing_ids:
-            logger.debug(f"Skipping {image_path.name}: already indexed.")
-            continue
-
+    for i, image_path in enumerate(image_files[:batch_size]):
         image_start_time = time.time()
 
         try:
             logger.info(
-                f"Processing image {i+1}/{len(files_to_process)}: {image_path.name}"
+                f"Processing image {i+1}/{len(image_files[:batch_size])}: {image_path.name}"
             )
 
             # Process image and generate histogram
@@ -197,6 +163,9 @@ def process_image_batch(
 
             # Validate histogram
             validate_processed_image(histogram, str(image_path))
+
+            # Generate unique image ID (using filename without extension)
+            image_id = image_path.stem
 
             # Get file size
             file_size = image_path.stat().st_size
@@ -236,7 +205,7 @@ def process_image_batch(
             # Add metadata to DuckDB
             metadata_store.add_batch(metadata_batch)
 
-            logger.info(f"Successfully indexed batch: {len(metadata_batch)} new images")
+            logger.info(f"Successfully indexed batch: {len(metadata_batch)} images")
 
         except Exception as e:
             logger.error(f"Failed to index batch: {str(e)}")
@@ -461,7 +430,7 @@ Examples:
         config_path = output_dir / INDEX_CONFIG_FILENAME
 
         index_exists = faiss_index_path.exists() or db_path.exists()
-        append_mode = args.append  # Respect the command line flag initially
+        append_mode = False
 
         # Load or prompt for index config
         index_config = load_index_config(output_dir)
@@ -475,8 +444,7 @@ Examples:
                 index_params = {"type": "IVFPQ", "nlist": 16384, "M": 32, "nbits": 8}
             index_config = index_params
             save_index_config(output_dir, index_config)
-            append_mode = False  # Force to False if we are creating a new index
-        elif index_exists and not args.append:
+        else:
             # Existing index: prompt for append/replace/quit
             print(f"\n[Chromatica] Existing index or metadata found in {output_dir}:")
             if faiss_index_path.exists():
@@ -527,8 +495,6 @@ Examples:
                 else:
                     print("Invalid input. Please type 'A', 'D', or 'Q'.")
 
-        logger.info(f"Indexing Mode: {'APPEND' if append_mode else 'CREATE/REPLACE'}")
-
         # Initialize FAISS index according to config
         if index_config["type"] == "HNSW":
             ann_index = AnnIndex(
@@ -553,114 +519,98 @@ Examples:
 
         logger.info("Components initialized successfully")
 
-        training_sample_size = 0
-        training_histograms = []
-        training_files = []
-        training_data = np.array([])
-
         # Train the FAISS index with a sample of images
-        # Training is only needed if the index is NOT already trained and loaded (i.e. not in append mode)
-        if hasattr(ann_index.index, "is_trained") and not ann_index.index.is_trained:
-            logger.info("Training FAISS index with representative data...")
-            # Use up to 1000 images for training from the current chunk
-            training_sample_size = min(1000, chunk_total)
-            training_files = image_files[:training_sample_size]
+        logger.info("Training FAISS index with representative data...")
+        training_sample_size = min(
+            1000, total_images
+        )  # Use up to 1000 images for training
+        training_files = image_files[:training_sample_size]
 
-            # Process training images to get histograms
-            for i, image_path in enumerate(training_files):
-                try:
-                    logger.debug(
-                        f"Processing training image {i+1}/{len(training_files)}: {image_path.name}"
-                    )
-                    histogram = process_image(str(image_path))
-                    validate_processed_image(histogram, str(image_path))
-                    training_histograms.append(histogram)
-                except Exception as e:
-                    logger.warning(
-                        f"Failed to process training image {image_path.name}: {str(e)}"
-                    )
-                    continue
-
-            if not training_histograms:
-                # If training fails, index cannot proceed for IndexIVFPQ
-                if index_config["type"] == "IVFPQ":
-                    raise RuntimeError(
-                        "No valid training histograms could be generated. Indexing aborted."
-                    )
-                else:
-                    logger.warning(
-                        "No valid training histograms generated. Proceeding without training for HNSW."
-                    )
-            else:
-                # Convert to numpy array and train the index
-                training_data = np.array(training_histograms)
-
-                # If using IVFPQ, auto-adjust and update nlist
-                if index_config["type"] == "IVFPQ":
-                    ivfpq_params = auto_ivfpq_params(len(training_data))
-                    index_config.update(ivfpq_params)
-                    save_index_config(output_dir, index_config)
-
-                    # Re-initialize AnnIndex with final IVFPQ params
-                    ann_index = AnnIndex(
-                        dimension=TOTAL_BINS,
-                        use_simple_index=False,
-                        index_path=str(faiss_index_path) if append_mode else None,
-                        nlist=index_config["nlist"],
-                        M=index_config["M"],
-                        nbits=index_config["nbits"],
-                    )
-
-                ann_index.train(training_data)
-
+        # Process training images to get histograms
+        training_histograms = []
+        for i, image_path in enumerate(training_files):
+            try:
                 logger.info(
-                    f"FAISS index training completed with {len(training_histograms)} histograms"
+                    f"Processing training image {i+1}/{len(training_files)}: {image_path.name}"
                 )
+                histogram = process_image(str(image_path))
+                validate_processed_image(histogram, str(image_path))
+                training_histograms.append(histogram)
+            except Exception as e:
+                logger.warning(
+                    f"Failed to process training image {image_path.name}: {str(e)}"
+                )
+                continue
 
-        # --- Index the training images immediately after training ---
+        if not training_histograms:
+            raise RuntimeError("No valid training histograms could be generated")
+
+        # Convert to numpy array and train the index
+        training_data = np.array(training_histograms)
+
+        # If using IVFPQ, prompt for nlist after knowing training_data size
+        if index_config["type"] == "IVFPQ":
+            ivfpq_params = auto_ivfpq_params(len(training_data))
+            index_config.update(ivfpq_params)
+            save_index_config(output_dir, index_config)
+            ann_index = AnnIndex(
+                dimension=TOTAL_BINS,
+                use_simple_index=False,
+                index_path=str(faiss_index_path) if append_mode else None,
+                nlist=index_config["nlist"],
+                M=index_config["M"],
+                nbits=index_config["nbits"],
+            )
+
+        # Incorrect:
+        # if not ann_index.is_trained:
+        if hasattr(ann_index.index, "is_trained") and not ann_index.index.is_trained:
+            ann_index.train(training_data)
+
+        logger.info(
+            f"FAISS index training completed with {len(training_histograms)} histograms"
+        )
+
+        # Process remaining images in batches (skip training images)
+        start_time = time.time()
         total_successful = 0
         total_errors = 0
 
-        if hasattr(ann_index.index, "is_trained") and ann_index.index.is_trained:
-            # If training occurred, index the data used for training
-            if training_histograms:
-                try:
-                    # Add training histograms to FAISS index
-                    ann_index.add(training_data)
+        # Add training images to the index and metadata store
+        if training_histograms:
+            try:
+                # Add training histograms to FAISS index
+                ann_index.add(training_data)
 
-                    # Add training metadata to DuckDB
-                    training_metadata = []
-                    for i, image_path in enumerate(
-                        training_files[: len(training_histograms)]
-                    ):
-                        training_metadata.append(
-                            {
-                                "image_id": image_path.stem,
-                                "file_path": str(image_path),
-                                "histogram": training_histograms[i],
-                                "file_size": image_path.stat().st_size,
-                            }
-                        )
-
-                    # Note: DuckDB's add_batch is INSERT OR REPLACE, so it's idempotent.
-                    metadata_store.add_batch(training_metadata)
-                    total_successful += len(training_histograms)
-
-                    logger.info(
-                        f"Successfully indexed {len(training_histograms)} training images"
+                # Add training metadata to DuckDB
+                training_metadata = []
+                for i, image_path in enumerate(
+                    training_files[: len(training_histograms)]
+                ):
+                    training_metadata.append(
+                        {
+                            "image_id": image_path.stem,
+                            "file_path": str(image_path),
+                            "histogram": training_histograms[i],
+                            "file_size": image_path.stat().st_size,
+                        }
                     )
-                except Exception as e:
-                    logger.error(f"Failed to index training images: {str(e)}")
-                    total_errors += len(training_histograms)
+
+                metadata_store.add_batch(training_metadata)
+                total_successful += len(training_histograms)
+
+                logger.info(
+                    f"Successfully indexed {len(training_histograms)} training images"
+                )
+            except Exception as e:
+                logger.error(f"Failed to index training images: {str(e)}")
+                total_errors += len(training_histograms)
 
         # Process remaining images in batches
-        # Correctly determine the list of remaining images after the training set
         remaining_images = image_files[training_sample_size:]
         remaining_count = len(remaining_images)
 
         logger.info(f"Processing {remaining_count} remaining images in batches...")
-
-        start_time = time.time()
 
         for batch_start in range(0, remaining_count, args.batch_size):
             batch_end = min(batch_start + args.batch_size, remaining_count)
@@ -671,20 +621,16 @@ Examples:
                 f"images {batch_start + 1}-{batch_end} of {remaining_count} remaining"
             )
 
-            # Process batch with de-duplication check
+            # Process batch
             batch_stats = process_image_batch(
-                batch_files,
-                len(batch_files),
-                ann_index,
-                metadata_store,
-                is_append_mode=append_mode,
+                batch_files, len(batch_files), ann_index, metadata_store
             )
 
             total_successful += batch_stats["successful_count"]
             total_errors += batch_stats["error_count"]
 
             logger.info(
-                f"Batch completed: {batch_stats['successful_count']} successful (newly indexed), "
+                f"Batch completed: {batch_stats['successful_count']} successful, "
                 f"{batch_stats['error_count']} errors, "
                 f"time: {batch_stats['batch_time']:.2f}s"
             )
@@ -697,49 +643,22 @@ Examples:
 
         # Final statistics
         total_time = time.time() - start_time
-        final_total_vectors = ann_index.get_total_vectors()
-
-        # Calculate success rate based on total images in chunk
-        success_rate = (total_successful / chunk_total) * 100 if chunk_total > 0 else 0
+        success_rate = (
+            (total_successful / total_images) * 100 if total_images > 0 else 0
+        )
 
         logger.info("=" * 60)
         logger.info("Indexing process completed successfully!")
         logger.info("=" * 60)
-        logger.info(f"Total images requested in chunk: {chunk_total}")
-        logger.info(f"Successfully indexed (new): {total_successful}")
+        logger.info(f"Total images processed: {total_images}")
+        logger.info(f"Successful: {total_successful}")
         logger.info(f"Errors: {total_errors}")
-        logger.info(f"Success rate (new indexings): {success_rate:.1f}%")
-        logger.info(f"Total time (indexing phase): {total_time:.2f}s")
-        if total_successful > 0:
-            logger.info(
-                f"Average time per *new* image: {total_time/total_successful:.3f}s"
-            )
-
-        logger.info("-" * 60)
-        logger.info(f"Final Index count: {final_total_vectors} vectors")
-
-        # --- NEW INDEX COUNT CHECK AND WARNING ---
-        if final_total_vectors == 0:
-            logger.error(
-                "\n*** FATAL INDEXING ERROR: FAISS index contains 0 vectors. ***"
-            )
-            logger.error(
-                "This is why your search is failing with 'k must be positive and <= 0'."
-            )
-            logger.error("ACTIONS REQUIRED:")
-            logger.error(
-                "1. Run the script with the '--verbose' flag to check the logs for 'Failed to process' messages."
-            )
-            logger.error(
-                "2. Verify that the image paths in your image directory are correct and accessible by OpenCV."
-            )
-            logger.error(
-                "3. Ensure all dependencies (OpenCV, skimage, numpy, FAISS, DuckDB) are correctly installed."
-            )
-            logger.error("4. Check the size of the images you are trying to index.")
-
+        logger.info(f"Success rate: {success_rate:.1f}%")
+        logger.info(f"Total time: {total_time:.2f}s")
+        logger.info(f"Average time per image: {total_time/total_images:.3f}s")
         logger.info(f"FAISS index saved to: {faiss_index_path}")
         logger.info(f"Metadata database saved to: {db_path}")
+        logger.info(f"Index contains {ann_index.get_total_vectors()} vectors")
 
         # Performance summary
         if total_successful > 0:
@@ -760,4 +679,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

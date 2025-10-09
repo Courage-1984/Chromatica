@@ -38,3 +38,6 @@ covers_index/
 .serena/
 _covers_index/
 
+_test_data/
+_test_data_db/
+

@@ -24,7 +24,7 @@ import logging
 import time
 import numpy as np
 import hashlib
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional, Union, Any
 from dataclasses import dataclass
 from functools import lru_cache
 import threading
@@ -235,357 +235,144 @@ def _get_adaptive_parameters(
 
 def find_similar(
     query_histogram: np.ndarray,
+    k: int,
+    max_rerank: int,
     index: AnnIndex,
     store: MetadataStore,
-    k: Optional[int] = None,
-    max_rerank: Optional[int] = None,
-    use_approximate_reranking: bool = False,
-    rerank_batch_size: int = 10,
-) -> List[SearchResult]:
+    fast_mode: bool = False,
+) -> List[Dict[str, Any]]:
     """
-    Perform a complete two-stage search for similar images.
-
-    This function implements the full search pipeline as specified in the critical
-    instructions document:
-
-    1. **ANN Search Stage**: Use FAISS HNSW index to retrieve top-K candidates
-       - Applies Hellinger transform automatically for L2 compatibility
-       - Returns distances and indices for the most similar vectors
-
-    2. **Metadata Retrieval Stage**: Fetch raw histograms for reranking
-       - Retrieves original histograms from DuckDB metadata store
-       - Maps FAISS indices to actual image IDs and file paths
-
-    3. **Reranking Stage**: Use Sinkhorn-EMD for high-fidelity ranking
-       - Computes perceptually accurate distances using optimal transport
-       - Re-sorts candidates by Sinkhorn distance for final ranking
-
-    Performance monitoring is built-in with separate timing for each stage,
-    enabling detailed performance analysis and optimization.
+    Find similar images using the two-stage search pipeline.
 
     Args:
-        query_histogram: Query histogram (normalized probability distribution)
-                        Shape: (TOTAL_BINS,) where TOTAL_BINS = 1152
-        index: FAISS HNSW index instance for fast ANN search
-        store: DuckDB metadata store for histogram retrieval
-        k: Number of candidates to retrieve from ANN stage
-           Default: RERANK_K from configuration (200)
-        max_rerank: Maximum number of candidates to rerank
-                   If None, reranks all retrieved candidates
-                   If specified, limits reranking to top candidates
+        query_histogram: Query histogram (1152-dimensional)
+        k: Number of results to return
+        max_rerank: Number of candidates to rerank
+        index: FAISS index instance
+        store: Metadata store instance
+        fast_mode: Whether to use fast mode (skip reranking)
 
     Returns:
-        List[SearchResult]: Ranked list of similar images with comprehensive
-                           information including file paths, distances, and ranks.
-                           Results are sorted by Sinkhorn distance (ascending).
-
-    Raises:
-        ValueError: If input validation fails (e.g., invalid histogram shape)
-        RuntimeError: If any stage of the search pipeline fails
-        TypeError: If inputs have incorrect types
-
-    Example:
-        >>> from chromatica.core.histogram import generate_histogram
-        >>> from chromatica.indexing.store import AnnIndex, MetadataStore
-        >>>
-        >>> # Load query image and generate histogram
-        >>> query_hist = generate_histogram("query_image.jpg")
-        >>>
-        >>> # Initialize search components
-        >>> index = AnnIndex()
-        >>> store = MetadataStore("metadata.db")
-        >>>
-        >>> # Perform search
-        >>> results = find_similar(query_hist, index, store)
-        >>>
-        >>> # Display top results
-        >>> for result in results[:5]:
-        ...     print(f"Rank {result.rank}: {result.image_id} "
-        ...           f"(distance: {result.distance:.6f})")
-
-    Performance Characteristics:
-        - ANN stage: ~1-5ms for 200 candidates (depending on index size)
-        - Metadata retrieval: ~10-50ms for 200 histograms
-        - Reranking stage: ~100-500ms for 200 candidates using Sinkhorn-EMD
-        - Total search time: ~150-600ms for typical queries
-
-    Memory Usage:
-        - Query histogram: ~9KB (1152 * 8 bytes)
-        - Candidate histograms: ~1.8MB for 200 candidates
-        - Temporary arrays: ~2-5MB during computation
-        - Total memory: ~3-7MB for typical searches
+        List of result dictionaries, each containing:
+        - image_id: Unique image identifier
+        - file_path: Path to the image file
+        - distance: Distance metric value
+        - confidence: Confidence score (0-1)
+        - ann_distance: Original ANN search distance
     """
-    # Input validation
-    if not isinstance(query_histogram, np.ndarray):
-        raise TypeError(
-            f"Query histogram must be numpy array, got {type(query_histogram)}"
-        )
+    try:
+        start_time = time.time()
+        logger.info(f"Starting search with k={k} and max_rerank={max_rerank}")
 
-    if query_histogram.ndim != 1:
-        raise ValueError(
-            f"Query histogram must be 1D, got shape {query_histogram.shape}"
-        )
+        # First stage: ANN search
+        ann_start = time.time()
+        distances, indices = index.search(query_histogram, max_rerank)
+        ann_time = time.time() - ann_start
 
-    if query_histogram.shape[0] != 1152:  # TOTAL_BINS
-        raise ValueError(
-            f"Query histogram must have 1152 dimensions, got {query_histogram.shape[0]}"
-        )
+        # Filter out invalid indices (FAISS returns -1 for empty slots)
+        valid_mask = indices >= 0
+        valid_indices = indices[valid_mask]
+        valid_distances = distances[valid_mask]
 
-    if not isinstance(index, AnnIndex):
-        raise TypeError(f"Index must be AnnIndex instance, got {type(index)}")
+        if len(valid_indices) == 0:
+            logger.warning("No valid indices returned from FAISS search")
+            return []
 
-    if not isinstance(store, MetadataStore):
-        raise TypeError(f"Store must be MetadataStore instance, got {type(store)}")
+        # Convert indices to image IDs (zero-padded format)
+        image_ids = [f"{int(idx):05d}" for idx in valid_indices]
 
-    # Use configuration defaults if not specified
-    if k is None:
-        k = RERANK_K
-
-    if max_rerank is None:
-        max_rerank = k
-
-    if k <= 0:
-        raise ValueError(f"k must be positive, got {k}")
-
-    if max_rerank <= 0:
-        raise ValueError(f"max_rerank must be positive, got {max_rerank}")
-
-    if max_rerank > k:
-        logger.warning(f"max_rerank ({max_rerank}) > k ({k}), setting max_rerank = k")
-        max_rerank = k
-
-    logger.info(f"Starting two-stage search: k={k}, max_rerank={max_rerank}")
-    logger.debug(f"Query histogram shape: {query_histogram.shape}")
-    logger.debug(f"Query histogram sum: {query_histogram.sum():.6f}")
-
-    # Check cache first
-    query_hash = _generate_query_hash(
-        query_histogram, k, max_rerank, use_approximate_reranking
-    )
-    cached_results = _get_cached_results(query_hash)
-
-    if cached_results is not None:
         logger.info(
-            f"Cache hit for query {query_hash[:8]}... returning {len(cached_results)} cached results"
-        )
-        # Update performance stats for cache hit
-        _update_performance_stats(
-            0.0, 0.0, 0.0, 0.001, True
-        )  # Very fast for cache hits
-        return cached_results
-
-    logger.debug(f"Cache miss for query {query_hash[:8]}..., proceeding with search")
-
-    # Stage 1: ANN Search
-    ann_start_time = time.time()
-    try:
-        logger.info("Stage 1: Performing ANN search with FAISS HNSW index")
-
-        # Perform ANN search to get top-k candidates
-        distances, indices = index.search(query_histogram, k)
-
-        ann_time = time.time() - ann_start_time
-        logger.info(f"ANN search completed in {ann_time:.3f}s")
-        logger.info(f"Retrieved {len(indices[0])} candidates from FAISS index")
-        logger.debug(
-            f"ANN distance range: [{distances[0].min():.6f}, {distances[0].max():.6f}]"
+            f"Found {len(image_ids)} valid candidates out of {len(indices)} results"
         )
 
-    except Exception as e:
-        ann_time = time.time() - ann_start_time
-        logger.error(f"ANN search failed after {ann_time:.3f}s: {e}")
-        raise RuntimeError(f"ANN search stage failed: {e}")
-
-    # Stage 2: Metadata Retrieval (Optimized)
-    metadata_start_time = time.time()
-    try:
-        logger.info("Stage 2: Retrieving metadata and raw histograms (optimized)")
-
-        # Get image IDs in insertion order (matching FAISS indices)
-        image_ids = store.get_image_ids_in_order()
-
-        if not image_ids:
-            logger.error("No image IDs found in metadata store")
-            raise RuntimeError("Metadata store is empty")
-
-        if len(image_ids) != index.get_total_vectors():
-            logger.warning(
-                f"Index vector count ({index.get_total_vectors()}) doesn't match "
-                f"metadata count ({len(image_ids)})"
-            )
-
-        # Extract candidate image IDs from FAISS results
-        candidate_image_ids = []
-        ann_scores = []
-
-        for i, (distance, index_idx) in enumerate(zip(distances[0], indices[0])):
-            if index_idx < len(image_ids):
-                candidate_image_ids.append(image_ids[index_idx])
-                ann_scores.append(distance)
-            else:
-                logger.warning(
-                    f"Index {index_idx} out of range for image_ids (len={len(image_ids)})"
-                )
-
-        if not candidate_image_ids:
-            logger.error("No valid candidates found after metadata mapping")
-            raise RuntimeError("Failed to map FAISS results to metadata")
-
-        # Load only the histograms we need (selective loading)
-        logger.info(f"Loading histograms for {len(candidate_image_ids)} candidates")
-        hist_start = time.time()
-        candidate_histograms_dict = store.get_histograms_by_ids(candidate_image_ids)
-        hist_time = time.time() - hist_start
-        logger.info(f"Histogram loading took {hist_time:.3f}s")
-
-        # Convert to ordered list matching the FAISS results
+        # Get histograms and metadata for candidates
+        metadata_start = time.time()
         candidate_histograms = []
-        candidate_ids = []
+        valid_candidates = []
 
-        for image_id in candidate_image_ids:
-            if image_id in candidate_histograms_dict:
-                candidate_histograms.append(candidate_histograms_dict[image_id])
-                candidate_ids.append(image_id)
+        for i, image_id in enumerate(image_ids):
+            hist = store.get_histogram(image_id)
+            info = store.get_image_info(image_id)
+
+            if hist is not None and info is not None and "file_path" in info:
+                candidate_histograms.append(hist)
+                valid_candidates.append(
+                    {
+                        "image_id": image_id,
+                        "file_path": info["file_path"],
+                        "ann_distance": float(valid_distances[i]),
+                    }
+                )
             else:
-                logger.warning(f"Histogram not found for image {image_id}")
+                logger.debug(
+                    f"Skipping candidate {image_id} due to missing histogram or metadata"
+                )
 
-        if not candidate_histograms:
-            logger.error("No valid histograms retrieved for candidates")
-            raise RuntimeError("Failed to retrieve candidate histograms")
+        metadata_time = time.time() - metadata_start
 
-        metadata_time = time.time() - metadata_start_time
-        logger.info(f"Metadata retrieval completed in {metadata_time:.3f}s")
-        logger.info(
-            f"Loaded {len(candidate_histograms)} histograms for {len(candidate_image_ids)} candidates"
-        )
+        if not valid_candidates:
+            logger.warning("No valid candidates found")
+            return []
 
-    except Exception as e:
-        metadata_time = time.time() - metadata_start_time
-        logger.error(f"Metadata retrieval failed after {metadata_time:.3f}s: {e}")
-        raise RuntimeError(f"Metadata retrieval stage failed: {e}")
-
-    # Stage 3: Reranking
-    rerank_start_time = time.time()
-    try:
-        logger.info("Stage 3: Reranking candidates using Sinkhorn-EMD")
-
-        # Limit candidates for reranking if specified
-        if max_rerank < len(candidate_histograms):
-            candidate_histograms = candidate_histograms[:max_rerank]
-            candidate_ids = candidate_ids[:max_rerank]
-            ann_scores = ann_scores[:max_rerank]
-            logger.info(f"Limited reranking to top {max_rerank} candidates")
-
-        # Perform Sinkhorn-EMD reranking with optimization options
+        # Second stage: Reranking (unless in fast mode)
         rerank_start = time.time()
-        rerank_results = rerank_candidates(
-            query_histogram,
-            candidate_histograms,
-            candidate_ids,
-            use_approximate=use_approximate_reranking,
-            batch_size=rerank_batch_size,
-            use_parallel=False,  # Disable parallel processing to avoid memory issues
-            streaming_mode=True,  # Enable streaming mode for memory efficiency
-            early_termination_count=min(
-                max_rerank,
-                len(candidate_histograms),  # Use max_rerank for early termination limit
-            ),  # Respect requested rerank count
-            early_termination_threshold=(
-                0.1 if use_approximate_reranking else 0.05
-            ),  # Adjust threshold based on mode
-        )
-
-        rerank_time = time.time() - rerank_start_time
-        rerank_actual_time = time.time() - rerank_start
-        logger.info(
-            f"Reranking completed in {rerank_time:.3f}s (actual rerank: {rerank_actual_time:.3f}s)"
-        )
-        logger.info(f"Successfully reranked {len(rerank_results)} candidates")
-
-    except Exception as e:
-        rerank_time = time.time() - rerank_start_time
-        logger.error(f"Reranking failed after {rerank_time:.3f}s: {e}")
-        raise RuntimeError(f"Reranking stage failed: {e}")
-
-    # Stage 4: Result Assembly
-    try:
-        logger.info("Stage 4: Assembling final search results")
-
-        # Create final search results with comprehensive information
-        search_results = []
-
-        for rerank_result in rerank_results:
-            # Find the corresponding ANN score
-            try:
-                ann_score_idx = candidate_ids.index(rerank_result.candidate_id)
-                ann_score = ann_scores[ann_score_idx]
-            except ValueError:
-                logger.warning(
-                    f"Could not find ANN score for {rerank_result.candidate_id}"
-                )
-                ann_score = float("inf")
-
-            # Get file path from metadata store
-            try:
-                metadata = store.get_image_info(rerank_result.candidate_id)
-                if metadata and metadata.get("file_path"):
-                    file_path = metadata["file_path"]
-                else:
-                    logger.warning(
-                        f"No file path found for {rerank_result.candidate_id}"
-                    )
-                    file_path = "unknown"
-            except Exception as e:
-                logger.warning(
-                    f"Could not retrieve file path for {rerank_result.candidate_id}: {e}"
-                )
-                file_path = "unknown"
-
-            # Create search result
-            search_result = SearchResult(
-                image_id=rerank_result.candidate_id,
-                file_path=file_path,
-                distance=rerank_result.distance,
-                rank=rerank_result.rank,
-                ann_score=ann_score,
+        if not fast_mode and len(candidate_histograms) > 0:
+            candidate_histograms = np.array(candidate_histograms)
+            reranked_distances = rerank_candidates(
+                query_histogram,
+                candidate_histograms,
+                batch_size=10,
             )
 
-            search_results.append(search_result)
+            # Ensure reranked_distances is a plain Python list, not a NumPy array
+            if isinstance(reranked_distances, np.ndarray):
+                reranked_distances = reranked_distances.tolist()
+        else:
+            # In fast mode, use ANN distances directly
+            reranked_distances = [c["ann_distance"] for c in valid_candidates]
 
-        # Final timing and logging
-        total_time = time.time() - ann_start_time
+        rerank_time = time.time() - rerank_start
 
-        logger.info("Search pipeline completed successfully:")
-        logger.info(f"  - Total time: {total_time:.3f}s")
-        logger.info(f"  - ANN stage: {ann_time:.3f}s ({ann_time/total_time*100:.1f}%)")
-        logger.info(
-            f"  - Metadata stage: {metadata_time:.3f}s ({metadata_time/total_time*100:.1f}%)"
-        )
-        logger.info(
-            f"  - Reranking stage: {rerank_time:.3f}s ({rerank_time/total_time*100:.1f}%)"
-        )
-        logger.info(f"  - Results returned: {len(search_results)}")
+        # Create final results
+        max_dist = max(reranked_distances) if len(reranked_distances) > 0 else 1.0
+        results = []
 
-        if search_results:
-            min_dist = search_results[0].distance
-            max_dist = search_results[-1].distance
-            logger.info(f"  - Final distance range: [{min_dist:.6f}, {max_dist:.6f}]")
+        for i, (candidate, dist) in enumerate(
+            zip(valid_candidates, reranked_distances)
+        ):
+            result = {
+                "image_id": candidate["image_id"],
+                "file_path": candidate["file_path"],
+                "distance": float(dist),
+                "confidence": max(0.0, 1.0 - float(dist) / max_dist),
+                "ann_distance": candidate["ann_distance"],
+                "rank": i + 1,
+            }
+            results.append(result)
 
-        # Cache the results
-        _cache_results(query_hash, search_results)
-        logger.debug(f"Cached search results for query {query_hash[:8]}...")
+        # Sort by distance
+        results.sort(key=lambda x: x["distance"])
 
-        # Update performance statistics
+        # Update performance stats
+        total_time = time.time() - start_time
         _update_performance_stats(
-            ann_time, metadata_time, rerank_time, total_time, False
+            ann_time=ann_time,
+            metadata_time=metadata_time,
+            rerank_time=rerank_time,
+            total_time=total_time,
+            cache_hit=False,
         )
 
-        return search_results
+        # Log completion
+        logger.info(f"Search completed in {total_time:.3f}s")
+        logger.info(f"Found {len(results)} results, returning top {k}")
+
+        # Return top k results
+        return results[:k]
 
     except Exception as e:
-        total_time = time.time() - ann_start_time
-        logger.error(f"Result assembly failed after {total_time:.3f}s: {e}")
-        raise RuntimeError(f"Result assembly stage failed: {e}")
+        logger.error(f"Search failed: {str(e)}", exc_info=True)
+        raise
 
 
 def validate_search_system(index: AnnIndex, store: MetadataStore) -> bool:
@@ -633,7 +420,12 @@ def validate_search_system(index: AnnIndex, store: MetadataStore) -> bool:
 
         # Perform test search
         results = find_similar(
-            query_hist, index, store, k=min(50, index.get_total_vectors())
+            query_histogram=query_hist,
+            k=min(50, index.get_total_vectors()),
+            max_rerank=min(200, index.get_total_vectors()),
+            index=index,
+            store=store,
+            fast_mode=False,
         )
 
         # Validate results
@@ -643,12 +435,12 @@ def validate_search_system(index: AnnIndex, store: MetadataStore) -> bool:
 
         # Check result structure
         for result in results:
-            if not hasattr(result, "image_id") or not hasattr(result, "distance"):
+            if "image_id" not in result or "distance" not in result:
                 logger.error("Search result missing required attributes")
                 return False
 
         # Check ranking consistency
-        distances = [r.distance for r in results]
+        distances = [r["distance"] for r in results]
         if distances != sorted(distances):
             logger.error("Search results not properly sorted by distance")
             return False

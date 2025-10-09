@@ -52,12 +52,6 @@ LAB_RANGES = [
 # This balances search speed with reranking accuracy
 RERANK_K = 200
 
-# Max number of final search results to return from the API endpoint
-MAX_SEARCH_RESULTS = 50
-
-# Max number of color-weight pairs allowed in a single query
-MAX_COLOR_COUNT = 5
-
 # =============================================================================
 # PERFORMANCE TUNING CONSTANTS
 # =============================================================================
@@ -188,14 +182,6 @@ def validate_config():
 
     if RERANK_K <= 0:
         raise ValueError(f"RERANK_K must be positive, got {RERANK_K}")
-
-    if MAX_SEARCH_RESULTS <= 0:
-        raise ValueError(
-            f"MAX_SEARCH_RESULTS must be positive, got {MAX_SEARCH_RESULTS}"
-        )
-
-    if MAX_COLOR_COUNT <= 0:
-        raise ValueError(f"MAX_COLOR_COUNT must be positive, got {MAX_COLOR_COUNT}")
 
     if SINKHORN_EPSILON <= 0:
         raise ValueError(f"SINKHORN_EPSILON must be positive, got {SINKHORN_EPSILON}")

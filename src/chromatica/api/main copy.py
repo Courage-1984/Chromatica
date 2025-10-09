@@ -24,7 +24,7 @@ import logging
 import os
 import time
 import uuid
-from typing import List, Optional, Dict, Any, Tuple  # Added Tuple
+from typing import List, Optional, Dict, Any
 from pathlib import Path
 import base64
 import io
@@ -34,7 +34,6 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from functools import lru_cache
-import subprocess
 
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, Response, HTMLResponse, FileResponse
@@ -42,24 +41,16 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import numpy as np
-import cv2
-from sklearn.cluster import KMeans
 
-
-# CORRECTED IMPORTS
-from ..core.query import create_query_histogram, hex_to_lab, normalize_weights
+from ..core.query import create_query_histogram
 from ..search import find_similar
 from ..indexing.store import AnnIndex, MetadataStore
-from ..indexing.pipeline import process_image  # Added process_image import
-from ..utils.config import (
-    TOTAL_BINS,
-    RERANK_K,
-    MAX_SEARCH_RESULTS,
-    MAX_COLOR_COUNT,
-    USE_APPROXIMATE_RERANKING,
-)
+from ..utils.config import TOTAL_BINS
 from ..visualization import create_query_visualization, create_results_collage
 from .visualization_3d import router as visualization_3d_router, set_search_components
+import cv2
+import numpy as np
+from sklearn.cluster import KMeans
 
 
 # Enhanced logging configuration
@@ -167,75 +158,43 @@ def decrement_concurrent_searches() -> None:
         )
 
 
-# Add new imports
-from typing import Tuple
-from ..core.query import hex_to_lab, normalize_weights
-from ..indexing.pipeline import process_image
-from ..utils.config import MAX_SEARCH_RESULTS, MAX_COLOR_COUNT
-
-# Configuration constants derived from environment or defaults
-INDEX_DIR = os.environ.get(
-    "INDEX_DIR", Path(__file__).parent.parent.parent.parent / "index"
-)
-FAISS_PATH = Path(INDEX_DIR) / "chromatica_index.faiss"
-DB_PATH = Path(INDEX_DIR) / "chromatica_metadata.db"
-
-
-# Helper function for thread pool execution
-def _run_in_executor(func, *args, **kwargs):
-    """Utility to run a blocking function in the thread pool executor."""
-    if not thread_pool:
-        raise RuntimeError("Thread pool is not initialized.")
-    return thread_pool.submit(func, *args, **kwargs)
-
-
-# Replace the existing perform_search_async function
 async def perform_search_async(
     query_histogram: np.ndarray,
     k: int,
     max_rerank: int,
-    fast_mode: bool = False,
-    batch_size: int = 10,
-) -> List[Dict[str, Any]]:
+    fast_mode: bool,
+    batch_size: int,
+) -> List[Any]:
     """
-    Asynchronously executes the two-stage color search pipeline.
+    Perform search operation asynchronously using thread pool.
 
     Args:
-        query_histogram: Numpy array of the query histogram
+        query_histogram: The query histogram to search with
         k: Number of candidates to retrieve from FAISS
-        max_rerank: Number of results to rerank
-        fast_mode: Whether to use fast approximate reranking
+        max_rerank: Number of candidates to rerank
+        fast_mode: Whether to use fast L2 distance instead of Sinkhorn-EMD
         batch_size: Batch size for reranking operations
-
-    Returns:
-        List of search results
     """
-    if index is None or store is None:
-        raise HTTPException(status_code=503, detail="Search engine is not initialized.")
+    global index, store, thread_pool
 
-    try:
-        # Ensure the query histogram is properly normalized
-        query_histogram = query_histogram.astype(np.float32)
-        if query_histogram.sum() > 0:
-            query_histogram /= query_histogram.sum()
+    if thread_pool is None:
+        raise RuntimeError("Thread pool not initialized")
 
-        # Run the blocking search function in the thread pool
-        search_task = _run_in_executor(
-            find_similar, query_histogram, k, max_rerank, index, store, fast_mode
-        )
+    # Run the CPU-intensive search in thread pool
+    loop = asyncio.get_event_loop()
+    search_results = await loop.run_in_executor(
+        thread_pool,
+        find_similar,
+        query_histogram,
+        index,
+        store,
+        k,  # Number of candidates to retrieve from FAISS
+        max_rerank,  # Number of results to rerank
+        fast_mode,  # Whether to use fast L2 distance
+        batch_size,  # Batch size for reranking
+    )
 
-        # Get search results
-        results = await asyncio.wrap_future(search_task)
-
-        # Return results directly - they already have the file_path key
-        # No need to re-fetch from the store or reformat
-        return results
-
-    except Exception as e:
-        logger.error(f"ANN search stage failed: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"ANN search stage failed: {str(e)}"
-        )
+    return search_results
 
 
 @asynccontextmanager
@@ -243,60 +202,191 @@ async def lifespan(app: FastAPI):
     """Manage application lifespan with proper startup and shutdown."""
     global index, store, thread_pool
 
-    logger.info("Starting up Chromatica API...")
-
-    # Initialize ThreadPool for blocking I/O
-    thread_pool = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)
-    logger.info(
-        f"ThreadPoolExecutor initialized with {thread_pool._max_workers} workers."
-    )
+    # Startup
+    api_logger.info("Starting Chromatica Color Search Engine API...")
+    api_logger.info(f"Global variables before init: index={index}, store={store}")
 
     try:
-        # Define index directory from environment variable with fallback
-        INDEX_DIR = Path(os.getenv("CHROMATICA_INDEX_DIR", "./index")).resolve()
-        FAISS_PATH = INDEX_DIR / "chromatica_index.faiss"
-        DB_PATH = INDEX_DIR / "chromatica_metadata.db"
+        # Initialize thread pool for CPU-intensive operations
+        max_workers = min(32, (os.cpu_count() or 1) + 4)  # Optimal for I/O bound tasks
+        thread_pool = ThreadPoolExecutor(
+            max_workers=max_workers, thread_name_prefix="chromatica"
+        )
+        api_logger.info(f"Initialized thread pool with {max_workers} workers")
 
-        logger.info(f"Attempting to load index files from: {INDEX_DIR}")
-        logger.info(f"FAISS path: {FAISS_PATH}")
-        logger.info(f"DuckDB path: {DB_PATH}")
+        # Load the FAISS index - first check environment variables
+        index_dir = os.getenv("CHROMATICA_INDEX_DIR", "index")
+        api_logger.info(f"Using index directory from env: {index_dir}")
 
-        # Check if index files exist
-        if not FAISS_PATH.exists():
-            raise FileNotFoundError(f"FAISS index not found at {FAISS_PATH}")
-        if not DB_PATH.exists():
-            raise FileNotFoundError(f"DuckDB database not found at {DB_PATH}")
+        # Also try the 85k directory if the default doesn't work
+        alternate_dirs = ["index", "85k", "data"]
 
-        # Initialize search components
-        index = AnnIndex(index_path=str(FAISS_PATH))
-        store = MetadataStore(db_path=str(DB_PATH))
+        # Log absolute paths for debugging
+        for dir_name in [index_dir] + alternate_dirs:
+            abs_path = os.path.abspath(dir_name)
+            api_logger.info(f"Checking directory: {dir_name} (absolute: {abs_path})")
+            api_logger.info(f"  Directory exists: {os.path.exists(abs_path)}")
 
-        # Add diagnostic logging
-        logger.info(f"FAISS index loaded with {index.get_total_vectors()} vectors")
+            # Check for index files
+            faiss_file = os.path.join(abs_path, "chromatica_index.faiss")
+            db_file = os.path.join(abs_path, "chromatica_metadata.db")
+            api_logger.info(f"  FAISS index exists: {os.path.exists(faiss_file)}")
+            api_logger.info(f"  Metadata DB exists: {os.path.exists(db_file)}")
 
-        # Check DuckDB records
-        store.check_stored_ids(limit=5)
+        # First try the env directory
+        index_filename = os.getenv("CHROMATICA_INDEX_FILE", "chromatica_index.faiss")
+        index_path = Path(index_dir) / index_filename
+        db_filename = os.getenv("CHROMATICA_DB_FILE", "chromatica_metadata.db")
+        db_path = Path(index_dir) / db_filename
 
-        # Verify counts match
-        faiss_count = index.get_total_vectors()
-        duckdb_count = store.get_image_count()
-        if faiss_count != duckdb_count:
-            logger.warning(
-                f"Count mismatch! FAISS: {faiss_count}, DuckDB: {duckdb_count}"
-            )
+        # Check if files exist in primary location
+        if not index_path.exists() or not db_path.exists():
+            api_logger.warning(f"Files not found in primary location: {index_dir}")
+            api_logger.warning(f"FAISS index exists: {index_path.exists()}")
+            api_logger.warning(f"Metadata DB exists: {db_path.exists()}")
 
+            # Try alternate directories
+            for alt_dir in alternate_dirs:
+                if alt_dir != index_dir:  # Skip if it's the same as the primary
+                    alt_index_path = Path(alt_dir) / index_filename
+                    alt_db_path = Path(alt_dir) / db_filename
+
+                    if alt_index_path.exists() and alt_db_path.exists():
+                        api_logger.info(
+                            f"Found files in alternate directory: {alt_dir}"
+                        )
+                        index_path = alt_index_path
+                        db_path = alt_db_path
+                        break
+
+            # Still not found?
+            if not index_path.exists():
+                api_logger.error(f"FAISS index not found at {index_path} or alternates")
+                return
+
+            if not db_path.exists():
+                api_logger.error(f"Metadata store not found at {db_path} or alternates")
+                return
+
+        # Initialize the search components
+        from ..indexing.store import AnnIndex, MetadataStore
+
+        index = AnnIndex(index_path=str(index_path), dimension=TOTAL_BINS)
+        store = MetadataStore(db_path=str(db_path))
+
+        # Make components available to 3D viz router
+        set_search_components(index, store)
+
+        api_logger.info("Search components loaded successfully")
     except Exception as e:
-        logger.error(f"Failed to load search components: {e}")
-        raise
+        api_logger.exception("Failed to initialize search components")
 
     yield
 
-    # Cleanup
-    logger.info("Shutting down Chromatica API...")
-    if store:
-        store.close()
-    if thread_pool:
-        thread_pool.shutdown(wait=True)
+    # Shutdown
+    api_logger.info("Shutting down Chromatica Color Search Engine API...")
+    try:
+        if store:
+            store.close()
+            api_logger.info("Metadata store connection closed")
+        if index:
+            api_logger.info("FAISS index cleanup completed")
+        if thread_pool:
+            thread_pool.shutdown(wait=True)
+            api_logger.info("Thread pool shutdown completed")
+    except Exception as e:
+        api_logger.error(f"Error during cleanup: {e}")
+
+
+# Initialize FastAPI app with lifespan
+app = FastAPI(
+    title="Chromatica Color Search Engine",
+    description="A two-stage color-based image search engine using CIE Lab color space and Sinkhorn-EMD reranking with visual enhancements",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Get absolute path to static directory
+static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "static"))
+print(f"Static directory: {static_dir}")
+print(f"Static directory exists: {os.path.exists(static_dir)}")
+
+# Mount static files
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+
+# Optional: Explicitly set MIME type for .js files
+@app.get("/static/js/{file_path:path}")
+async def serve_js(file_path: str):
+    return FileResponse(f"static/js/{file_path}", media_type="application/javascript")
+
+
+# Add CORS middleware for parallel requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Configure appropriately for production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include 3D visualization router
+app.include_router(visualization_3d_router)
+
+# Mount static files for web interface
+try:
+    static_dir = Path(__file__).parent / "static"
+    if static_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+        webui_logger.info(f"Static files mounted from: {static_dir}")
+    else:
+        webui_logger.warning(f"Static directory not found: {static_dir}")
+except Exception as e:
+    webui_logger.warning(f"Failed to mount static files: {e}")
+
+
+def extract_dominant_colors(file_path: str, num_colors: int = 5) -> List[str]:
+    """
+    Extract dominant colors from an image using K-means clustering.
+
+    Args:
+        file_path: Path to the image file
+        num_colors: Number of dominant colors to extract (default: 5)
+
+    Returns:
+        List of hex color codes representing dominant colors
+    """
+    try:
+        # Read the image
+        image = cv2.imread(file_path)
+        if image is None:
+            logger.warning(f"Could not read image: {file_path}")
+            return ["#000000"]  # Return black as fallback
+
+        # Convert BGR to RGB
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Reshape image to 2D array of pixels
+        pixels = image_rgb.reshape(-1, 3)
+
+        # Use K-means to find dominant colors
+        kmeans = KMeans(n_clusters=num_colors, random_state=42, n_init=10)
+        kmeans.fit(pixels)
+
+        # Get the cluster centers (dominant colors)
+        dominant_colors = kmeans.cluster_centers_.astype(int)
+
+        # Convert to hex format
+        hex_colors = []
+        for color in dominant_colors:
+            hex_color = "#{:02x}{:02x}{:02x}".format(color[0], color[1], color[2])
+            hex_colors.append(hex_color)
+
+        return hex_colors
+
+    except Exception as e:
+        logger.error(f"Failed to extract dominant colors from {file_path}: {e}")
+        return ["#000000"]  # Return black as fallback
 
 
 # Pydantic models for request/response validation
@@ -345,51 +435,6 @@ class VisualizationResponse(BaseModel):
     visualization_type: str = Field(..., description="Type of visualization generated")
     image_data: str = Field(..., description="Base64 encoded image data")
     mime_type: str = Field(..., description="MIME type of the image")
-
-
-# Initialize FastAPI app with lifespan
-app = FastAPI(
-    title="Chromatica Color Search Engine",
-    description="A two-stage color-based image search engine using color space and Sinkhorn-EMD reranking with visual enhancements",
-    version="1.0.0",
-    lifespan=lifespan,
-)
-
-# Get absolute path to static directory for mounting
-static_dir = Path(__file__).parent / "static"
-logger.info(f"Static directory path: {static_dir}")
-
-# Create static directory if it doesn't exist
-static_dir.mkdir(parents=True, exist_ok=True)
-
-# Mount static files with explicit type checking
-if static_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
-    logger.info(f"Static files mounted from: {static_dir}")
-else:
-    logger.error(f"Static directory not found: {static_dir}")
-
-
-# Add explicit route for JavaScript files
-@app.get("/static/js/{file_path:path}")
-async def serve_js(file_path: str):
-    """Serve JavaScript files with proper MIME type."""
-    js_path = static_dir / "js" / file_path
-    if not js_path.exists():
-        raise HTTPException(
-            status_code=404, detail=f"JavaScript file {file_path} not found"
-        )
-    return FileResponse(str(js_path), media_type="application/javascript")
-
-
-# Add CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 @app.get("/")
@@ -496,13 +541,34 @@ async def api_info():
 
 @app.get("/search", response_model=SearchResponse)
 async def search_images(
-    colors: str = Query(...),
-    weights: str = Query(...),
-    k: int = Query(50),
-    n_results: Optional[int] = Query(None),
-    fuzz: float = Query(1.0),
-    fast_mode: bool = Query(False),
-    batch_size: int = Query(5),
+    colors: str = Query(
+        ...,
+        description="Comma-separated list of hex color codes (without #)",
+    ),
+    weights: str = Query(
+        ...,
+        description="Comma-separated list of float weights, corresponding to colors",
+    ),
+    k: int = Query(50, description="Number of results to return", ge=1, le=200),
+    n_results: int = Query(
+        None,
+        description="Alternative parameter for number of results to return (will override k if provided)",
+        ge=1,
+        le=200,
+    ),
+    fuzz: float = Query(
+        1.0, description="Gaussian sigma multiplier for query fuzziness", ge=0.1, le=5.0
+    ),
+    fast_mode: bool = Query(
+        False,  # Default to normal mode, let users choose fast mode explicitly
+        description="Use fast approximate reranking (L2 distance instead of Sinkhorn-EMD)",
+    ),
+    batch_size: int = Query(
+        5,
+        description="Batch size for reranking operations",
+        ge=1,
+        le=50,  # Smaller batch size
+    ),
 ):
     """
     Search for images based on color similarity using the two-stage search pipeline.
@@ -532,10 +598,7 @@ async def search_images(
     global index, store
 
     # Use n_results if provided, otherwise use k
-    result_count = min(n_results if n_results is not None else k, MAX_SEARCH_RESULTS)
-
-    # Calculate max_rerank based on the requested results
-    max_rerank = min(RERANK_K, result_count * 5)  # Use 5x multiplier for better results
+    result_count = n_results if n_results is not None else k
 
     # Log search request
     search_logger.info(f"=== SEARCH REQUEST START ===")
@@ -659,35 +722,27 @@ async def search_images(
 
             search_start = time.time()
             # Perform the search with correct parameters for both modes
-            results = find_similar(
+            search_results = await perform_search_async(
                 query_histogram=query_histogram,
-                k=result_count,
-                max_rerank=max_rerank,  # Pass the calculated max_rerank value
-                index=index,
-                store=store,
+                k=search_k,  # Search for more candidates than needed
+                max_rerank=rerank_k,  # Rerank exactly what was requested
                 fast_mode=fast_mode,
+                batch_size=batch_size,
             )
-
-            # Log results (adding your print statement)
-            for i, result in enumerate(results):
-                search_logger.info(
-                    f"Result {i+1}: Image: {result['file_path']}, Distance: {result['distance']}"
-                )
-
             search_time = time.time() - search_start
 
             # Limit to requested result count
-            if len(results) > result_count:
+            if len(search_results) > result_count:
                 search_logger.info(
-                    f"Limiting {len(results)} results to requested {result_count}"
+                    f"Limiting {len(search_results)} results to requested {result_count}"
                 )
-                results = results[:result_count]
+                search_results = search_results[:result_count]
 
             # Update performance stats
             update_performance_stats(search_time)
             decrement_concurrent_searches()
 
-            if not results:
+            if not search_results:
                 search_logger.warning("Search returned no results")
                 # Return empty results instead of error
                 return SearchResponse(
@@ -704,7 +759,7 @@ async def search_images(
                 )
 
             search_logger.info(f"Search completed successfully in {search_time:.3f}s")
-            search_logger.info(f"Found {len(results)} results")
+            search_logger.info(f"Found {len(search_results)} results")
 
         except Exception as e:
             search_logger.error(f"Search operation failed: {e}")
@@ -716,35 +771,24 @@ async def search_images(
         try:
             formatted_results = []
 
-            for i, result in enumerate(results):
+            for i, result in enumerate(search_results):
+                # Extract dominant colors from image
                 try:
-                    # Extract dominant colors from image
-                    dominant_colors = ["#000000"] * 5  # Default fallback colors
-
-                    # Access result as a dictionary, not an object
-                    file_path = result.get("file_path")
-
-                    if file_path and Path(file_path).exists():
-                        try:
-                            # Try to extract dominant colors if the file exists
-                            # We need to implement the extract_dominant_colors function
-                            # or use a placeholder for now
-                            dominant_colors = extract_dominant_colors(file_path)
-                        except Exception as color_ex:
-                            search_logger.warning(
-                                f"Failed to extract colors for {file_path}: {color_ex}"
-                            )
+                    if result.file_path and Path(result.file_path).exists():
+                        dominant_colors = extract_dominant_colors(result.file_path)
                     else:
+                        # Fallback dominant colors if file not accessible
+                        dominant_colors = ["#000000"] * 5
                         search_logger.warning(
-                            f"Could not access file for image {result.get('image_id')}, using fallback colors"
+                            f"Could not access file for image {result.image_id}, using fallback colors"
                         )
 
                     formatted_results.append(
                         SearchResult(
-                            image_id=result.get("image_id", "unknown"),
-                            distance=result.get("distance", 1.0),
+                            image_id=result.image_id,
+                            distance=result.distance,
                             dominant_colors=dominant_colors,
-                            file_path=file_path,
+                            file_path=result.file_path if result.file_path else None,
                         )
                     )
                 except Exception as e:
@@ -820,14 +864,14 @@ async def get_image(image_id: str):
         raise HTTPException(status_code=503, detail="Metadata store is not available")
 
     try:
-        # Get the image metadata from the store - use get_image_info instead of get_image_metadata
-        image_info = store.get_image_info(image_id)
-        if not image_info:
+        # Get the image metadata from the store
+        metadata = store.get_image_metadata(image_id)
+        if not metadata:
             raise HTTPException(
                 status_code=404, detail=f"Image with ID {image_id} not found"
             )
 
-        file_path = image_info.get("file_path")
+        file_path = metadata.get("file_path")
         if not file_path or not Path(file_path).exists():
             raise HTTPException(
                 status_code=404, detail=f"Image file not found at {file_path}"
@@ -1125,8 +1169,8 @@ async def parallel_search(request: ParallelSearchRequest):
                 # Perform search
                 search_results = await perform_search_async(
                     query_histogram=query_histogram,
-                    k=search_k,
-                    max_rerank=k,
+                    k=search_k,  # Search for more candidates
+                    max_rerank=k,  # Rerank exactly what was requested
                     fast_mode=fast_mode,
                     batch_size=batch_size,
                 )
@@ -1436,55 +1480,6 @@ async def execute_command(request: CommandRequest):
         return CommandResponse(
             success=False, output="Command execution failed", error=error_msg
         )
-
-
-def extract_dominant_colors(image_path: str, num_colors: int = 5) -> List[str]:
-    """
-    Extract dominant colors from an image using K-means clustering.
-
-    Args:
-        image_path: Path to the image file
-        num_colors: Number of dominant colors to extract (default: 5)
-
-    Returns:
-        List of hex color codes representing dominant colors
-    """
-    try:
-        # Read the image
-        image = cv2.imread(image_path)
-        if image is None:
-            return ["#000000"] * num_colors
-
-        # Convert to RGB (OpenCV uses BGR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Reshape the image to be a list of pixels
-        pixels = image.reshape(-1, 3).astype(np.float32)
-
-        # Take a sample if the image is large
-        if len(pixels) > 10000:
-            indices = np.random.choice(len(pixels), 10000, replace=False)
-            pixels = pixels[indices]
-
-        # Apply K-means clustering
-        kmeans = KMeans(n_clusters=num_colors, n_init=3, random_state=42)
-        kmeans.fit(pixels)
-
-        # Get the colors
-        colors = kmeans.cluster_centers_.astype(int)
-
-        # Convert to hex codes
-        hex_colors = []
-        for color in colors:
-            r, g, b = color
-            hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            hex_colors.append(hex_color)
-
-        return hex_colors
-
-    except Exception as e:
-        logger.error(f"Failed to extract dominant colors from {image_path}: {e}")
-        return ["#000000"] * num_colors
 
 
 if __name__ == "__main__":

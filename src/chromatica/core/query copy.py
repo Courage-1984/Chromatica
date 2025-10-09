@@ -8,7 +8,6 @@ consistency between query and target representations.
 
 Key Features:
 - Hex color code to CIE Lab conversion using skimage
-- **NEW: Weight normalization for API compatibility**
 - Soft assignment to create "softened" query histograms
 - L1 normalization for consistent distance calculations
 - Support for weighted color queries
@@ -18,47 +17,14 @@ the FAISS HNSW index and Sinkhorn-EMD reranking stage.
 """
 
 import numpy as np
-from typing import List, Tuple, Optional, Union
+from typing import List, Tuple, Optional
 import logging
 from skimage import color
 
-# Assuming these imports are from ..utils.config
-try:
-    from ..utils.config import L_BINS, A_BINS, B_BINS, TOTAL_BINS, LAB_RANGES
-except ImportError:
-    # Placeholder values for standalone testing if needed
-    L_BINS = 8
-    A_BINS = 12
-    B_BINS = 12
-    TOTAL_BINS = L_BINS * A_BINS * B_BINS  # 1152
-    LAB_RANGES = [[0, 100], [-86, 98], [-108, 95]]
-
+from ..utils.config import L_BINS, A_BINS, B_BINS, TOTAL_BINS, LAB_RANGES
 
 # Set up logging for this module
 logger = logging.getLogger(__name__)
-
-
-def normalize_weights(weights: List[Union[int, float]]) -> List[float]:
-    """
-    Normalizes a list of weights to sum to 1.0.
-
-    Args:
-        weights: List of integer or float weights.
-
-    Returns:
-        List[float]: Normalized weights.
-
-    Raises:
-        ValueError: If the sum of weights is zero or negative.
-    """
-    if not weights:
-        return []
-
-    total_weight = sum(weights)
-    if total_weight <= 0:
-        raise ValueError("Sum of weights must be greater than 0 for normalization")
-
-    return [float(w) / total_weight for w in weights]
 
 
 def hex_to_lab(hex_color: str) -> Tuple[float, float, float]:
@@ -148,7 +114,46 @@ def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarra
     """
     Creates a "softened" query histogram from hex colors and weights.
 
-    (Docstring truncated for brevity)
+    This function converts a list of hex color codes to CIE Lab values and creates
+    a query histogram by distributing weights to the nearest bins using soft assignment.
+    The resulting histogram is L1-normalized to create a probability distribution
+    suitable for similarity calculations.
+
+    The soft assignment approach ensures that query colors are represented as
+    distributions rather than single points, making the search more robust to
+    minor color variations and improving the quality of color-based image retrieval.
+
+    Mathematical Process:
+    1. Convert each hex color to Lab values
+    2. For each color, distribute its weight to the 8 nearest bin centers
+    3. Use tri-linear interpolation weights for smooth distribution
+    4. Sum contributions from all colors
+    5. L1-normalize to create a probability distribution
+
+    Args:
+        colors: List of hex color codes (e.g., ["#FF0000", "#00FF00"]).
+               Each color will be converted to Lab space and contribute to the histogram.
+        weights: List of weights corresponding to each color.
+                Weights determine the relative importance of each color in the query.
+                Must have the same length as colors.
+                Weights are automatically normalized if they don't sum to 1.0.
+
+    Returns:
+        np.ndarray: A flattened, L1-normalized query histogram of shape (1152,).
+                   The histogram represents the weighted color distribution and sums to 1.0.
+
+    Raises:
+        ValueError: If colors and weights have different lengths, or if any color is invalid.
+        RuntimeError: If histogram generation fails.
+
+    Example:
+        >>> colors = ["#FF0000", "#00FF00", "#0000FF"]
+        >>> weights = [0.5, 0.3, 0.2]
+        >>> query_hist = create_query_histogram(colors, weights)
+        >>> print(f"Query histogram shape: {query_hist.shape}")
+        >>> print(f"Sum of histogram: {query_hist.sum():.6f}")
+        Query histogram shape: (1152,)
+        Sum of histogram: 1.000000
     """
     # Input validation
     if not isinstance(colors, list) or not isinstance(weights, list):
@@ -171,11 +176,12 @@ def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarra
     if not all(w >= 0 for w in weights):
         raise ValueError("All weights must be non-negative")
 
-    # Normalize weights to sum to 1.0 (FIXED: using the new function)
-    try:
-        normalized_weights = normalize_weights(weights)
-    except ValueError as e:
-        raise ValueError(str(e))
+    # Normalize weights to sum to 1.0
+    total_weight = sum(weights)
+    if total_weight == 0:
+        raise ValueError("Sum of weights must be greater than 0")
+
+    normalized_weights = [w / total_weight for w in weights]
 
     # Initialize the query histogram
     query_hist = np.zeros(TOTAL_BINS, dtype=np.float64)
@@ -247,19 +253,9 @@ def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarra
         # L1-normalize the histogram
         hist_sum = query_hist.sum()
         if hist_sum == 0:
-            # Should not happen if weights > 0, but as a safeguard:
-            # We already normalized, so this check is redundant but kept for safety.
-            raise RuntimeError(
-                "Generated query histogram has zero sum after L1-normalization"
-            )
+            raise RuntimeError("Generated query histogram has zero sum")
 
-        # The histogram is already L1-normalized through `normalized_weights` and the
-        # soft assignment mechanism. A final check is sufficient.
-
-        # NOTE: A more accurate approach is to just check the final sum after the loop
-        # and re-normalize, but given the current structure of soft-assignment, the
-        # weights should sum close to 1.0. A final division for stability is best:
-        query_hist = query_hist / hist_sum if hist_sum != 0 else query_hist
+        query_hist = query_hist / hist_sum
 
         # Validate the result
         if not np.allclose(query_hist.sum(), 1.0, atol=1e-6):
@@ -283,7 +279,23 @@ def validate_query_histogram(histogram: np.ndarray) -> bool:
     """
     Validates that a query histogram meets the required specifications.
 
-    (Docstring truncated for brevity)
+    This function performs comprehensive validation of query histograms to ensure
+    they are compatible with the search and reranking pipeline. The validation
+    checks match the requirements for image histograms to maintain consistency.
+
+    Args:
+        histogram: The query histogram to validate.
+
+    Returns:
+        bool: True if the histogram is valid, False otherwise.
+
+    Example:
+        >>> colors = ["#FF0000", "#00FF00"]
+        >>> weights = [0.6, 0.4]
+        >>> query_hist = create_query_histogram(colors, weights)
+        >>> is_valid = validate_query_histogram(query_hist)
+        >>> print(f"Histogram is valid: {is_valid}")
+        Histogram is valid: True
     """
     try:
         # Check shape
@@ -320,4 +332,3 @@ def validate_query_histogram(histogram: np.ndarray) -> bool:
     except Exception as e:
         logger.error(f"Histogram validation failed: {str(e)}")
         return False
-

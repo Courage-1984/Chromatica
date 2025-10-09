@@ -1896,10 +1896,12 @@
                 <div class="error" id="error" style="display: none;"></div>
 
                 <!-- Image Popup Modal -->
-                <div id="imageModal" class="image-modal" style="display: none;">
-                    <div class="image-modal-content">
-                        <span class="image-close">&times;</span>
-                        <img id="modalImage" src="" alt="Full size image">
+                <div id="imageModal" class="image-modal"
+                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 1000; justify-content: center; align-items: center;">
+                    <div class="image-modal-content" style="position: relative; max-width: 90%; max-height: 90%;">
+                        <span class="image-close">×</span>
+                        <img id="modalImage" src="" alt="Full size image"
+                            style="max-width: 100%; max-height: 90vh; object-fit: contain;">
                     </div>
                 </div>
 
