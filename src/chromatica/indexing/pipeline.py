@@ -17,6 +17,7 @@ can also be used for real-time image processing in the search API.
 
 import cv2
 import numpy as np
+import os
 from skimage import color
 from typing import Tuple, Optional
 import logging
@@ -81,12 +82,38 @@ def process_image(image_path: str) -> np.ndarray:
     if not image_path.is_file():
         raise ValueError(f"Path is not a file: {image_path}")
 
-    logger.debug(f"Processing image: {image_path}")
+    # Safe logging for Unicode filenames
+    try:
+        logger.debug(f"Processing image: {image_path}")
+    except UnicodeEncodeError:
+        logger.debug(f"Processing image: [Unicode filename] {image_path.name}")
 
     try:
-        # Step 1: Load image using OpenCV
+        # Step 1: Load image using OpenCV with Unicode support
         logger.debug("Loading image with OpenCV")
-        image = cv2.imread(str(image_path))
+        
+        # Handle Unicode filenames on Windows
+        image_path_str = str(image_path)
+        if os.name == 'nt':  # Windows
+            # Use numpy to read the file and then decode with OpenCV
+            import numpy as np
+            try:
+                # Read file as bytes
+                with open(image_path, 'rb') as f:
+                    image_data = f.read()
+                
+                # Convert to numpy array
+                nparr = np.frombuffer(image_data, np.uint8)
+                
+                # Decode image with OpenCV
+                image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            except Exception as unicode_error:
+                logger.warning(f"Unicode path handling failed, trying direct path: {unicode_error}")
+                # Fallback to direct path
+                image = cv2.imread(image_path_str)
+        else:
+            # On Unix-like systems, direct path should work
+            image = cv2.imread(image_path_str)
 
         if image is None:
             raise ValueError(f"Failed to load image: {image_path}")
@@ -109,11 +136,17 @@ def process_image(image_path: str) -> np.ndarray:
         logger.debug(f"Generated histogram with shape: {histogram.shape}")
 
         # Step 5: Return the normalized histogram
-        logger.info(f"Successfully processed image: {image_path}")
+        try:
+            logger.info(f"Successfully processed image: {image_path}")
+        except UnicodeEncodeError:
+            logger.info(f"Successfully processed image: [Unicode filename] {image_path.name}")
         return histogram
 
     except Exception as e:
-        logger.error(f"Failed to process image {image_path}: {str(e)}")
+        try:
+            logger.error(f"Failed to process image {image_path}: {str(e)}")
+        except UnicodeEncodeError:
+            logger.error(f"Failed to process image [Unicode filename] {image_path.name}: {str(e)}")
         raise RuntimeError(f"Image processing failed for {image_path}: {str(e)}") from e
 
 

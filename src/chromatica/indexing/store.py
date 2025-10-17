@@ -137,10 +137,11 @@ class AnnIndex:
             self.is_trained = True
             logger.info("FAISS training complete.")
 
-    def add(self, vectors: np.ndarray) -> None:
+    def add(self, vectors: np.ndarray, ids: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Add Hellinger-transformed vectors to the FAISS index.
-        Also assigns sequential IDs starting from 1.
+        Optionally accepts explicit integer IDs. If not provided, assigns
+        sequential IDs starting from current ntotal + 1.
         """
         if self.index is None:
             raise RuntimeError("FAISS index is not initialized.")
@@ -153,15 +154,25 @@ class AnnIndex:
         # Apply Hellinger transform
         transformed_vectors = hellinger_transform(vectors)
 
-        # Get current count and assign sequential IDs
-        start_id = self.index.ntotal + 1
-        ids = np.arange(start_id, start_id + len(vectors), dtype=np.int64)
+        # Get IDs
+        if ids is None:
+            # Assign sequential IDs
+            start_id = self.index.ntotal + 1
+            ids = np.arange(start_id, start_id + len(vectors), dtype=np.int64)
+        else:
+            # Ensure proper dtype and shape
+            ids = np.asarray(ids, dtype=np.int64).reshape(-1)
+            if len(ids) != len(transformed_vectors):
+                raise ValueError(
+                    f"Length of ids ({len(ids)}) must match number of vectors ({len(transformed_vectors)})."
+                )
 
         # Add to the index with explicit IDs
         self.index.add_with_ids(transformed_vectors, ids)
         logger.debug(
-            f"Added {len(vectors)} vectors with IDs {start_id}-{start_id+len(vectors)-1}"
+            f"Added {len(vectors)} vectors with IDs sample: {ids[:3]}..."
         )
+        return ids
 
     def search(self, query_vector: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -261,13 +272,21 @@ class MetadataStore:
         conn.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {self.table_name} (
-                image_id VARCHAR PRIMARY KEY,
+                image_id VARCHAR,
+                faiss_id BIGINT,
                 histogram BLOB NOT NULL,
                 file_path VARCHAR,
-                file_size BIGINT
+                file_size BIGINT,
+                image_url VARCHAR
             )
             """
         )
+        # Create indices for fast lookups
+        try:
+            conn.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{self.table_name}_faiss_id ON {self.table_name}(faiss_id)")
+            conn.execute(f"CREATE UNIQUE INDEX IF NOT EXISTS idx_{self.table_name}_image_id ON {self.table_name}(image_id)")
+        except Exception:
+            pass
         conn.commit()
         logger.info(f"Table '{self.table_name}' checked/created with updated schema.")
 
@@ -308,15 +327,18 @@ class MetadataStore:
             for record in batch_data:
                 histogram_blob = self._serialize_histogram(record["histogram"])
 
-                # Use sequential integer IDs matching FAISS
+                # Persist both human image_id and FAISS numeric id
                 image_id = f"{int(record['image_id']):05d}"
+                faiss_id = int(record.get("faiss_id", 0)) if record.get("faiss_id") is not None else None
 
                 insert_data.append(
                     (
                         image_id,
+                        faiss_id,
                         histogram_blob,
                         record.get("file_path"),
                         record.get("file_size"),
+                        record.get("image_url"),
                     )
                 )
 
@@ -324,10 +346,17 @@ class MetadataStore:
             sample_insert = [data[0] for data in insert_data[:5]]
             logger.debug(f"Inserting with IDs: {sample_insert}")
 
+            # Upsert by faiss_id to keep FAISS<->DuckDB mapping stable
             query = f"""
-                INSERT OR REPLACE INTO {self.table_name} 
-                (image_id, histogram, file_path, file_size)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO {self.table_name}
+                (image_id, faiss_id, histogram, file_path, file_size, image_url)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(faiss_id) DO UPDATE SET
+                  image_id = excluded.image_id,
+                  histogram = excluded.histogram,
+                  file_path = excluded.file_path,
+                  file_size = excluded.file_size,
+                  image_url = excluded.image_url
             """
 
             conn = self._get_thread_connection()
@@ -370,6 +399,20 @@ class MetadataStore:
     def get_histogram(self, image_id: Union[str, float, int]) -> Optional[np.ndarray]:
         """Retrieve the raw histogram for a given image ID."""
         try:
+            # If looks like FAISS id (int without leading zeros), try by faiss_id first
+            if isinstance(image_id, (int, np.integer)) or (isinstance(image_id, str) and image_id.isdigit() and len(image_id) <= 5):
+                conn = self._get_thread_connection()
+                try:
+                    fid = int(image_id)
+                    res = conn.execute(
+                        f"SELECT histogram FROM {self.table_name} WHERE faiss_id = ? LIMIT 1",
+                        [fid],
+                    ).fetchone()
+                    if res is not None:
+                        return self._deserialize_histogram(res[0])
+                except Exception:
+                    pass
+
             # Convert float/decimal IDs to integers, preserving original ID
             if isinstance(image_id, (float, np.float32, np.float64)):
                 # Round to nearest integer since FAISS IDs start from 1
@@ -413,7 +456,7 @@ class MetadataStore:
         try:
             # Note: Select ALL columns
             query = f"""
-                SELECT image_id, file_path, file_size, histogram 
+                SELECT image_id, faiss_id, file_path, file_size, histogram, image_url 
                 FROM {self.table_name} 
                 WHERE image_id IN (UNNEST(?))
             """
@@ -421,17 +464,19 @@ class MetadataStore:
 
             metadata_list = []
             # Map column names to indices for clarity
-            col_map = {"image_id": 0, "file_path": 1, "file_size": 2, "histogram": 3}
+            col_map = {"image_id": 0, "faiss_id": 1, "file_path": 2, "file_size": 3, "histogram": 4, "image_url": 5}
 
             for row in result:
                 metadata_list.append(
                     {
                         "image_id": row[col_map["image_id"]],
+                        "faiss_id": row[col_map["faiss_id"]],
                         "file_path": row[col_map["file_path"]],
                         "file_size": row[col_map["file_size"]],
                         "histogram": self._deserialize_histogram(
                             row[col_map["histogram"]]
                         ),
+                        "image_url": row[col_map["image_url"]],
                     }
                 )
 
@@ -447,7 +492,7 @@ class MetadataStore:
         """
         try:
             query = f"""
-                SELECT image_id, file_path, file_size
+                SELECT image_id, file_path, file_size, image_url
                 FROM {self.table_name}
                 LIMIT ?
             """
@@ -458,7 +503,7 @@ class MetadataStore:
             images = []
             for row in result:
                 images.append(
-                    {"image_id": row[0], "file_path": row[1], "file_size": row[2]}
+                    {"image_id": row[0], "file_path": row[1], "file_size": row[2], "image_url": row[3]}
                 )
 
             logger.info(f"Retrieved {len(images)} image metadata records")
@@ -550,7 +595,7 @@ class MetadataStore:
         """
         try:
             query = f"""
-                SELECT image_id, file_path, file_size
+                SELECT image_id, file_path, file_size, image_url
                 FROM {self.table_name}
                 WHERE image_id = ?
                 LIMIT 1
@@ -566,10 +611,46 @@ class MetadataStore:
                 "image_id": result[0],
                 "file_path": result[1],
                 "file_size": result[2],
+                "image_url": result[3],
             }
 
         except Exception as e:
             logger.error(f"Error retrieving image info for {image_id}: {e}")
+            return None
+
+    def get_image_info_by_faiss_id(self, faiss_id: Union[int, str]) -> Optional[Dict[str, Any]]:
+        """
+        Get image information by FAISS ID.
+
+        Args:
+            faiss_id: The FAISS vector ID
+
+        Returns:
+            Dictionary with image information or None if not found
+        """
+        try:
+            query = f"""
+                SELECT image_id, file_path, file_size, image_url
+                FROM {self.table_name}
+                WHERE faiss_id = ?
+                LIMIT 1
+            """
+            conn = self._get_thread_connection()
+            result = conn.execute(query, [int(faiss_id)]).fetchone()
+
+            if result is None:
+                logger.warning(f"No image info found for faiss_id: {faiss_id}")
+                return None
+
+            return {
+                "image_id": result[0],
+                "file_path": result[1],
+                "file_size": result[2],
+                "image_url": result[3],
+            }
+
+        except Exception as e:
+            logger.error(f"Error retrieving image info for faiss_id {faiss_id}: {e}")
             return None
 
     def get_image_path(self, image_id: Union[str, float, int]) -> Optional[str]:

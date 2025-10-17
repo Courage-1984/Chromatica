@@ -278,34 +278,34 @@ def find_similar(
             logger.warning("No valid indices returned from FAISS search")
             return []
 
-        # Convert indices to image IDs (zero-padded format)
-        image_ids = [f"{int(idx):05d}" for idx in valid_indices]
+        # Use FAISS indices directly (they are the faiss_id values)
+        faiss_ids = valid_indices.tolist()
 
         logger.info(
-            f"Found {len(image_ids)} valid candidates out of {len(indices)} results"
+            f"Found {len(faiss_ids)} valid candidates out of {len(indices)} results"
         )
 
-        # Get histograms and metadata for candidates
+        # Get histograms and metadata for candidates using faiss_id
         metadata_start = time.time()
         candidate_histograms = []
         valid_candidates = []
 
-        for i, image_id in enumerate(image_ids):
-            hist = store.get_histogram(image_id)
-            info = store.get_image_info(image_id)
+        for i, faiss_id in enumerate(faiss_ids):
+            hist = store.get_histogram(faiss_id)  # This will look up by faiss_id first
+            info = store.get_image_info_by_faiss_id(faiss_id)  # New method needed
 
             if hist is not None and info is not None and "file_path" in info:
                 candidate_histograms.append(hist)
                 valid_candidates.append(
                     {
-                        "image_id": image_id,
+                        "image_id": info["image_id"],  # Use the actual image_id from metadata
                         "file_path": info["file_path"],
                         "ann_distance": float(valid_distances[i]),
                     }
                 )
             else:
                 logger.debug(
-                    f"Skipping candidate {image_id} due to missing histogram or metadata"
+                    f"Skipping candidate faiss_id {faiss_id} due to missing histogram or metadata"
                 )
 
         metadata_time = time.time() - metadata_start
