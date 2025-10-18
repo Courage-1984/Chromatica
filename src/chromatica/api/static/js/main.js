@@ -1307,7 +1307,15 @@ window.updateSearchResults = function (data) {
     console.log('Processing search results:', data.results); // Debug log
 
     data.results.forEach((result, index) => {
+        console.log(`Result ${index + 1}:`, {
+            image_id: result.image_id,
+            image_url: result.image_url,
+            file_path: result.file_path,
+            distance: result.distance
+        }); // Debug log for each result
+        
         const imgSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
+        console.log(`Using imgSrc: ${imgSrc}`); // Debug log for image source
         const distance = typeof result.distance === 'number' ? result.distance.toFixed(6) : 'N/A';
 
         console.log('Result dominant colors:', result.dominant_colors); // Debug log

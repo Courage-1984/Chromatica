@@ -46,6 +46,7 @@ class SearchResult:
     distance: float
     rank: int
     ann_score: float  # Original ANN distance score
+    image_url: Optional[str] = None  # URL of the image
 
 
 # Global query cache for avoiding repeated computations
@@ -300,6 +301,7 @@ def find_similar(
                     {
                         "image_id": info["image_id"],  # Use the actual image_id from metadata
                         "file_path": info["file_path"],
+                        "image_url": info.get("image_url"),  # Include the image URL
                         "ann_distance": float(valid_distances[i]),
                     }
                 )
@@ -343,6 +345,7 @@ def find_similar(
             result = {
                 "image_id": candidate["image_id"],
                 "file_path": candidate["file_path"],
+                "image_url": candidate.get("image_url"),  # Include the image URL
                 "distance": float(dist),
                 "confidence": max(0.0, 1.0 - float(dist) / max_dist),
                 "ann_distance": candidate["ann_distance"],

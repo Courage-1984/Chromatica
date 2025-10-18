@@ -314,6 +314,7 @@ class SearchResult(BaseModel):
     distance: float = Field(..., description="Sinkhorn-EMD distance from query")
     dominant_colors: List[str] = Field(..., description="Dominant colors in the image")
     file_path: Optional[str] = Field(None, description="Path to the image file")
+    image_url: Optional[str] = Field(None, description="URL of the image")
 
 
 class SearchMetadata(BaseModel):
@@ -671,7 +672,7 @@ async def search_images(
             # Log results (adding your print statement)
             for i, result in enumerate(results):
                 search_logger.info(
-                    f"Result {i+1}: Image: {result['file_path']}, Distance: {result['distance']}"
+                    f"Result {i+1}: Image: {result['file_path']}, Distance: {result['distance']}, URL: {result.get('image_url', 'None')}"
                 )
 
             search_time = time.time() - search_start
@@ -745,6 +746,7 @@ async def search_images(
                             distance=result.get("distance", 1.0),
                             dominant_colors=dominant_colors,
                             file_path=file_path,
+                            image_url=result.get("image_url"),  # Include the image URL
                         )
                     )
                 except Exception as e:

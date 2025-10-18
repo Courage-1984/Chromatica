@@ -41,3 +41,8 @@ _covers_index/
 _test_data/
 _test_data_db/
 
+data/
+./data/
+
+image_downloads_001_10k/
+

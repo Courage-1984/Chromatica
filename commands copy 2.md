@@ -207,9 +207,32 @@ python scripts/build_index.py C:/Users/anon/github/Chromatica/_test_data --outpu
 
 python scripts/build_index.py C:/Users/anon/github/cover-dl/covers2_10000 --output-dir C:/Users/anon/github/Chromatica/covers_index --batch-size 1000 --append
 
-$env:CHROMATICA_INDEX_DIR = (Resolve-Path .\_test_data_db).Path
+$env:CHROMATICA_INDEX_DIR = (Resolve-Path .\index_urls).Path
 
-python -m src.chromatica.api.main
+cls
 
 python scripts/build_index.py C:/Users/anon/github/Chromatica/_test_data --output-dir C:/Users/anon/github/Chromatica/_test_data_db --batch-size 1000 --verbose
+
+# Basic usage
+python scripts/build_covers_index.py data/done.json data/images
+
+# With custom output directory and batch size
+python scripts/build_covers_index.py data/done.json data/images --output-dir index_urls --batch-size 1000 --verbose
+
+# Append mode for incremental indexing
+python scripts/build_covers_index.py data/done.json data/images --append
+
+# Skip downloading missing images
+python scripts/build_covers_index.py data/done.json data/images --no-download
+
+
+python scripts/build_covers_index.py data/done.json data/images --output-dir index_urls --batch-size 1000 --verbose
+
+
+python scripts/build_covers_index.py image_downloads_001_10k/done.json image_downloads_001_10k/images --output-dir _covers_indexed_urls --batch-size 1000 --verbose
+
+--enhance-metadata --update-json
+
+python scripts/build_covers_index.py image_downloads_001_10k/done.json image_downloads_001_10k/images --output-dir _covers_indexed_urls --batch-size 1000 --verbose --enhance-metadata --update-json
+
 

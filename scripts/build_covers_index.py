@@ -1,7 +1,7 @@
 # Example: python scripts/build_covers_index.py data/done.json data/images --output-dir index_urls --batch-size 1000 --verbose
 
 """
-Offline indexing script for the Chromatica color search engine with JSON metadata support.
+Offline indexing script for the Chromatica color search engine with enhanced JSON metadata support.
 
 This script processes a JSON metadata file containing image information and a directory
 of images, then populates both the FAISS HNSW index and DuckDB metadata store. It's
@@ -16,16 +16,19 @@ Key Features:
 - Downloads images from URLs if local files are not found
 - Supports append mode for incremental indexing
 - Maintains compatibility with existing Chromatica infrastructure
+- Enhanced metadata fetching from Apple Music/iTunes APIs
+- Multiple download fallback methods (requests, aria2c, wget, curl)
+- Automatic JSON file updates with enhanced metadata
 
 Usage:
-    python scripts/build_covers_index.py <json_metadata_file> <image_directory> [--output-dir <output_dir>] [--batch-size <batch_size>] [--append]
+    python scripts/build_covers_index.py <json_metadata_file> <image_directory> [--output-dir <output_dir>] [--batch-size <batch_size>] [--append] [--enhance-metadata] [--update-json]
 
 Example:
-    python scripts/build_covers_index.py data/done.json data/images --output-dir index_urls --batch-size 1000 --verbose
+    python scripts/build_covers_index.py data/done.json data/images --output-dir index_urls --batch-size 1000 --verbose --enhance-metadata --update-json
 
 Features:
 - JSON metadata parsing with final_filename and image_url_modified fields
-- Image URL downloading with retry logic
+- Image URL downloading with retry logic and multiple fallback methods
 - Batch processing for memory efficiency
 - Comprehensive logging and progress tracking
 - Error handling with graceful degradation
@@ -33,6 +36,9 @@ Features:
 - Performance monitoring and timing
 - Automatic output directory creation
 - Duplicate image detection in append mode
+- Apple Music/iTunes API integration for metadata enhancement
+- Enhanced download methods with aria2c, wget, and curl fallbacks
+- Automatic JSON file updates with enhanced metadata
 """
 
 import argparse
@@ -42,6 +48,9 @@ import sys
 import time
 import json
 import requests
+import re
+import hashlib
+import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Set, Tuple
 import numpy as np
@@ -55,6 +64,38 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from chromatica.indexing.pipeline import process_image, validate_processed_image
 from chromatica.indexing.store import AnnIndex, MetadataStore
 from chromatica.utils.config import TOTAL_BINS
+
+# --- Enhanced Download and Metadata Functions ---
+
+# Configuration for enhanced downloading
+REQUEST_TIMEOUT = 30
+MAX_TOTAL_RETRIES = 5
+
+# Downloader options
+ARIA2C_COMMON_OPTIONS = [
+    "--max-tries=1",
+    "--max-concurrent-downloads=1",
+    "--min-split-size=10M",
+    "--split=1",
+    "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "--check-certificate=false",
+    "--timeout=30",
+]
+
+WGET_COMMON_OPTIONS = [
+    "--tries=1",
+    "--wait=5",
+    "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "--no-check-certificate",
+    "-q",
+]
+
+CURL_COMMON_OPTIONS = [
+    "-L", "-f", "--max-redirs", "10", "--connect-timeout", "30",
+    "--retry", "0", "--user-agent",
+    "Mozilla/50 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "--silent", "--show-error",
+]
 
 
 class ProgressTracker:
@@ -189,6 +230,346 @@ class ProgressTracker:
             return f"{hours:.1f}h"
 
 
+def get_apple_music_token() -> str:
+    """Extract developer token from Apple Music's public site."""
+    logger = logging.getLogger(__name__)
+    logger.info("Fetching Apple Music token...")
+    main_page_url = "https://beta.music.apple.com"
+
+    try:
+        # Step 1: Fetch the main page to find the JS file
+        main_page_response = requests.get(main_page_url, timeout=REQUEST_TIMEOUT)
+        main_page_response.raise_for_status()
+    except requests.RequestException as e:
+        raise Exception(f"Failed to fetch main page: {e}")
+
+    main_page_body = main_page_response.text
+    js_file_regex = r"/assets/index-legacy-[^/]+\.js"
+    index_js_uri = re.search(js_file_regex, main_page_body)
+
+    if not index_js_uri:
+        raise Exception("Index JS file not found")
+
+    # Step 2: Fetch the JS file to extract the token
+    js_file_url = main_page_url + index_js_uri.group(0)
+    try:
+        js_file_response = requests.get(js_file_url, timeout=REQUEST_TIMEOUT)
+        js_file_response.raise_for_status()
+    except requests.RequestException as e:
+        raise Exception(f"Failed to fetch JS file: {e}")
+
+    js_file_body = js_file_response.text
+    token_regex = r'eyJh[^"]+'
+    token = re.search(token_regex, js_file_body)
+
+    if not token:
+        raise Exception("Token not found in JS file")
+
+    logger.info("Successfully obtained Apple Music token")
+    return token.group(0)
+
+
+def fetch_album_apple_music(album_id: str, token: str, storefront: str = "us") -> Optional[Dict[str, Any]]:
+    """Fetch album data from Apple Music API (amp-api)."""
+    logger = logging.getLogger(__name__)
+    url = f"https://amp-api.music.apple.com/v1/catalog/{storefront}/albums/{album_id}"
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+        "Origin": "https://music.apple.com",
+    }
+    params = {"include": "albums", "extend": "extendedAssetUrls", "l": ""}
+
+    try:
+        logger.debug(f"Trying Apple Music API with storefront: {storefront}")
+        response = requests.get(url, headers=headers, params=params, timeout=REQUEST_TIMEOUT)
+        if response.status_code == 404:
+            return None
+        response.raise_for_status()
+        logger.debug(f"Successfully fetched data from {storefront}")
+        return response.json()
+    except requests.RequestException as e:
+        logger.debug(f"Error fetching from Apple Music API ({storefront}): {e}")
+        return None
+
+
+def fetch_album_itunes(album_id: str) -> Optional[Dict[str, Any]]:
+    """Fetch album data from iTunes API (fallback)."""
+    logger = logging.getLogger(__name__)
+    url = f"https://itunes.apple.com/lookup"
+    params = {"id": album_id, "entity": "album"}
+
+    try:
+        logger.debug(f"Trying iTunes API request for album ID: {album_id}")
+        response = requests.get(url, params=params, timeout=REQUEST_TIMEOUT)
+        response.raise_for_status()
+        data = response.json()
+        if data.get("resultCount", 0) > 0:
+            logger.debug("Successfully fetched iTunes data")
+            return data
+        logger.debug("No results found in iTunes API")
+        return None
+    except requests.RequestException as e:
+        logger.debug(f"Error fetching from iTunes API: {e}")
+        return None
+
+
+def fetch_album_data_with_token(album_id: str, token: str) -> Optional[Dict[str, Any]]:
+    """Fetch album data using a provided Apple Music token, fallback to iTunes if needed."""
+    logger = logging.getLogger(__name__)
+    storefronts = ["us", "gb"]  # Primary storefronts
+    for storefront in storefronts:
+        result = fetch_album_apple_music(album_id, token, storefront)
+        if result:
+            return result
+    logger.debug("No results from Apple Music API, trying iTunes API...")
+    return fetch_album_itunes(album_id)
+
+
+def get_album_name(api_data: Dict[str, Any]) -> str:
+    """Extract and sanitize album name."""
+    name = ""
+    is_itunes = "results" in api_data  # Check if it's an iTunes API response
+
+    if is_itunes and api_data.get("results"):
+        # iTunes API structure
+        album_info = api_data["results"][0]
+        name = album_info.get("collectionName", "")
+    elif api_data.get("data"):
+        # Apple Music API structure
+        album_info = api_data["data"][0].get("attributes", {})
+        name = album_info.get("name", "")
+
+    if not name:
+        return f"AlbumID_{hashlib.sha1(api_data.__str__().encode()).hexdigest()[:8]}"
+
+    # Sanitization
+    safe_name = re.sub(r"[^\w\s-]", "_", name).strip()
+    safe_name = re.sub(r"[-\s]+", "_", safe_name)  # Convert all spaces/hyphens to single underscore
+    # Truncate to a reasonable length to avoid filesystem issues
+    if len(safe_name) > 100:
+        safe_name = safe_name[:100]
+
+    return safe_name
+
+
+def sanitize_and_rename_url(original_url: str) -> str:
+    """
+    Modifies the Apple Music URL to ensure it is always suffixed with
+    /1000x1000bb and uses the original extension (.png or .jpg),
+    while preserving the necessary image identifier path segments.
+    """
+    target_size_prefix = "/1000x1000bb"
+
+    # 1. Find the position of the last forward slash.
+    last_slash_index = original_url.rfind("/")
+
+    if last_slash_index == -1:
+        return original_url
+
+    # base_url is the part before the size suffix
+    base_url = original_url[:last_slash_index]
+    original_suffix = original_url[last_slash_index:]
+
+    # 2. Extract the file extension from the original suffix (e.g., .png or .jpg).
+    ext_match = re.search(r"\.(png|jpe?g)$", original_suffix, re.IGNORECASE)
+
+    if ext_match:
+        # Construct the new, correct URL: [Base Path/Image ID] + /1000x1000bb + [Original Extension]
+        new_ext = ext_match.group(0).lower()
+        return f"{base_url}{target_size_prefix}{new_ext}"
+
+    return original_url
+
+
+def run_downloader_command(command: List[str], downloader_name: str, url: str, output_path: str) -> bool:
+    """Executes a command line downloader (aria2c, wget, or curl)."""
+    logger = logging.getLogger(__name__)
+    logger.debug(f"Attempting download with {downloader_name}...")
+    try:
+        # aria2c needs --dir and --out arguments separately
+        if downloader_name == "aria2c":
+            download_dir = os.path.dirname(output_path)
+            filename = os.path.basename(output_path)
+            final_command = command + ["--dir", download_dir, "--out", filename, url]
+        # wget and curl need the full output path
+        elif downloader_name == "wget":
+            download_dir = os.path.dirname(output_path)
+            final_command = command + [
+                "--directory-prefix=" + download_dir,
+                "--output-document=" + output_path,
+                url,
+            ]
+        elif downloader_name == "curl":
+            final_command = command + ["--output", output_path, url]
+        else:  # Should not happen
+            return False
+
+        subprocess.run(
+            final_command,
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        logger.debug(f"SUCCESS ({downloader_name}): Downloaded to '{output_path}'.")
+        return True
+
+    except subprocess.CalledProcessError as e:
+        stderr_output = e.stderr[-300:] if e.stderr else "No error output."
+        logger.debug(f"FAILURE ({downloader_name}): Exit code {e.returncode}. Error output snippet:\n{stderr_output}")
+        return False
+    except FileNotFoundError:
+        logger.debug(f"Error: '{downloader_name}' command not found. Skipping.")
+        return False
+
+
+def download_image_with_fallbacks(modified_url: str, output_path: str) -> bool:
+    """
+    Attempts to download an image using requests, then aria2c, then wget, then curl.
+    Returns True on success, False on failure.
+    """
+    logger = logging.getLogger(__name__)
+    download_dir = os.path.dirname(output_path)
+    os.makedirs(download_dir, exist_ok=True)  # Ensure output directory exists
+
+    # 1. Attempt with 'requests' (built-in Python method)
+    logger.debug("Attempting download with 'requests' (Python built-in)...")
+    try:
+        response = requests.get(modified_url, timeout=REQUEST_TIMEOUT, stream=True)
+        response.raise_for_status()
+        with open(output_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+        logger.debug(f"SUCCESS (requests): Downloaded to '{output_path}'.")
+        return True
+    except requests.RequestException as e:
+        logger.debug(f"FAILURE (requests): {e}")
+
+    # 2. Fallback to aria2c
+    aria2c_command = ["aria2c", *ARIA2C_COMMON_OPTIONS]
+    if run_downloader_command(aria2c_command, "aria2c", modified_url, output_path):
+        return True
+
+    # 3. Fallback to wget
+    wget_command = ["wget", *WGET_COMMON_OPTIONS]
+    if run_downloader_command(wget_command, "wget", modified_url, output_path):
+        return True
+
+    # 4. Fallback to curl
+    curl_command = ["curl", *CURL_COMMON_OPTIONS]
+    if run_downloader_command(curl_command, "curl", modified_url, output_path):
+        return True
+
+    return False
+
+
+def enhance_metadata_entry(entry_id: str, entry_data: Dict[str, Any], token: str) -> Dict[str, Any]:
+    """
+    Enhance metadata entry by fetching additional data from Apple Music/iTunes APIs.
+    
+    Args:
+        entry_id: ID of the metadata entry
+        entry_data: Dictionary containing the metadata
+        token: Apple Music API token
+        
+    Returns:
+        Enhanced metadata dictionary
+    """
+    logger = logging.getLogger(__name__)
+    enhanced_data = entry_data.copy()
+    
+    # Check if we need to enhance the metadata
+    needs_enhancement = (
+        not entry_data.get('final_filename') or 
+        not entry_data.get('image_url_modified') or
+        not entry_data.get('api_data')
+    )
+    
+    if not needs_enhancement:
+        logger.debug(f"Entry {entry_id} already has complete metadata")
+        return enhanced_data
+    
+    # Try to get album_id from the entry
+    album_id = entry_data.get('album_id')
+    if not album_id:
+        logger.warning(f"Entry {entry_id} missing 'album_id' field, cannot enhance metadata")
+        return enhanced_data
+    
+    try:
+        logger.info(f"Enhancing metadata for entry {entry_id} (album_id: {album_id})")
+        
+        # Fetch album data from APIs
+        api_data = fetch_album_data_with_token(album_id, token)
+        
+        if api_data:
+            # Extract album name
+            album_name = get_album_name(api_data)
+            
+            # Get original URL and modify it
+            original_url = entry_data.get('original_url', entry_data.get('image_url_modified'))
+            if original_url:
+                modified_url = sanitize_and_rename_url(original_url)
+                
+                # Update enhanced data
+                enhanced_data.update({
+                    'api_data': api_data,
+                    'album_name': album_name,
+                    'image_url_modified': modified_url,
+                    'final_filename': f"{album_name}{os.path.splitext(modified_url)[1]}",
+                    'enhanced': True
+                })
+                
+                logger.info(f"Successfully enhanced metadata for entry {entry_id}")
+            else:
+                logger.warning(f"No original URL found for entry {entry_id}")
+        else:
+            logger.warning(f"Failed to fetch API data for entry {entry_id}")
+            enhanced_data['enhancement_failed'] = True
+            
+    except Exception as e:
+        logger.error(f"Error enhancing metadata for entry {entry_id}: {e}")
+        enhanced_data['enhancement_error'] = str(e)
+    
+    return enhanced_data
+
+
+def update_json_with_enhanced_metadata(
+    json_file: Path, 
+    enhanced_metadata: Dict[str, Dict[str, Any]]
+) -> None:
+    """
+    Update the JSON file with enhanced metadata.
+    
+    Args:
+        json_file: Path to the JSON metadata file
+        enhanced_metadata: Dictionary of enhanced metadata entries
+    """
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Load existing JSON data
+        with open(json_file, 'r', encoding='utf-8') as f:
+            existing_data = json.load(f)
+        
+        # Update with enhanced metadata
+        for entry_id, enhanced_data in enhanced_metadata.items():
+            if entry_id in existing_data:
+                existing_data[entry_id].update(enhanced_data)
+            else:
+                existing_data[entry_id] = enhanced_data
+        
+        # Write back to file
+        with open(json_file, 'w', encoding='utf-8') as f:
+            json.dump(existing_data, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"Updated JSON file with {len(enhanced_metadata)} enhanced entries")
+        
+    except Exception as e:
+        logger.error(f"Failed to update JSON file: {e}")
+
+
 def safe_log_message(logger, level: str, message: str) -> None:
     """
     Safely log a message that may contain Unicode characters.
@@ -225,8 +606,8 @@ def log_progress_summary(logger, progress_tracker: ProgressTracker, is_batch_com
         # Detailed batch completion log
         safe_log_message(logger, 'info', 
             f"Batch {stats['current_batch']}/{stats['total_batches']} completed: "
-            f"{stats['batch_successful']} successful, {stats['batch_failed']} failed, "
-            f"{stats['batch_skipped']} skipped in {progress_tracker.format_time(stats['avg_batch_time'])}"
+            f"{progress_tracker.batch_successful} successful, {progress_tracker.batch_failed} failed, "
+            f"{progress_tracker.batch_skipped} skipped in {progress_tracker.format_time(stats['avg_batch_time'])}"
         )
     
     # Overall progress summary
@@ -419,7 +800,9 @@ def process_metadata_entry(
     entry_id: str, 
     entry_data: Dict[str, Any], 
     image_dir: Path,
-    download_missing: bool = True
+    download_missing: bool = True,
+    token: Optional[str] = None,
+    enhance_metadata: bool = True
 ) -> Optional[Tuple[str, Path, str]]:
     """
     Process a single metadata entry and return image information.
@@ -429,6 +812,8 @@ def process_metadata_entry(
         entry_data: Dictionary containing the metadata
         image_dir: Directory containing local images
         download_missing: Whether to download missing images from URLs
+        token: Apple Music API token for metadata enhancement
+        enhance_metadata: Whether to enhance metadata using APIs
 
     Returns:
         Tuple of (image_id, image_path, image_url) or None if processing failed
@@ -436,6 +821,10 @@ def process_metadata_entry(
     logger = logging.getLogger(__name__)
     
     try:
+        # Enhance metadata if requested and token is available
+        if enhance_metadata and token:
+            entry_data = enhance_metadata_entry(entry_id, entry_data, token)
+        
         # Extract required fields
         final_filename = entry_data.get('final_filename')
         image_url = entry_data.get('image_url_modified')
@@ -452,18 +841,24 @@ def process_metadata_entry(
         image_path = find_image_file(final_filename, image_dir)
         
         if image_path is None and download_missing:
-            # Try to download the image
+            # Try to download the image using enhanced download methods
             logger.info(f"Image {final_filename} not found locally, attempting download from {image_url}")
             
-            # Create a temporary filename for download
-            temp_filename = f"downloaded_{entry_id}_{final_filename}"
-            temp_path = image_dir / temp_filename
+            # Use the final filename directly
+            temp_path = image_dir / final_filename
             
-            if download_image_from_url(image_url, temp_path):
+            # Try enhanced download with fallbacks
+            if download_image_with_fallbacks(image_url, str(temp_path)):
                 image_path = temp_path
+                logger.info(f"Successfully downloaded image to {temp_path}")
             else:
-                logger.error(f"Failed to download image for entry {entry_id}")
-                return None
+                # Fallback to original download method
+                logger.info("Enhanced download failed, trying original method...")
+                if download_image_from_url(image_url, temp_path):
+                    image_path = temp_path
+                else:
+                    logger.error(f"Failed to download image for entry {entry_id}")
+                    return None
         
         if image_path is None:
             logger.error(f"Image {final_filename} not found and download failed for entry {entry_id}")
@@ -778,6 +1173,18 @@ Examples:
         help="Skip downloading missing images from URLs",
     )
 
+    parser.add_argument(
+        "--enhance-metadata",
+        action="store_true",
+        help="Enhance metadata using Apple Music/iTunes APIs",
+    )
+
+    parser.add_argument(
+        "--update-json",
+        action="store_true",
+        help="Update the JSON file with enhanced metadata",
+    )
+
     args = parser.parse_args()
 
     # Set up logging
@@ -817,22 +1224,45 @@ Examples:
 
         logger.info(f"Total metadata entries found: {total_entries}")
 
+        # Get Apple Music token if metadata enhancement is requested
+        token = None
+        if args.enhance_metadata:
+            try:
+                logger.info("Fetching Apple Music token for metadata enhancement...")
+                token = get_apple_music_token()
+                logger.info("Apple Music token obtained successfully")
+            except Exception as e:
+                logger.warning(f"Failed to get Apple Music token: {e}")
+                logger.warning("Metadata enhancement will be skipped")
+                args.enhance_metadata = False
+
         # Process metadata entries to get image information
         logger.info("Processing metadata entries...")
         image_entries = []
         failed_entries = 0
+        enhanced_metadata = {}
 
         for entry_id, entry_data in metadata.items():
             result = process_metadata_entry(
                 entry_id, 
                 entry_data, 
                 image_dir, 
-                download_missing=not args.no_download
+                download_missing=not args.no_download,
+                token=token,
+                enhance_metadata=args.enhance_metadata
             )
             if result:
                 image_entries.append(result)
+                # Store enhanced metadata if enhancement was performed
+                if args.enhance_metadata and token:
+                    enhanced_metadata[entry_id] = entry_data
             else:
                 failed_entries += 1
+
+        # Update JSON file with enhanced metadata if requested
+        if args.update_json and enhanced_metadata:
+            logger.info("Updating JSON file with enhanced metadata...")
+            update_json_with_enhanced_metadata(json_file, enhanced_metadata)
 
         logger.info(f"Successfully processed {len(image_entries)} entries, {failed_entries} failed")
 
@@ -1076,6 +1506,11 @@ Examples:
         # Correctly determine the list of remaining images after the training set
         remaining_entries = image_entries[training_sample_size:]
         remaining_count = len(remaining_entries)
+
+        # Update progress tracker to reflect remaining work
+        progress_tracker.total_entries = remaining_count
+        progress_tracker.total_batches = (remaining_count + args.batch_size - 1) // args.batch_size
+        progress_tracker.processed_entries = 0  # Reset since we're starting fresh batches
 
         logger.info(f"Processing {remaining_count} remaining entries in batches...")
 
