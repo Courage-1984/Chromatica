@@ -16,9 +16,10 @@ Key Features:
 - Downloads images from URLs if local files are not found
 - Supports append mode for incremental indexing
 - Maintains compatibility with existing Chromatica infrastructure
-- Enhanced metadata fetching from Apple Music/iTunes APIs
+- Enhanced metadata fetching from Apple Music/iTunes APIs with comprehensive region fallback
 - Multiple download fallback methods (requests, aria2c, wget, curl)
 - Automatic JSON file updates with enhanced metadata
+- Intelligent region discovery using album_region_checker.py when standard regions fail
 
 Usage:
     python scripts/build_covers_index.py <json_metadata_file> <image_directory> [--output-dir <output_dir>] [--batch-size <batch_size>] [--append] [--enhance-metadata] [--update-json]
@@ -315,14 +316,118 @@ def fetch_album_itunes(album_id: str) -> Optional[Dict[str, Any]]:
         return None
 
 
+def check_album_regions_with_checker(album_id: str, token: str) -> List[str]:
+    """
+    Use the album_region_checker.py script to find which regions have the album available.
+    
+    Args:
+        album_id: The album ID to check
+        token: Apple Music API token
+        
+    Returns:
+        List of region codes where the album is available
+    """
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Get the path to the region checker script
+        script_dir = Path(__file__).parent
+        region_checker_path = script_dir / "album_region_checker.py"
+        
+        if not region_checker_path.exists():
+            logger.warning(f"Region checker script not found at {region_checker_path}")
+            return []
+        
+        logger.info(f"Running region checker for album {album_id}...")
+        
+        # Execute the region checker script
+        result = subprocess.run(
+            [sys.executable, str(region_checker_path), token, album_id],
+            capture_output=True,
+            text=True,
+            timeout=60  # 60 second timeout
+        )
+        
+        # Log the full output for debugging
+        logger.info("=== Region Checker Output ===")
+        logger.info(f"Return code: {result.returncode}")
+        logger.info(f"STDOUT:\n{result.stdout}")
+        if result.stderr:
+            logger.info(f"STDERR:\n{result.stderr}")
+        logger.info("=== End Region Checker Output ===")
+        
+        if result.returncode != 0:
+            logger.warning(f"Region checker failed with return code {result.returncode}")
+            return []
+        
+        # Parse the output to extract available regions
+        output_lines = result.stdout.strip().split('\n')
+        available_regions = []
+        
+        # Look for the JSON array in the output
+        # The JSON array appears after "Results Summary" and is formatted with indentation
+        in_results_section = False
+        json_lines = []
+        
+        for line in output_lines:
+            if "Results Summary" in line:
+                in_results_section = True
+                continue
+            elif in_results_section:
+                # Collect lines that look like JSON array content
+                if line.strip().startswith('[') or line.strip().startswith('"') or line.strip() == ']':
+                    json_lines.append(line.strip())
+                elif line.strip() == '':
+                    # Empty line might indicate end of JSON
+                    break
+        
+        # Try to parse the collected JSON lines
+        if json_lines:
+            json_text = ''.join(json_lines)
+            logger.debug(f"Attempting to parse JSON: {json_text}")
+            try:
+                available_regions = json.loads(json_text)
+                logger.info(f"Successfully parsed regions: {available_regions}")
+            except json.JSONDecodeError as e:
+                logger.warning(f"Failed to parse JSON from region checker output: {e}")
+                logger.debug(f"JSON text was: {json_text}")
+        
+        if available_regions:
+            logger.info(f"Found album in {len(available_regions)} regions: {available_regions}")
+        else:
+            logger.info("Album not found in any region or parsing failed")
+            
+        return available_regions
+        
+    except subprocess.TimeoutExpired:
+        logger.warning("Region checker timed out")
+        return []
+    except Exception as e:
+        logger.warning(f"Error running region checker: {e}")
+        return []
+
+
 def fetch_album_data_with_token(album_id: str, token: str) -> Optional[Dict[str, Any]]:
     """Fetch album data using a provided Apple Music token, fallback to iTunes if needed."""
     logger = logging.getLogger(__name__)
-    storefronts = ["us", "gb"]  # Primary storefronts
+    storefronts = ["us", "jp", "ca", "fr", "kr", "gb"]  # Storefronts in fallback order
     for storefront in storefronts:
         result = fetch_album_apple_music(album_id, token, storefront)
         if result:
             return result
+    
+    # If all standard storefronts fail, use the region checker to find available regions
+    logger.info("All standard storefronts failed, checking with region checker...")
+    available_regions = check_album_regions_with_checker(album_id, token)
+    
+    if available_regions:
+        # Try the first available region found by the checker
+        for region in available_regions:
+            logger.info(f"Trying region {region} found by region checker...")
+            result = fetch_album_apple_music(album_id, token, region)
+            if result:
+                return result
+    
     logger.debug("No results from Apple Music API, trying iTunes API...")
     return fetch_album_itunes(album_id)
 
