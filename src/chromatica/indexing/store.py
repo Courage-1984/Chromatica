@@ -267,6 +267,60 @@ class MetadataStore:
             threading.current_thread().duckdb_conn = conn
         return threading.current_thread().duckdb_conn
 
+    def get_raw_histograms(self, image_ids: List[str]) -> np.ndarray:
+        """
+        Retrieves the raw (L1-normalized) histograms for a list of image IDs.
+        This is required for the Sinkhorn-EMD reranking stage.
+        """
+        # Assuming TOTAL_BINS is imported and available (value should be 1152)
+        if not image_ids:
+            return np.empty((0, TOTAL_BINS), dtype=np.float32)
+    
+        # Initialize a NumPy array of zeros to hold the final histograms
+        histograms = np.zeros((len(image_ids), TOTAL_BINS), dtype=np.float32)
+        
+        # Create the correct number of SQL placeholders for the IN clause
+        placeholders = ", ".join(["?"] * len(image_ids))
+        
+        query = f"""
+            SELECT image_id, histogram 
+            FROM {self.table_name}
+            WHERE image_id IN ({placeholders})
+        """
+        
+        try:
+            conn = self._get_thread_connection()
+            # Pass the list of image_ids (as strings) directly to the execute method
+            result = conn.execute(query, image_ids).fetchall()
+
+            # Map results: (image_id, histogram_blob)
+            id_to_hist_blob = {str(row[0]): row[1] for row in result}
+            
+            for i, image_id in enumerate(image_ids):
+                hist_blob = id_to_hist_blob.get(image_id)
+                if hist_blob:
+                    # Assuming you have a _deserialize_histogram or equivalent method,
+                    # but based on the snippets, you are deserializing a binary blob:
+                    hist = np.frombuffer(hist_blob, dtype=np.float32)
+                    if hist.shape[0] == TOTAL_BINS:
+                        histograms[i] = hist
+                    else:
+                        logger.warning(
+                            f"Skipping histogram for {image_id}: shape mismatch ({hist.shape[0]})"
+                        )
+                else:
+                    logger.warning(f"No raw histogram found for image_id: {image_id}")
+                    
+            return histograms
+    
+        except Exception as e:
+            # This is where the error you saw in the logs (invalid literal for int) was likely being generated 
+            # by the calling function because the function was missing. Now that it's here, 
+            # the error handling is defensive.
+            logger.error(f"Error retrieving raw histograms for {len(image_ids)} images: {e}")
+            # Return an array of zeros of the correct size to prevent a crash in search.py
+            return np.zeros((len(image_ids), TOTAL_BINS), dtype=np.float32)
+
     def create_table_if_not_exists(self, conn: duckdb.DuckDBPyConnection) -> None:
         """Create the histograms table if it does not already exist."""
         conn.execute(
@@ -533,6 +587,38 @@ class MetadataStore:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit point."""
         self.close()
+
+    def faiss_id_to_image_id(self, faiss_id: Union[int, np.int64]) -> Optional[str]:
+        """
+        Converts a FAISS index ID (row number) back to the corresponding image_id (DuckDB key).
+        """
+        faiss_id = int(faiss_id)
+
+        # CORRECT LOOKUP: map via explicit faiss_id column, not ROWID
+        query = f"""
+            SELECT image_id
+            FROM {self.table_name}
+            WHERE faiss_id = ?
+            LIMIT 1
+        """
+
+        try:
+            conn = self._get_thread_connection()
+            result = conn.execute(query, [faiss_id]).fetchone()
+
+            if result is None:
+                logger.warning(
+                    f"No image_id found for faiss_id={faiss_id}. Check indexing pipeline/add_batch alignment."
+                )
+                return None
+
+            return str(result[0])
+
+        except Exception as e:
+            logger.error(
+                f"Error converting faiss_id {faiss_id} to image_id: {e}"
+            )
+            return None
 
     def get_image_count(self) -> int:
         """

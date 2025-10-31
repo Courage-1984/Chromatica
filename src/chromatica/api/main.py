@@ -36,6 +36,8 @@ import threading
 from functools import lru_cache
 import subprocess
 
+from dataclasses import asdict
+
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
 from fastapi.responses import JSONResponse, Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -61,6 +63,7 @@ from ..utils.config import (
 from ..visualization import create_query_visualization, create_results_collage
 from .visualization_3d import router as visualization_3d_router, set_search_components
 
+import json
 
 # Enhanced logging configuration
 def setup_logging():
@@ -214,7 +217,7 @@ async def perform_search_async(
         raise HTTPException(status_code=503, detail="Search engine is not initialized.")
 
     try:
-        # Ensure the query histogram is properly normalized
+        # Ensure the query histogram is properly normalizedf
         query_histogram = query_histogram.astype(np.float32)
         if query_histogram.sum() > 0:
             query_histogram /= query_histogram.sum()
@@ -227,9 +230,12 @@ async def perform_search_async(
         # Get search results
         results = await asyncio.wrap_future(search_task)
 
+        # Convert SearchResult dataclass objects to dictionaries for JSON serialization
+        response_data = [asdict(r) for r in results]
+
         # Return results directly - they already have the file_path key
         # No need to re-fetch from the store or reformat
-        return results
+        return response_data
 
     except Exception as e:
         logger.error(f"ANN search stage failed: {e}")
@@ -669,10 +675,13 @@ async def search_images(
                 fast_mode=fast_mode,
             )
 
-            # Log results (adding your print statement)
+            # Log results safely using attribute access
             for i, result in enumerate(results):
+                fp = getattr(result, 'file_path', None)
+                dist = getattr(result, 'distance', None)
+                url = getattr(result, 'image_url', None)
                 search_logger.info(
-                    f"Result {i+1}: Image: {result['file_path']}, Distance: {result['distance']}, URL: {result.get('image_url', 'None')}"
+                    f"Result {i+1}: Image: {fp}, Distance: {dist}, URL: {url}"
                 )
 
             search_time = time.time() - search_start
@@ -722,8 +731,8 @@ async def search_images(
                     # Extract dominant colors from image
                     dominant_colors = ["#000000"] * 5  # Default fallback colors
 
-                    # Access result as a dictionary, not an object
-                    file_path = result.get("file_path")
+                    # Access dataclass attributes from search layer
+                    file_path = getattr(result, "file_path", None)
 
                     if file_path and Path(file_path).exists():
                         try:
@@ -737,16 +746,16 @@ async def search_images(
                             )
                     else:
                         search_logger.warning(
-                            f"Could not access file for image {result.get('image_id')}, using fallback colors"
+                            f"Could not access file for image {getattr(result, 'image_id', 'unknown')}, using fallback colors"
                         )
 
                     formatted_results.append(
                         SearchResult(
-                            image_id=result.get("image_id", "unknown"),
-                            distance=result.get("distance", 1.0),
+                            image_id=getattr(result, "image_id", "unknown"),
+                            distance=float(getattr(result, "distance", 1.0)),
                             dominant_colors=dominant_colors,
                             file_path=file_path,
-                            image_url=result.get("image_url"),  # Include the image URL
+                            image_url=getattr(result, "image_url", None),  # Include the image URL
                         )
                     )
                 except Exception as e:

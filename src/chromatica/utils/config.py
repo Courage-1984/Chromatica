@@ -50,7 +50,7 @@ LAB_RANGES = [
 
 # Number of candidates to retrieve from the ANN index for reranking
 # This balances search speed with reranking accuracy
-RERANK_K = 200
+RERANK_K = 500
 
 # Max number of final search results to return from the API endpoint
 MAX_SEARCH_RESULTS = 50
@@ -65,7 +65,11 @@ MAX_COLOR_COUNT = 5
 # Sinkhorn regularization parameter for Earth Mover's Distance approximation
 # Higher values provide more stable EMD but may be less accurate
 # Increased from 0.1 to 1.0 for better numerical stability
-SINKHORN_EPSILON = 1.0
+SINKHORN_EPSILON = 0.05
+
+# Maximum iterations for Sinkhorn (speed/convergence tradeoff)
+# Reduced from a likely default of 100 to 50 for faster execution while maintaining convergence.
+SINKHORN_MAX_ITER = 50
 
 # Performance optimization parameters
 # Early termination threshold for very similar histograms (L2 distance)
@@ -76,6 +80,47 @@ RERANK_BATCH_SIZE = 10
 
 # Default reranking mode (False = Sinkhorn-EMD, True = approximate L2)
 USE_APPROXIMATE_RERANKING = False
+
+# --- Chroma weighting and query shaping (bias control) ---
+# C* cutoff below which bins are suppressed (set to 0) at search-time only
+CHROMA_CUTOFF = 15.0  # in Lab chroma units
+# Sigma controlling growth of chroma weight: w = 1 - exp(-(C*^2)/(2*sigma^2))
+CHROMA_SIGMA = 15.0
+# Query sharpening exponent (>1 concentrates mass around peaks); 1.0 disables
+QUERY_SHARPEN_EXPONENT = 2.2
+# Additional L1 alignment penalty in reranking to preserve multi-color balance
+RERANK_ALPHA_L1 = 0.45
+
+# Lightness suppression for very bright bins (reduces white bias) during rerank only
+LIGHTNESS_SUPPRESS_THRESHOLD = 82.0  # L* above this gets down-weighted
+LIGHTNESS_SIGMA = 6.0
+
+# Hue proximity weighting (in rerank): emphasize bins close to query mean (a*, b*)
+HUE_SIGMA = 15.0
+
+# Multi-peak hue emphasis configuration (for complex multi-color queries)
+# Number of top query bins to center Gaussians on
+HUE_MIXTURE_TOP_K = 3
+# Global gain applied to hue mixture mask (1.0 keeps absolute scale)
+HUE_MIXTURE_GAIN = 1.3
+
+PREFILTER_MIN_MASS = 0.03
+
+# Candidate prefiltering (enforce presence of query hues before reranking)
+# Minimum mass that must fall under the query hue-mixture window
+PREFILTER_HUE_MIN_MASS = 0.05  # 5% of histogram probability
+# If too strict, keep at least this many best-by-hue-mass
+PREFILTER_MIN_KEEP = 60
+
+# Verbose search logging
+VERBOSE_SEARCH_LOGS = True
+LOG_TOP_COLORS_N = 5
+
+# Per-color presence enforcement (for multi-color queries)
+# Minimum mass each of the top-K query peaks must have in a candidate
+PERCOLOR_MIN_MASS = 0.03
+PERCOLOR_TOP_K = 2  # usually number of query colors
+PERCOLOR_ENFORCE_STRICT = True
 
 # FAISS IndexIVFPQ parameters for memory-efficient indexing
 # These parameters control the Product Quantization (PQ) compression
@@ -99,7 +144,7 @@ IVFPQ_NBITS = 8  # 2^8 = 256 centroids per subquantizer
 # Number of clusters to probe during search
 # Higher values = better recall but slower search
 # Optimized for speed while maintaining good accuracy
-IVFPQ_NPROBE = 8  # Reduced from 10 for faster search
+IVFPQ_NPROBE = 10
 
 # Additional FAISS optimization parameters
 # Enable GPU acceleration if available (future enhancement)

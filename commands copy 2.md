@@ -236,3 +236,133 @@ python scripts/build_covers_index.py image_downloads_001_10k/done.json image_dow
 python scripts/build_covers_index.py image_downloads_001_10k/done.json image_downloads_001_10k/images --output-dir _covers_indexed_urls --batch-size 1000 --verbose --enhance-metadata --update-json
 
 
+python scripts/build_covers_index.py data/done.json data/images --output-dir _covers_indexed_urls --batch-size 1000 --verbose --enhance-metadata --update-json
+
+
+venv311\Scripts\activate
+
+$env:CHROMATICA_INDEX_DIR = (Resolve-Path .\_covers_indexed_urls).Path
+
+python -m src.chromatica.api.main
+
+
+https://itunes.apple.com/lookup?id=<ALBUM_ID_HERE>&entity=album
+
+https://amp-api.music.apple.com/v1/catalog/jp/albums/(id)
+
+https://amp-api.music.apple.com/v1/catalog/us/albums/(id)
+
+curl -X GET 'https://amp-api.music.apple.com/v1/catalog/<region>/albums/<id>' \
+  -H 'Authorization: Bearer <your_auth_token>' \
+  -H 'Origin: https://music.apple.com' \
+  -H 'Referer: https://music.apple.com'
+
+curl -X GET 'https://amp-api.music.apple.com/v1/catalog/us/albums/1667184596' -H 'Authorization: Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzU5OTcwNjMxLCJleHAiOjE3NjcyMjgyMzEsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.2olNgPLuL51wQBjlYwZWslVBxqV65I921NlgdXHazA9DL_-zksa42Lr4aiGC0TV3SAe4vs9FSRtdKe9gTCCiwQ' -H 'Origin: https://music.apple.com' -H 'Referer: https://music.apple.com'
+
+
+1651024421
+
+325333357
+
+eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzU5OTcwNjMxLCJleHAiOjE3NjcyMjgyMzEsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.2olNgPLuL51wQBjlYwZWslVBxqV65I921NlgdXHazA9DL_-zksa42Lr4aiGC0TV3SAe4vs9FSRtdKe9gTCCiwQ
+
+
+
+
+curl -X GET 'https://api.music.apple.com/v1/storefronts' \
+  -H 'Authorization: Bearer <your_developer_token>' \
+  -H 'Origin: https://music.apple.com'
+
+
+  curl -X GET 'https://api.music.apple.com/v1/storefronts' -H 'Authorization: Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzU5OTcwNjMxLCJleHAiOjE3NjcyMjgyMzEsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.2olNgPLuL51wQBjlYwZWslVBxqV65I921NlgdXHazA9DL_-zksa42Lr4aiGC0TV3SAe4vs9FSRtdKe9gTCCiwQ' -H 'Origin: https://music.apple.com'
+
+
+python album_region_checker.py <YOUR_DEV_TOKEN> <ID>
+
+python ./scripts/album_region_checker.py <YOUR_DEV_TOKEN> <ID>
+
+325333357
+
+
+curl -X GET 'https://amp-api.music.apple.com/v1/catalog/us/albums/1667184596' -H 'Authorization: Bearer eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IldlYlBsYXlLaWQifQ.eyJpc3MiOiJBTVBXZWJQbGF5IiwiaWF0IjoxNzU5OTcwNjMxLCJleHAiOjE3NjcyMjgyMzEsInJvb3RfaHR0cHNfb3JpZ2luIjpbImFwcGxlLmNvbSJdfQ.2olNgPLuL51wQBjlYwZWslVBxqV65I921NlgdXHazA9DL_-zksa42Lr4aiGC0TV3SAe4vs9FSRtdKe9gTCCiwQ' -H 'Origin: https://music.apple.com' -H 'Referer: https://music.apple.com'
+
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\85k"
+
+
+python scripts/build_covers_index.py _small_covers_db_1_10k/done.json _small_covers_db_1_10k/images --output-dir _small_covers_db --batch-size 1000 --verbose --enhance-metadata --update-json
+
+
+python scripts/build_covers_index.py _covers01_100k/done.json _covers01_100k/images --output-dir _covers01_100k_db --batch-size 1000 --verbose --enhance-metadata --update-json
+
+
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\_covers01_100k_db"
+python -m src.chromatica.api.main
+
+
+
+
+
+
+venv311\Scripts\activate
+
+$env:CHROMATICA_INDEX_DIR = "C:\path\to\index"  # folder with chromatica_index.faiss and chromatica_metadata.db
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\_covers01_100k_db"
+
+```
+- Single color:
+  ```bash
+  python tools/test_search_quality.py --colors "#ff00ff" --weights "1.0" --k 9
+  ```
+- Two colors:
+  ```bash
+  python tools/test_search_quality.py --colors "#ff00ff,#00ff00" --weights "0.65,0.35" --k 12
+  ```
+- Save JSON:
+  ```bash
+  python tools/test_search_quality.py --colors "#d6cbbe,#e1fde4" --weights "0.5,0.5" --k 12 --out reports\search_quality.json
+  python tools/test_search_quality.py --colors "#d6cbbe,#e1fde4" --weights "0.4,0.6" --k 12 --out reports\search_quality.json
+  ```
+
+What it does
+- Builds the query histogram via `src.chromatica.core.query.create_query_histogram`.
+- Runs `find_similar` twice: Normal (Sinkhorn-EMD) and Fast (L2).
+- For each result, loads the image file and computes top dominant colors using k-means in Lab space, then reports them as hex with percentages.
+- Prints concise side-by-side summaries and optionally saves a JSON report.
+
+File added
+- `tools/test_search_quality.py` with OpenCV + scikit-image based color extraction and clean console output.
+
+If you want, I can extend it to compare result overlap between modes, output CSV, or visualize color bars per result.
+
+
+Bias control notes (config in `src/chromatica/utils/config.py`)
+- CHROMA_CUTOFF: suppress near-neutral bins during search (default 10)
+- CHROMA_SIGMA: strength of chroma weighting (higher = stronger growth)
+- QUERY_SHARPEN_EXPONENT: concentrates query mass around peaks (>1)
+- RERANK_ALPHA_L1: extra L1 penalty in rerank to preserve query balance
+
+
+python tools/test_search_quality.py --colors "#d6cbbe,#e1fde4" --weights "0.4,0.6" --k 12 --top-colors 7 --out reports\search_quality_v3.json
+
+python tools/test_search_quality.py --colors "#d6cbbe,#e1fde4" --weights "0.4,0.6" --k 12 --top-colors 7 --out reports\search_quality_v4.json
+
+python tools/test_search_quality.py --colors "#03e9fc,#ff00ff" --weights "0.4,0.6" --k 12 --top-colors 7 --out reports\search_quality_v5.json
+
+
+
+python scripts/build_covers_index.py _covers02_100k/done.json _covers02_100k/images --output-dir _covers01_100k_db --batch-size 1000 --verbose --enhance-metadata --update-json --append
+
+
+
+
+
+venv311\Scripts\activate
+
+python scripts/build_covers_index.py _covers02_100k/done.json _covers02_100k/images --output-dir _covers01_100k_db --batch-size 1000 --verbose --enhance-metadata --update-json --append
+
+$env:CHROMATICA_INDEX_DIR = "$PWD\_covers01_100k_db"
+
+python -m src.chromatica.api.main

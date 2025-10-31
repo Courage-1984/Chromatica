@@ -25,6 +25,7 @@ from skimage import color
 # Assuming these imports are from ..utils.config
 try:
     from ..utils.config import L_BINS, A_BINS, B_BINS, TOTAL_BINS, LAB_RANGES
+    from ..utils.config import QUERY_SHARPEN_EXPONENT
 except ImportError:
     # Placeholder values for standalone testing if needed
     L_BINS = 8
@@ -32,6 +33,7 @@ except ImportError:
     B_BINS = 12
     TOTAL_BINS = L_BINS * A_BINS * B_BINS  # 1152
     LAB_RANGES = [[0, 100], [-86, 98], [-108, 95]]
+    QUERY_SHARPEN_EXPONENT = 1.0
 
 
 # Set up logging for this module
@@ -144,7 +146,7 @@ def hex_to_lab(hex_color: str) -> Tuple[float, float, float]:
         raise RuntimeError(f"Failed to convert hex color {hex_color} to Lab: {str(e)}")
 
 
-def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarray:
+def create_query_histogram(colors: List[str], weights: List[float], sharpen_exponent: Optional[float] = None) -> np.ndarray:
     """
     Creates a "softened" query histogram from hex colors and weights.
 
@@ -260,6 +262,14 @@ def create_query_histogram(colors: List[str], weights: List[float]) -> np.ndarra
         # and re-normalize, but given the current structure of soft-assignment, the
         # weights should sum close to 1.0. A final division for stability is best:
         query_hist = query_hist / hist_sum if hist_sum != 0 else query_hist
+
+        # Optional sharpening to concentrate mass around peaks
+        exp_val = sharpen_exponent if sharpen_exponent is not None else QUERY_SHARPEN_EXPONENT
+        if exp_val and exp_val > 1.0:
+            query_hist = np.power(np.maximum(query_hist, 0.0), exp_val)
+            hist_sum = query_hist.sum()
+            if hist_sum > 0:
+                query_hist = query_hist / hist_sum
 
         # Validate the result
         if not np.allclose(query_hist.sum(), 1.0, atol=1e-6):
