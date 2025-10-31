@@ -38,7 +38,7 @@ import subprocess
 
 from dataclasses import asdict
 
-from fastapi import FastAPI, HTTPException, Query, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, UploadFile, File, Form
 from fastapi.responses import JSONResponse, Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -1496,6 +1496,167 @@ def extract_dominant_colors(image_path: str, num_colors: int = 5) -> List[str]:
     except Exception as e:
         logger.error(f"Failed to extract dominant colors from {image_path}: {e}")
         return ["#000000"] * num_colors
+
+
+def extract_dominant_colors_with_weights(image_bytes: bytes, num_colors: int = 5) -> Tuple[List[str], List[float]]:
+    """
+    Extract dominant colors from an image using K-means clustering and return colors with weights.
+
+    Args:
+        image_bytes: Image file as bytes
+        num_colors: Number of dominant colors to extract (default: 5)
+
+    Returns:
+        Tuple of (list of hex color codes, list of weights/proportions)
+    """
+    try:
+        # Convert bytes to numpy array
+        nparr = np.frombuffer(image_bytes, np.uint8)
+        
+        # Decode image
+        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        if image is None:
+            # Try alternative decoding with PIL as fallback
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(image_bytes))
+                image = np.array(img)
+                if len(image.shape) == 3:
+                    # Convert PIL RGB to OpenCV BGR if needed
+                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            except ImportError:
+                logger.warning("PIL/Pillow not available, using OpenCV only")
+        
+        if image is None:
+            colors = ["#000000"] * num_colors
+            weights = [1.0 / num_colors] * num_colors
+            return colors, weights
+
+        # Convert to RGB (OpenCV uses BGR)
+        if len(image.shape) == 3 and image.shape[2] == 3:
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        
+        # Handle grayscale
+        if len(image.shape) == 2:
+            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
+
+        # Reshape the image to be a list of pixels
+        pixels = image.reshape(-1, 3).astype(np.float32)
+
+        # Take a sample if the image is large
+        if len(pixels) > 10000:
+            indices = np.random.choice(len(pixels), 10000, replace=False)
+            pixels = pixels[indices]
+
+        # Apply K-means clustering
+        kmeans = KMeans(n_clusters=num_colors, n_init=10, random_state=42)
+        kmeans.fit(pixels)
+
+        # Get the colors
+        colors = kmeans.cluster_centers_.astype(int)
+
+        # Count labels to get proportions (weights)
+        labels = kmeans.labels_
+        unique, counts = np.unique(labels, return_counts=True)
+        label_counts = dict(zip(unique, counts))
+        
+        # Calculate weights (proportions)
+        total_pixels = len(labels)
+        weights = []
+        for i in range(num_colors):
+            count = label_counts.get(i, 0)
+            weight = count / total_pixels if total_pixels > 0 else 1.0 / num_colors
+            weights.append(weight)
+
+        # Convert to hex codes
+        hex_colors = []
+        for color in colors:
+            r, g, b = color
+            # Clamp to valid range
+            r = max(0, min(255, r))
+            g = max(0, min(255, g))
+            b = max(0, min(255, b))
+            hex_color = f"#{r:02x}{g:02x}{b:02x}"
+            hex_colors.append(hex_color)
+
+        # Normalize weights to sum to 1.0
+        total_weight = sum(weights)
+        if total_weight > 0:
+            weights = [w / total_weight for w in weights]
+        else:
+            weights = [1.0 / num_colors] * num_colors
+
+        return hex_colors, weights
+
+    except Exception as e:
+        logger.error(f"Failed to extract dominant colors from image: {e}")
+        colors = ["#000000"] * num_colors
+        weights = [1.0 / num_colors] * num_colors
+        return colors, weights
+
+
+@app.post("/api/extract-colors")
+async def extract_colors_from_image(
+    image: UploadFile = File(...),
+    num_colors: int = Form(5)
+):
+    """
+    Extract dominant colors from an uploaded image.
+    
+    Args:
+        image: Uploaded image file
+        num_colors: Number of colors to extract (1-10)
+    
+    Returns:
+        JSON response with extracted colors and weights
+    """
+    try:
+        # Validate num_colors
+        if num_colors < 1 or num_colors > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Number of colors must be between 1 and 10"
+            )
+        
+        # Validate file type
+        if not image.content_type or not image.content_type.startswith('image/'):
+            raise HTTPException(
+                status_code=400,
+                detail="File must be an image (JPG, PNG, GIF, WebP)"
+            )
+        
+        # Read image bytes
+        image_bytes = await image.read()
+        
+        if len(image_bytes) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="Image file is empty"
+            )
+        
+        logger.info(f"Extracting {num_colors} colors from uploaded image: {image.filename}")
+        
+        # Extract colors and weights
+        colors, weights = extract_dominant_colors_with_weights(image_bytes, num_colors)
+        
+        logger.info(f"Extracted {len(colors)} colors: {colors}")
+        logger.info(f"Color weights: {weights}")
+        
+        return {
+            "colors": colors,
+            "weights": weights,
+            "num_colors": len(colors)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error extracting colors from image: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to extract colors from image: {str(e)}"
+        )
 
 
 if __name__ == "__main__":

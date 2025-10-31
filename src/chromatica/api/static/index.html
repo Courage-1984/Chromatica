@@ -38,6 +38,17 @@
             <div id="colorInputs">
                 <div class="color-row">
                     <input type="color" class="color-picker" value="#FF0000">
+                    <select class="color-format-select" style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px;">
+                        <option value="HEX">HEX</option>
+                        <option value="RGB">RGB</option>
+                        <option value="HSL">HSL</option>
+                        <option value="HSV">HSV</option>
+                        <option value="CMYK">CMYK</option>
+                    </select>
+                    <input type="text" class="color-format-input" placeholder="#FF0000" value="#FF0000"
+                        style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px; width: 120px;">
+                    <button class="randomize-color-btn" onclick="randomizeColorRow(this)" title="Randomize this color"
+                        style="background: var(--lavender); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px;">🔀</button>
                     <input type="range" class="weight-slider" min="0" max="100" value="100" step="1">
                     <span class="weight-value">100%</span>
                     <button onclick="removeColor(this)"
@@ -46,12 +57,22 @@
             </div>
             <!-- Color Suggestions -->
             <div id="colorSuggestions"></div>
-            <div style="display: flex; gap: 10px; margin: 15px 0;">
-                <button class="add-color-btn" onclick="addColor()">+ Add Another Color</button>
+            <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
+                <button class="add-color-btn" onclick="addColor()">➕ Add Another Color</button>
                 <button class="suggest-palette-btn" onclick="showSuggestPaletteModal()"
                     style="background: var(--mauve); color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 16px;">🎨</span>
                     <span>Suggest Palette</span>
+                </button>
+                <button onclick="rollDice()"
+                    style="background: var(--yellow); color: var(--base); padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    <span style="font-size: 16px;">🎲</span>
+                    <span>Roll Dice</span>
+                </button>
+                <button onclick="showImageUploadModal()"
+                    style="background: var(--teal); color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🖼️</span>
+                    <span>Input Image</span>
                 </button>
             </div>
 
@@ -2130,6 +2151,51 @@
                                 style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
                                 Apply Palette
                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Image Upload Modal -->
+                <div id="imageUploadModal" class="modal"
+                    style="display: none; position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; overflow: auto; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
+                    <div class="modal-content" style="width: 90%; max-width: 600px; background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1);">
+                        <span class="close" onclick="closeImageUploadModal()"
+                            style="color: var(--text); float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 20px;">&times;</span>
+                        <h2 style="color: var(--text); margin-top: 0;">🖼️ Upload Image to Extract Colors</h2>
+                        <p style="color: var(--subtext1); margin-bottom: 20px;">Drag and drop an image here, or click to select a file.</p>
+                        
+                        <div id="imageUploadArea"
+                            style="border: 3px dashed var(--surface2); border-radius: 12px; padding: 40px; text-align: center; background: var(--surface0); cursor: pointer; transition: all 0.3s; margin-bottom: 20px;"
+                            ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('imageFileInput').click()">
+                            <div style="font-size: 48px; margin-bottom: 15px;">📎</div>
+                            <div style="color: var(--text); font-size: 16px; font-weight: bold; margin-bottom: 10px;">Drop image here or click to upload</div>
+                            <div style="color: var(--subtext1); font-size: 14px;">Supports: JPG, PNG, GIF, WebP</div>
+                            <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                        </div>
+
+                        <div id="imagePreview" style="display: none; margin-bottom: 20px;">
+                            <img id="uploadedImagePreview" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 2px solid var(--surface2);">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; color: var(--text); margin-bottom: 10px; font-weight: bold;">Number of colors to extract:</label>
+                            <input type="number" id="numColorsToExtract" min="1" max="10" value="5"
+                                style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 14px;">
+                            <small style="color: var(--subtext1); font-size: 12px;">Choose how many dominant colors to extract (1-10)</small>
+                        </div>
+
+                        <div id="extractionStatus" style="display: none; margin-bottom: 20px;">
+                            <div style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: center;">
+                                <div style="color: var(--yellow); font-size: 18px; margin-bottom: 10px;">⏳</div>
+                                <div style="color: var(--text);">Extracting colors...</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="closeImageUploadModal()"
+                                style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
+                            <button onclick="extractColorsFromImage()"
+                                style="background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract Colors</button>
                         </div>
                     </div>
                 </div>

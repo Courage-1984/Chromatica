@@ -1177,6 +1177,16 @@ window.performSearch = async function () {
     searchBtn.disabled = true;
     searchBtn.textContent = '⏳ Searching...';
     loading.style.display = 'block';
+    
+    // Scroll to center the loading indicator
+    if (loading) {
+        setTimeout(() => {
+            const loadingRect = loading.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const scrollPosition = window.scrollY + loadingRect.top - (windowHeight / 2) + (loadingRect.height / 2);
+            window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
+        }, 100);
+    }
 
     try {
         // Get color inputs
@@ -1267,6 +1277,19 @@ window.performSearch = async function () {
         window.showSuccess('Search Complete', `Found ${data.results.length} matching images`);
         window.updateSearchResults(data);
         window.updateVisualization(data);
+        
+        // Scroll to Query Visualization h2 (almost at top)
+        setTimeout(() => {
+            const visualizationSection = document.getElementById('visualizationSection');
+            if (visualizationSection) {
+                const queryVizH2 = visualizationSection.querySelector('h2');
+                if (queryVizH2 && queryVizH2.textContent.includes('Query Visualization')) {
+                    const h2Rect = queryVizH2.getBoundingClientRect();
+                    const scrollPosition = window.scrollY + h2Rect.top - 100; // 100px from top
+                    window.scrollTo({ top: Math.max(0, scrollPosition), behavior: 'smooth' });
+                }
+            }
+        }, 100);
 
     } catch (err) {
         console.error('Search failed:', err);
@@ -2289,6 +2312,16 @@ window.generateColorSchemesFromResults = function () {
 
     // Show success message
     window.showSuccess('Color Schemes Generated', `Created ${schemes.length} color schemes from search results.`);
+    
+    // Scroll to center the colorSchemesSection
+    setTimeout(() => {
+        if (schemesSection) {
+            const sectionRect = schemesSection.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const scrollPosition = window.scrollY + sectionRect.top - (windowHeight / 2) + (sectionRect.height / 2);
+            window.scrollTo({ top: scrollPosition, behavior: 'smooth' });
+        }
+    }, 100);
 };
 
 // Generate different types of color schemes
@@ -2510,6 +2543,62 @@ function addColorRow(color, weight = 100) {
     // We'll handle the event listener in a unified way below
     // Not adding event listener here to avoid duplicates
 
+    // Color format dropdown
+    const formatSelect = document.createElement('select');
+    formatSelect.className = 'color-format-select';
+    formatSelect.style.cssText = 'padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px;';
+    ['HEX', 'RGB', 'HSL', 'HSV', 'CMYK'].forEach(format => {
+        const option = document.createElement('option');
+        option.value = format;
+        option.textContent = format;
+        formatSelect.appendChild(option);
+    });
+    formatSelect.value = 'HEX';
+
+    // Color format input
+    const formatInput = document.createElement('input');
+    formatInput.type = 'text';
+    formatInput.className = 'color-format-input';
+    formatInput.placeholder = '#FF0000';
+    formatInput.value = color;
+    formatInput.style.cssText = 'padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px; width: 120px;';
+
+    // Randomize button
+    const randomizeBtn = document.createElement('button');
+    randomizeBtn.className = 'randomize-color-btn';
+    randomizeBtn.textContent = '🔀';
+    randomizeBtn.title = 'Randomize this color';
+    randomizeBtn.style.cssText = 'background: var(--lavender); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px;';
+    randomizeBtn.onclick = () => window.randomizeColorRow(randomizeBtn);
+
+    // Update format input when color picker changes
+    const updateFormatInput = () => {
+        const currentFormat = formatSelect.value;
+        const hexColor = colorPicker.value;
+        formatInput.value = convertColorToFormat(hexColor, currentFormat);
+    };
+
+    // Update color picker when format input changes
+    formatInput.addEventListener('input', () => {
+        try {
+            const format = formatSelect.value;
+            const hex = convertFormatToHex(formatInput.value, format);
+            if (hex) {
+                colorPicker.value = hex;
+                window.handleColorPickerChange({ target: colorPicker });
+            }
+        } catch (e) {
+            console.warn('Invalid color format:', e);
+        }
+    });
+
+    // Update format input when format dropdown changes
+    formatSelect.addEventListener('change', updateFormatInput);
+
+    // Update format input when color picker changes
+    colorPicker.addEventListener('input', updateFormatInput);
+    colorPicker.addEventListener('change', updateFormatInput);
+
     const weightSlider = document.createElement('input');
     weightSlider.type = 'range';
     weightSlider.className = 'weight-slider';
@@ -2594,6 +2683,9 @@ function addColorRow(color, weight = 100) {
     infoContainer.appendChild(complementaryContainer);
 
     colorRow.appendChild(colorPicker);
+    colorRow.appendChild(formatSelect);
+    colorRow.appendChild(formatInput);
+    colorRow.appendChild(randomizeBtn);
     colorRow.appendChild(weightSlider);
     colorRow.appendChild(weightValue);
     colorRow.appendChild(removeButton);
@@ -2830,6 +2922,8 @@ if (document.readyState === 'loading') {
 // After loadVisualizationModule completes, the function on window is the module's version.
 window.generateColorSpaceNavigator = async function() {
     await loadVisualizationModule('colorSpaceNavigator');
+    // Scroll to Interactive 3D Visualizations h2 (almost at top)
+    scrollTo3DVisualizationsHeader();
     // Module has loaded and overwritten this function, so call it
     // Store reference before calling to avoid recursion
     const func = window.generateColorSpaceNavigator;
@@ -2840,6 +2934,7 @@ window.generateColorSpaceNavigator = async function() {
 
 window.generateHistogramCloud = async function() {
     await loadVisualizationModule('histogramCloud');
+    scrollTo3DVisualizationsHeader();
     const func = window.generateHistogramCloud;
     if (func && func !== arguments.callee) {
         return func.apply(this, arguments);
@@ -2848,6 +2943,7 @@ window.generateHistogramCloud = async function() {
 
 window.generateSimilarityLandscape = async function() {
     await loadVisualizationModule('similarityLandscape');
+    scrollTo3DVisualizationsHeader();
     const func = window.generateSimilarityLandscape;
     if (func && func !== arguments.callee) {
         return func.apply(this, arguments);
@@ -2856,6 +2952,7 @@ window.generateSimilarityLandscape = async function() {
 
 window.generateRerankingAnimation = async function() {
     await loadVisualizationModule('rerankingAnimation');
+    scrollTo3DVisualizationsHeader();
     const func = window.generateRerankingAnimation;
     if (func && func !== arguments.callee) {
         return func.apply(this, arguments);
@@ -2864,6 +2961,7 @@ window.generateRerankingAnimation = async function() {
 
 window.generateImageGlobe = async function() {
     await loadVisualizationModule('imageGlobe');
+    scrollTo3DVisualizationsHeader();
     const func = window.generateImageGlobe;
     if (func && func !== arguments.callee) {
         return func.apply(this, arguments);
@@ -2872,6 +2970,7 @@ window.generateImageGlobe = async function() {
 
 window.generateConnectionsGraph = async function() {
     await loadVisualizationModule('connectionsGraph');
+    scrollTo3DVisualizationsHeader();
     const func = window.generateConnectionsGraph;
     if (func && func !== arguments.callee) {
         return func.apply(this, arguments);
@@ -2928,21 +3027,37 @@ window.exportGraphData = async function() {
 };
 
 // New visualizations wrappers
-window.generateOTTransport3D = async function(){ await loadVisualizationModule('otTransport3D'); const func = window.generateOTTransport3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateOTTransport3D = async function(){ await loadVisualizationModule('otTransport3D'); scrollTo3DVisualizationsHeader(); const func = window.generateOTTransport3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 window.exportOTTransportData = async function(){ await loadVisualizationModule('otTransport3D'); const func = window.exportOTTransportData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
-window.generateHNSWExplorer = async function(){ await loadVisualizationModule('hnswGraphExplorer'); const func = window.generateHNSWExplorer; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateHNSWExplorer = async function(){ await loadVisualizationModule('hnswGraphExplorer'); scrollTo3DVisualizationsHeader(); const func = window.generateHNSWExplorer; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 window.exportHNSWData = async function(){ await loadVisualizationModule('hnswGraphExplorer'); const func = window.exportHNSWData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
-window.generateColorDensityVolume = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.generateColorDensityVolume; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateColorDensityVolume = async function(){ await loadVisualizationModule('colorDensityVolume'); scrollTo3DVisualizationsHeader(); const func = window.generateColorDensityVolume; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 window.exportColorDensityData = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.exportColorDensityData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
-window.generateImageThumbnails3D = async function(){ await loadVisualizationModule('imageThumbnails3D'); const func = window.generateImageThumbnails3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateImageThumbnails3D = async function(){ await loadVisualizationModule('imageThumbnails3D'); scrollTo3DVisualizationsHeader(); const func = window.generateImageThumbnails3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 window.exportThumbnailsData = async function(){ await loadVisualizationModule('imageThumbnails3D'); const func = window.exportThumbnailsData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
 // ============================================================================
 // 3D VISUALIZATION SHARED UTILITIES
 // ============================================================================
+
+/**
+ * Scroll to center the 3D visualization container vertically in the browser window
+ */
+function scrollTo3DVisualizationsHeader() {
+    const container = document.getElementById('visualization3d-container');
+    if (container) {
+        setTimeout(() => {
+            const containerRect = container.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            // Calculate scroll position to center the container vertically
+            const scrollPosition = window.scrollY + containerRect.top - (windowHeight / 2) + (containerRect.height / 2);
+            window.scrollTo({ top: Math.max(0, scrollPosition), behavior: 'smooth' });
+        }, 100);
+    }
+}
 
 // Global state for current visualization
 window.current3DVisualization = {
@@ -3892,6 +4007,49 @@ document.addEventListener('DOMContentLoaded', function () {
             setTimeout(() => mode.style.transform = 'scale(1)', 100);
         });
     });
+    
+    // Set up event handlers for initial color row(s)
+    const initialColorRows = document.querySelectorAll('.color-row');
+    initialColorRows.forEach(colorRow => {
+        const colorPicker = colorRow.querySelector('.color-picker');
+        const formatSelect = colorRow.querySelector('.color-format-select');
+        const formatInput = colorRow.querySelector('.color-format-input');
+        
+        if (colorPicker && formatSelect && formatInput) {
+            // Update format input when color picker changes
+            const updateFormatInput = () => {
+                const currentFormat = formatSelect.value;
+                const hexColor = colorPicker.value;
+                formatInput.value = convertColorToFormat(hexColor, currentFormat);
+            };
+            
+            // Update color picker when format input changes
+            formatInput.addEventListener('input', () => {
+                try {
+                    const format = formatSelect.value;
+                    const hex = convertFormatToHex(formatInput.value, format);
+                    if (hex) {
+                        colorPicker.value = hex;
+                        if (window.handleColorPickerChange) {
+                            window.handleColorPickerChange({ target: colorPicker });
+                        }
+                    }
+                } catch (e) {
+                    console.warn('Invalid color format:', e);
+                }
+            });
+            
+            // Update format input when format select changes
+            formatSelect.addEventListener('change', updateFormatInput);
+            
+            // Update format input when color picker changes
+            colorPicker.addEventListener('input', updateFormatInput);
+            colorPicker.addEventListener('change', updateFormatInput);
+            
+            // Initial update
+            updateFormatInput();
+        }
+    });
 });
 
 
@@ -4556,6 +4714,529 @@ window.exportLogs = async function() {
     } catch (error) {
         console.error('[Export Logs] ✗ Export failed:', error);
         alert(`Failed to export logs: ${error.message}`);
+    }
+};
+
+// ============================================================================
+// COLOR FORMAT CONVERSION FUNCTIONS
+// ============================================================================
+
+/**
+ * Convert hex color to HSV format
+ */
+function hexToHsv(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return null;
+    
+    let { r, g, b } = rgb;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const delta = max - min;
+    
+    let h = 0;
+    if (delta !== 0) {
+        if (max === r) {
+            h = ((g - b) / delta) % 6;
+        } else if (max === g) {
+            h = (b - r) / delta + 2;
+        } else {
+            h = (r - g) / delta + 4;
+        }
+    }
+    h = Math.round(h * 60);
+    if (h < 0) h += 360;
+    
+    const s = max === 0 ? 0 : Math.round((delta / max) * 100);
+    const v = Math.round(max * 100);
+    
+    return { h, s, v };
+}
+
+/**
+ * Convert HSV to hex color
+ */
+function hsvToHex(h, s, v) {
+    h = h % 360;
+    if (h < 0) h += 360;
+    s = s / 100;
+    v = v / 100;
+    
+    const c = v * s;
+    const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    const m = v - c;
+    
+    let r = 0, g = 0, b = 0;
+    
+    if (h >= 0 && h < 60) {
+        r = c; g = x; b = 0;
+    } else if (h >= 60 && h < 120) {
+        r = x; g = c; b = 0;
+    } else if (h >= 120 && h < 180) {
+        r = 0; g = c; b = x;
+    } else if (h >= 180 && h < 240) {
+        r = 0; g = x; b = c;
+    } else if (h >= 240 && h < 300) {
+        r = x; g = 0; b = c;
+    } else if (h >= 300 && h < 360) {
+        r = c; g = 0; b = x;
+    }
+    
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+    
+    return rgbToHex(r, g, b);
+}
+
+/**
+ * Convert hex color to CMYK format
+ */
+function hexToCmyk(hex) {
+    const rgb = hexToRgb(hex);
+    if (!rgb) return null;
+    
+    let { r, g, b } = rgb;
+    r /= 255;
+    g /= 255;
+    b /= 255;
+    
+    const k = 1 - Math.max(r, g, b);
+    const c = k === 1 ? 0 : (1 - r - k) / (1 - k);
+    const m = k === 1 ? 0 : (1 - g - k) / (1 - k);
+    const y = k === 1 ? 0 : (1 - b - k) / (1 - k);
+    
+    return {
+        c: Math.round(c * 100),
+        m: Math.round(m * 100),
+        y: Math.round(y * 100),
+        k: Math.round(k * 100)
+    };
+}
+
+/**
+ * Convert CMYK to hex color
+ */
+function cmykToHex(c, m, y, k) {
+    c = c / 100;
+    m = m / 100;
+    y = y / 100;
+    k = k / 100;
+    
+    const r = Math.round(255 * (1 - c) * (1 - k));
+    const g = Math.round(255 * (1 - m) * (1 - k));
+    const b = Math.round(255 * (1 - y) * (1 - k));
+    
+    return rgbToHex(r, g, b);
+}
+
+/**
+ * Convert color to specified format string
+ */
+function convertColorToFormat(hex, format) {
+    if (!hex) return '';
+    
+    switch (format) {
+        case 'HEX':
+            return hex;
+        case 'RGB':
+            const rgb = hexToRgb(hex);
+            return rgb ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` : '';
+        case 'HSL':
+            const hsl = hexToHsl(hex);
+            return hsl ? `hsl(${Math.round(hsl.h)}°, ${Math.round(hsl.s)}%, ${Math.round(hsl.l)}%)` : '';
+        case 'HSV':
+            const hsv = hexToHsv(hex);
+            return hsv ? `hsv(${hsv.h}°, ${hsv.s}%, ${hsv.v}%)` : '';
+        case 'CMYK':
+            const cmyk = hexToCmyk(hex);
+            return cmyk ? `cmyk(${cmyk.c}%, ${cmyk.m}%, ${cmyk.y}%, ${cmyk.k}%)` : '';
+        default:
+            return hex;
+    }
+}
+
+/**
+ * Convert color format string to hex
+ */
+function convertFormatToHex(colorString, format) {
+    if (!colorString || !format) return null;
+    
+    colorString = colorString.trim();
+    
+    try {
+        switch (format) {
+            case 'HEX':
+                // Handle with or without #
+                if (colorString.startsWith('#')) {
+                    return colorString.length === 7 ? colorString : null;
+                } else {
+                    return colorString.length === 6 ? '#' + colorString : null;
+                }
+            
+            case 'RGB':
+                // Parse rgb(r, g, b) or r, g, b
+                const rgbMatch = colorString.match(/\d+/g);
+                if (rgbMatch && rgbMatch.length === 3) {
+                    const [r, g, b] = rgbMatch.map(Number);
+                    if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                        return rgbToHex(r, g, b);
+                    }
+                }
+                return null;
+            
+            case 'HSL':
+                // Parse hsl(h, s%, l%) or h, s, l
+                const hslMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
+                if (hslMatch && hslMatch.length >= 3) {
+                    const h = parseFloat(hslMatch[0]);
+                    const s = parseFloat(hslMatch[1]);
+                    const l = parseFloat(hslMatch[2]);
+                    if (h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100) {
+                        return hslToHex(h, s, l);
+                    }
+                }
+                return null;
+            
+            case 'HSV':
+                // Parse hsv(h, s%, v%) or h, s, v
+                const hsvMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
+                if (hsvMatch && hsvMatch.length >= 3) {
+                    const h = parseFloat(hsvMatch[0]);
+                    const s = parseFloat(hsvMatch[1]);
+                    const v = parseFloat(hsvMatch[2]);
+                    if (h >= 0 && h <= 360 && s >= 0 && s <= 100 && v >= 0 && v <= 100) {
+                        return hsvToHex(h, s, v);
+                    }
+                }
+                return null;
+            
+            case 'CMYK':
+                // Parse cmyk(c%, m%, y%, k%) or c, m, y, k
+                const cmykMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
+                if (cmykMatch && cmykMatch.length >= 4) {
+                    const c = parseFloat(cmykMatch[0]);
+                    const m = parseFloat(cmykMatch[1]);
+                    const y = parseFloat(cmykMatch[2]);
+                    const k = parseFloat(cmykMatch[3]);
+                    if (c >= 0 && c <= 100 && m >= 0 && m <= 100 && y >= 0 && y <= 100 && k >= 0 && k <= 100) {
+                        return cmykToHex(c, m, y, k);
+                    }
+                }
+                return null;
+            
+            default:
+                return null;
+        }
+    } catch (e) {
+        console.warn('Error converting color format:', e);
+        return null;
+    }
+}
+
+// ============================================================================
+// RANDOMIZE COLOR ROW FUNCTION
+// ============================================================================
+
+/**
+ * Randomize the color in a specific row
+ */
+window.randomizeColorRow = function(buttonElement) {
+    const colorRow = buttonElement.closest('.color-row');
+    if (!colorRow) return;
+    
+    const colorPicker = colorRow.querySelector('.color-picker');
+    if (!colorPicker) return;
+    
+    // Generate random hex color
+    const randomHex = '#' + randomHexColor();
+    colorPicker.value = randomHex;
+    
+    // Update format input
+    const formatSelect = colorRow.querySelector('.color-format-select');
+    const formatInput = colorRow.querySelector('.color-format-input');
+    if (formatSelect && formatInput) {
+        formatInput.value = convertColorToFormat(randomHex, formatSelect.value);
+    }
+    
+    // Trigger color picker change handler
+    if (window.handleColorPickerChange) {
+        window.handleColorPickerChange({ target: colorPicker });
+    }
+    
+    console.log('[Randomize] Changed color row to:', randomHex);
+};
+
+// ============================================================================
+// ROLL DICE FUNCTION
+// ============================================================================
+
+/**
+ * Roll Dice: Generate random number of colors with random weights
+ */
+window.rollDice = function() {
+    console.log('[Roll Dice] Generating random color query...');
+    
+    // Generate random number of colors (2-5, not too many)
+    const numColors = Math.floor(Math.random() * 4) + 2; // 2-5 colors
+    
+    // Generate random colors
+    const colors = [];
+    for (let i = 0; i < numColors; i++) {
+        colors.push('#' + randomHexColor());
+    }
+    
+    // Generate random weights (percentages)
+    const weights = [];
+    for (let i = 0; i < numColors; i++) {
+        weights.push(Math.floor(Math.random() * 80) + 10); // 10-90%
+    }
+    
+    // Normalize weights to sum to 100
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    const normalizedWeights = weights.map(w => Math.round((w / totalWeight) * 100));
+    
+    // Clear existing color inputs
+    const colorInputs = document.getElementById('colorInputs');
+    if (!colorInputs) return;
+    colorInputs.innerHTML = '';
+    
+    // Add new colors with weights
+    colors.forEach((color, index) => {
+        addColorRow(color, normalizedWeights[index]);
+    });
+    
+    // Update color palette
+    window.updateColorPalette();
+    
+    console.log('[Roll Dice] Generated query with', numColors, 'colors:', colors, 'weights:', normalizedWeights);
+    window.showSuccess('🎲 Roll Dice', `Generated random query with ${numColors} colors`);
+};
+
+// ============================================================================
+// IMAGE UPLOAD AND COLOR EXTRACTION FUNCTIONS
+// ============================================================================
+
+/**
+ * Show image upload modal
+ */
+window.showImageUploadModal = function() {
+    const modal = document.getElementById('imageUploadModal');
+    if (modal) {
+        // Reset modal state
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('uploadedImagePreview');
+        const extractionStatus = document.getElementById('extractionStatus');
+        const fileInput = document.getElementById('imageFileInput');
+        
+        if (preview) preview.style.display = 'none';
+        if (previewImg) previewImg.src = '';
+        if (extractionStatus) extractionStatus.style.display = 'none';
+        if (fileInput) fileInput.value = '';
+        
+        // Ensure modal is properly centered and displayed
+        modal.style.display = 'flex';
+        modal.style.position = 'absolute';
+        modal.style.top = '50%';
+        modal.style.left = '50%';
+        modal.style.transform = 'translate(-50%, -50%)';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.zIndex = '9999';
+        modal.style.flexDirection = 'column';
+        modal.style.justifyContent = 'center';
+        modal.style.alignItems = 'center';
+        modal.style.padding = '20px';
+        modal.style.boxSizing = 'border-box';
+        
+        console.log('[Image Upload] Modal opened');
+    }
+};
+
+/**
+ * Close image upload modal
+ */
+window.closeImageUploadModal = function() {
+    const modal = document.getElementById('imageUploadModal');
+    if (modal) {
+        modal.style.display = 'none';
+        console.log('[Image Upload] Modal closed');
+    }
+};
+
+/**
+ * Handle drag over event
+ */
+window.handleDragOver = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const uploadArea = document.getElementById('imageUploadArea');
+    if (uploadArea) {
+        uploadArea.style.borderColor = 'var(--teal)';
+        uploadArea.style.backgroundColor = 'var(--surface1)';
+    }
+};
+
+/**
+ * Handle drag leave event
+ */
+window.handleDragLeave = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    const uploadArea = document.getElementById('imageUploadArea');
+    if (uploadArea) {
+        uploadArea.style.borderColor = 'var(--surface2)';
+        uploadArea.style.backgroundColor = 'var(--surface0)';
+    }
+};
+
+/**
+ * Handle drop event
+ */
+window.handleDrop = function(event) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const uploadArea = document.getElementById('imageUploadArea');
+    if (uploadArea) {
+        uploadArea.style.borderColor = 'var(--surface2)';
+        uploadArea.style.backgroundColor = 'var(--surface0)';
+    }
+    
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+        handleImageFile(files[0]);
+    }
+};
+
+/**
+ * Handle file select event
+ */
+window.handleFileSelect = function(event) {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+        handleImageFile(files[0]);
+    }
+};
+
+/**
+ * Handle image file selection
+ */
+function handleImageFile(file) {
+    if (!file.type.startsWith('image/')) {
+        window.showError('Invalid File', 'Please select an image file (JPG, PNG, GIF, WebP)');
+        return;
+    }
+    
+    // Show preview
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const preview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('uploadedImagePreview');
+        
+        if (preview && previewImg) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        }
+        
+        // Store file for extraction
+        window.selectedImageFile = file;
+        console.log('[Image Upload] File selected:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB');
+    };
+    
+    reader.readAsDataURL(file);
+}
+
+/**
+ * Extract colors from uploaded image
+ */
+window.extractColorsFromImage = async function() {
+    const file = window.selectedImageFile;
+    if (!file) {
+        window.showError('No Image', 'Please select an image file first');
+        return;
+    }
+    
+    const numColors = parseInt(document.getElementById('numColorsToExtract')?.value) || 5;
+    if (numColors < 1 || numColors > 10) {
+        window.showError('Invalid Number', 'Number of colors must be between 1 and 10');
+        return;
+    }
+    
+    const extractionStatus = document.getElementById('extractionStatus');
+    if (extractionStatus) {
+        extractionStatus.style.display = 'block';
+    }
+    
+    try {
+        console.log('[Image Upload] Extracting', numColors, 'colors from image...');
+        
+        // Create FormData for file upload
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('num_colors', numColors);
+        
+        // Upload and extract colors
+        const response = await fetch('/api/extract-colors', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: 'Failed to extract colors' }));
+            throw new Error(errorData.detail || `HTTP ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.colors || !Array.isArray(data.colors) || data.colors.length === 0) {
+            throw new Error('No colors extracted from image');
+        }
+        
+        console.log('[Image Upload] Extracted colors:', data.colors);
+        console.log('[Image Upload] Color weights:', data.weights);
+        
+        // Clear existing color inputs
+        const colorInputs = document.getElementById('colorInputs');
+        if (!colorInputs) return;
+        colorInputs.innerHTML = '';
+        
+        // Add extracted colors with their weights
+        data.colors.forEach((color, index) => {
+            // Ensure color is in hex format
+            let hexColor = color;
+            if (!color.startsWith('#')) {
+                hexColor = '#' + color;
+            }
+            
+            // Convert weight percentage to slider value (0-100)
+            const weight = data.weights && data.weights[index] ? Math.round(data.weights[index] * 100) : 100;
+            addColorRow(hexColor, weight);
+        });
+        
+        // Update color palette
+        window.updateColorPalette();
+        
+        // Close modal
+        window.closeImageUploadModal();
+        
+        // Hide extraction status
+        if (extractionStatus) {
+            extractionStatus.style.display = 'none';
+        }
+        
+        window.showSuccess('🎨 Colors Extracted', `Extracted ${data.colors.length} colors from image`);
+        
+    } catch (error) {
+        console.error('[Image Upload] Error extracting colors:', error);
+        window.showError('Extraction Failed', error.message || 'Failed to extract colors from image');
+        
+        if (extractionStatus) {
+            extractionStatus.style.display = 'none';
+        }
     }
 };
 
