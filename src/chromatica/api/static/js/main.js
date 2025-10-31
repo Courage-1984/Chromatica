@@ -2726,6 +2726,401 @@ window.updateColorSuggestions = function () {
 // Store the currently generated palette
 window.generatedPalette = null;
 
+// ============================================================================
+// 3D VISUALIZATION MODULES - Dynamic Loading
+// ============================================================================
+
+/**
+ * Dynamically load visualization modules and ensure they're available.
+ * Modules are loaded from /static/js/modules/ and attach functions to window.
+ */
+
+// Track which modules are loaded
+const visualizationModules = {
+    colorSpaceNavigator: false,
+    histogramCloud: false,
+    similarityLandscape: false,
+    rerankingAnimation: false,
+    imageGlobe: false,
+    connectionsGraph: false
+};
+
+/**
+ * Load a single visualization module script
+ */
+function loadVisualizationModule(moduleName) {
+    return new Promise((resolve, reject) => {
+        // Check if already loaded
+        if (visualizationModules[moduleName]) {
+            resolve();
+            return;
+        }
+
+        // Check if script already exists in DOM
+        const existingScript = document.querySelector(`script[data-viz-module="${moduleName}"]`);
+        if (existingScript) {
+            visualizationModules[moduleName] = true;
+            resolve();
+            return;
+        }
+
+        // Create and load script
+        const script = document.createElement('script');
+        script.src = `/static/js/modules/${moduleName}.js`;
+        script.type = 'text/javascript';
+        script.setAttribute('data-viz-module', moduleName);
+        
+        script.onload = () => {
+            visualizationModules[moduleName] = true;
+            console.log(`✓ Visualization module loaded: ${moduleName}`);
+            resolve();
+        };
+        
+        script.onerror = () => {
+            console.error(`✗ Failed to load visualization module: ${moduleName}`);
+            reject(new Error(`Failed to load ${moduleName}`));
+        };
+        
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * Load all visualization modules when page loads
+ */
+async function loadAllVisualizationModules() {
+    const modules = [
+        'colorSpaceNavigator',
+        'histogramCloud',
+        'similarityLandscape',
+        'rerankingAnimation',
+        'imageGlobe',
+        'connectionsGraph'
+    ];
+
+    try {
+        console.log('Loading 3D visualization modules...');
+        await Promise.all(modules.map(module => loadVisualizationModule(module)));
+        console.log('✓ All visualization modules loaded successfully');
+    } catch (error) {
+        console.error('Error loading visualization modules:', error);
+    }
+}
+
+// Load modules when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadAllVisualizationModules);
+} else {
+    loadAllVisualizationModules();
+}
+
+/**
+ * Function wrappers that ensure modules are loaded before executing.
+ * These act as proxies until the actual module functions are loaded.
+ * Once loaded, the modules define the actual functions on window.
+ */
+
+// Generate function wrappers
+// These ensure modules are loaded before execution.
+// When a module loads, it overwrites the corresponding window function with its implementation.
+// After loadVisualizationModule completes, the function on window is the module's version.
+window.generateColorSpaceNavigator = async function() {
+    await loadVisualizationModule('colorSpaceNavigator');
+    // Module has loaded and overwritten this function, so call it
+    // Store reference before calling to avoid recursion
+    const func = window.generateColorSpaceNavigator;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.generateHistogramCloud = async function() {
+    await loadVisualizationModule('histogramCloud');
+    const func = window.generateHistogramCloud;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.generateSimilarityLandscape = async function() {
+    await loadVisualizationModule('similarityLandscape');
+    const func = window.generateSimilarityLandscape;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.generateRerankingAnimation = async function() {
+    await loadVisualizationModule('rerankingAnimation');
+    const func = window.generateRerankingAnimation;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.generateImageGlobe = async function() {
+    await loadVisualizationModule('imageGlobe');
+    const func = window.generateImageGlobe;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.generateConnectionsGraph = async function() {
+    await loadVisualizationModule('connectionsGraph');
+    const func = window.generateConnectionsGraph;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+// Export function wrappers
+window.exportColorSpaceData = async function() {
+    await loadVisualizationModule('colorSpaceNavigator');
+    const func = window.exportColorSpaceData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.exportHistogramData = async function() {
+    await loadVisualizationModule('histogramCloud');
+    const func = window.exportHistogramData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.exportSimilarityData = async function() {
+    await loadVisualizationModule('similarityLandscape');
+    const func = window.exportSimilarityData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.exportAnimationData = async function() {
+    await loadVisualizationModule('rerankingAnimation');
+    const func = window.exportAnimationData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.exportGlobeData = async function() {
+    await loadVisualizationModule('imageGlobe');
+    const func = window.exportGlobeData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+window.exportGraphData = async function() {
+    await loadVisualizationModule('connectionsGraph');
+    const func = window.exportGraphData;
+    if (func && func !== arguments.callee) {
+        return func.apply(this, arguments);
+    }
+};
+
+// ============================================================================
+// 3D VISUALIZATION SHARED UTILITIES
+// ============================================================================
+
+// Global state for current visualization
+window.current3DVisualization = {
+    scene: null,
+    camera: null,
+    renderer: null,
+    controls: null,
+    animationId: null,
+    isPaused: false
+};
+
+/**
+ * Clear any existing 3D visualization
+ */
+window.clear3DVisualization = function() {
+    console.log('[3D Visualization] Clearing previous visualization...');
+    
+    // Stop any running animations
+    if (window.current3DVisualization.animationId) {
+        cancelAnimationFrame(window.current3DVisualization.animationId);
+        window.current3DVisualization.animationId = null;
+    }
+    
+    // Dispose of Three.js resources
+    if (window.current3DVisualization.scene) {
+        // Remove all objects from scene
+        while (window.current3DVisualization.scene.children.length > 0) {
+            const child = window.current3DVisualization.scene.children[0];
+            if (child.geometry) child.geometry.dispose();
+            if (child.material) {
+                if (Array.isArray(child.material)) {
+                    child.material.forEach(m => m.dispose());
+                } else {
+                    child.material.dispose();
+                }
+            }
+            window.current3DVisualization.scene.remove(child);
+        }
+    }
+    
+    // Remove renderer from DOM
+    const container = document.getElementById('visualization3d-container');
+    if (container && window.current3DVisualization.renderer) {
+        const canvas = window.current3DVisualization.renderer.domElement;
+        if (canvas && canvas.parentNode === container) {
+            container.removeChild(canvas);
+        }
+    }
+    
+    // Dispose renderer
+    if (window.current3DVisualization.renderer) {
+        window.current3DVisualization.renderer.dispose();
+    }
+    
+    // Clear references
+    window.current3DVisualization.scene = null;
+    window.current3DVisualization.camera = null;
+    window.current3DVisualization.renderer = null;
+    window.current3DVisualization.controls = null;
+    window.current3DVisualization.isPaused = false;
+    
+    // Show placeholder
+    const placeholder = document.getElementById('3d-placeholder');
+    const loading = document.getElementById('3d-loading');
+    if (placeholder) placeholder.style.display = 'block';
+    if (loading) loading.style.display = 'none';
+    
+    console.log('[3D Visualization] Previous visualization cleared');
+};
+
+/**
+ * Show loading indicator
+ */
+window.show3DLoading = function() {
+    const loading = document.getElementById('3d-loading');
+    const placeholder = document.getElementById('3d-placeholder');
+    if (loading) loading.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+};
+
+/**
+ * Hide loading indicator
+ */
+window.hide3DLoading = function() {
+    const loading = document.getElementById('3d-loading');
+    const placeholder = document.getElementById('3d-placeholder');
+    if (loading) loading.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'none';
+};
+
+/**
+ * Get container for 3D visualization
+ */
+window.get3DContainer = function() {
+    return document.getElementById('visualization3d-container');
+};
+
+// ============================================================================
+// RANDOM VALUE GENERATORS
+// ============================================================================
+
+/**
+ * Generate random hex color
+ */
+function randomHexColor() {
+    return Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
+}
+
+/**
+ * Generate random colors string
+ */
+window.randomSimilarityColors = function() {
+    const numColors = Math.floor(Math.random() * 3) + 1; // 1-3 colors
+    const colors = Array.from({ length: numColors }, () => randomHexColor());
+    document.getElementById('similarityColors').value = colors.join(',');
+    console.log('[Random] Generated similarity colors:', colors.join(','));
+};
+
+window.randomAnimationColors = function() {
+    const numColors = Math.floor(Math.random() * 3) + 1;
+    const colors = Array.from({ length: numColors }, () => randomHexColor());
+    document.getElementById('animationColors').value = colors.join(',');
+    console.log('[Random] Generated animation colors:', colors.join(','));
+};
+
+/**
+ * Generate random weights string
+ */
+window.randomSimilarityWeights = function() {
+    const numWeights = document.getElementById('similarityColors').value.split(',').length || 1;
+    const weights = Array.from({ length: numWeights }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
+    const sum = weights.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+    const normalized = weights.map(w => (parseFloat(w) / sum).toFixed(3));
+    document.getElementById('similarityWeights').value = normalized.join(',');
+    console.log('[Random] Generated similarity weights:', normalized.join(','));
+};
+
+window.randomAnimationWeights = function() {
+    const numWeights = document.getElementById('animationColors').value.split(',').length || 1;
+    const weights = Array.from({ length: numWeights }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
+    const sum = weights.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+    const normalized = weights.map(w => (parseFloat(w) / sum).toFixed(3));
+    document.getElementById('animationWeights').value = normalized.join(',');
+    console.log('[Random] Generated animation weights:', normalized.join(','));
+};
+
+/**
+ * Generate random image ID (fetches from search results)
+ */
+window.randomHistogramImageId = async function() {
+    try {
+        console.log('[Random] Fetching random image ID...');
+        const response = await fetch(`/search?colors=808080&weights=1.0&k=50&fast_mode=true`);
+        if (!response.ok) throw new Error('Failed to fetch images');
+        const data = await response.json();
+        if (data.results && data.results.length > 0) {
+            const randomResult = data.results[Math.floor(Math.random() * data.results.length)];
+            document.getElementById('histogramImageId').value = randomResult.image_id;
+            console.log('[Random] Generated histogram image ID:', randomResult.image_id);
+        } else {
+            throw new Error('No results available');
+        }
+    } catch (error) {
+        console.error('[Random] Error fetching random image ID:', error);
+        alert('Failed to fetch random image ID. Please enter one manually.');
+    }
+};
+
+// ============================================================================
+// 3D VISUALIZATION CONTROLS
+// ============================================================================
+
+window.toggle3DVisualization = function() {
+    window.current3DVisualization.isPaused = !window.current3DVisualization.isPaused;
+    console.log('[3D Controls] Visualization', window.current3DVisualization.isPaused ? 'paused' : 'resumed');
+};
+
+window.reset3DVisualization = function() {
+    if (window.current3DVisualization.camera && window.current3DVisualization.controls) {
+        window.current3DVisualization.camera.position.set(150, 150, 150);
+        window.current3DVisualization.camera.lookAt(0, 0, 0);
+        // Reset target for OrbitControls
+        if (window.current3DVisualization.controls.target) {
+            window.current3DVisualization.controls.target.set(0, 0, 0);
+        }
+        window.current3DVisualization.controls.update();
+        console.log('[3D Controls] View reset');
+    }
+};
+
+window.turnOff3DVisualization = function() {
+    console.log('[3D Controls] Turning off visualization');
+    window.clear3DVisualization();
+};
+
 // Show the suggest palette modal
 window.showSuggestPaletteModal = function () {
     const modal = document.getElementById('suggestPaletteModal');
