@@ -18,6 +18,15 @@ and used consistently across the application without modification.
 
 from typing import Dict
 
+import os
+from pathlib import Path
+from dataclasses import dataclass
+
+from typing import Callable, Optional
+
+# CRITICAL FIX: Import the types needed for the GlobalState dataclass
+from ..indexing.store import AnnIndex, MetadataStore
+
 # =============================================================================
 # COLOR SPACE BINNING PARAMETERS
 # =============================================================================
@@ -155,6 +164,58 @@ FAISS_USE_MMAP = True
 
 # Search timeout in milliseconds (prevents hanging on large indices)
 FAISS_SEARCH_TIMEOUT_MS = 5000
+
+# --- Directory Constants ---
+# These are the configuration variables needed by main.py and indexing scripts
+LOG_DIR = Path(os.getenv("CHROMATICA_LOG_DIR", "logs"))
+INDEX_FILE = "faiss_index.bin"
+DB_FILE = "metadata.db"
+
+
+# --- Path Utility Functions ---
+def get_index_path(output_dir: Path) -> Path:
+    """Returns the full path to the FAISS index file."""
+    return output_dir / INDEX_FILE
+
+
+def get_db_path(output_dir: Path) -> Path:
+    """Returns the full path to the DuckDB metadata file."""
+    return output_dir / DB_FILE
+
+
+# Define a dataclass to hold the global state components
+@dataclass
+class GlobalState:
+    index: Optional[AnnIndex]
+    store: Optional[MetadataStore]
+    increment_concurrent_searches: Callable[[], None]
+    decrement_concurrent_searches: Callable[[], None]
+    update_performance_stats: Callable[[float], None]
+    # Add any other global state variables needed by the router here
+
+
+# This function will be defined and populated in main.py's startup
+global_state_container: GlobalState = GlobalState(
+    index=None,
+    store=None,
+    increment_concurrent_searches=lambda: None,
+    decrement_concurrent_searches=lambda: None,
+    update_performance_stats=lambda x: None,
+)
+
+
+def set_global_state(index, store, increment_func, decrement_func, update_func):
+    """Sets the global state container during application startup."""
+    global_state_container.index = index
+    global_state_container.store = store
+    global_state_container.increment_concurrent_searches = increment_func
+    global_state_container.decrement_concurrent_searches = decrement_func
+    global_state_container.update_performance_stats = update_func
+
+
+def get_global_state() -> GlobalState:
+    """Retrieves the global state container for routers."""
+    return global_state_container
 
 
 # Adaptive search parameters based on dataset size

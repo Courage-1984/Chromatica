@@ -47,8 +47,12 @@ class RerankResult:
     """Result from reranking a single candidate."""
 
     image_id: str
+    file_path: str
     distance: float
+    rank: int
+    ann_score: float  # Original ANN distance score
     confidence: float = 1.0
+    image_url: Optional[str] = None  # URL of the image
 
 # --- Add this helper function immediately before 'create_cost_matrix' ---
 def _get_lab_bin_centers() -> Optional[np.ndarray]:

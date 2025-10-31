@@ -38,6 +38,17 @@ import subprocess
 
 from dataclasses import asdict
 
+from .routers import search as search_router
+
+from ..utils.config import (
+    LOG_DIR,
+    INDEX_FILE,
+    DB_FILE,
+    get_index_path,
+    get_db_path,
+    set_global_state,  # 💡 NEW: Import the state setter
+)
+
 from fastapi import FastAPI, HTTPException, Query, BackgroundTasks, UploadFile, File, Form
 from fastapi.responses import JSONResponse, Response, HTMLResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -64,6 +75,23 @@ from ..utils.logging_config import setup_logging
 from ..visualization import create_query_visualization, create_results_collage
 from .visualization_3d import router as visualization_3d_router, set_search_components
 
+from ..utils.color_utils import (
+    extract_dominant_colors,
+    extract_dominant_colors_with_weights,
+)
+
+# ADD THESE IMPORTS:
+from .models import (
+    QueryColors, SearchResponse, SearchMetadata,
+    ParallelSearchRequest, ParallelSearchResponse,
+    VisualizationResponse,
+    CommandRequest, CommandResponse,
+    PerformanceStatsResponse,
+    SearchResult # Note: May need to confirm if SearchResult is directly used or imported from search.py
+)
+# The `dataclass` and `asdict` imports may no longer be needed if they were only for the models.
+# Keep `from typing import List, Optional, Dict, Any, Tuple` if still used elsewhere.
+
 import json
 
 # Initialize logging
@@ -89,6 +117,43 @@ performance_stats = {
 # Thread lock for stats updates
 stats_lock = threading.Lock()
 
+# 💡 NEW: Use thread-safe global state for performance tracking
+MAX_CONCURRENT_SEARCHES = 2
+PERFORMANCE_STATS = {
+    "total_searches": 0,
+    "total_time": 0.0,
+    "concurrent_searches": 0,
+    "lock": threading.Lock(),
+}
+
+
+# --- Performance Tracking Functions (Keep these, but make them local or adjust their scope) ---
+def update_performance_stats(search_time: float):
+    # Keep these as helper functions within main.py
+    with PERFORMANCE_STATS["lock"]:
+        PERFORMANCE_STATS["total_searches"] += 1
+        PERFORMANCE_STATS["total_time"] += search_time
+
+
+def increment_concurrent_searches():
+    # Keep this as a helper function within main.py
+    with PERFORMANCE_STATS["lock"]:
+        if PERFORMANCE_STATS["concurrent_searches"] >= MAX_CONCURRENT_SEARCHES:
+            raise HTTPException(
+                status_code=503, detail="Server busy, please try again."
+            )
+        PERFORMANCE_STATS["concurrent_searches"] += 1
+
+
+def decrement_concurrent_searches():
+    # Keep this as a helper function within main.py
+    with PERFORMANCE_STATS["lock"]:
+        PERFORMANCE_STATS["concurrent_searches"] = max(
+            0, PERFORMANCE_STATS["concurrent_searches"] - 1
+        )
+
+
+# -----------------------------------------------------------------------------------------
 
 def update_performance_stats(search_time: float) -> None:
     """Update performance statistics in a thread-safe manner."""
@@ -216,6 +281,9 @@ async def lifespan(app: FastAPI):
         f"ThreadPoolExecutor initialized with {thread_pool._max_workers} workers."
     )
 
+    # --- Loading Index and Store ---
+    global global_index, global_store
+
     try:
         # Define index directory from environment variable with fallback
         INDEX_DIR = Path(os.getenv("CHROMATICA_INDEX_DIR", "./index")).resolve()
@@ -242,6 +310,16 @@ async def lifespan(app: FastAPI):
         # Check DuckDB records
         store.check_stored_ids(limit=5)
 
+        # 庁 CRITICAL: Set the global state for the routers to access
+        # PASS THE LOADED 'index' AND 'store' OBJECTS
+        set_global_state(
+            index=index,
+            store=store,
+            increment_func=increment_concurrent_searches,
+            decrement_func=decrement_concurrent_searches,
+            update_func=update_performance_stats,
+        )
+
         # Verify counts match
         faiss_count = index.get_total_vectors()
         duckdb_count = store.get_image_count()
@@ -263,56 +341,6 @@ async def lifespan(app: FastAPI):
     if thread_pool:
         thread_pool.shutdown(wait=True)
 
-
-# Pydantic models for request/response validation
-class QueryColors(BaseModel):
-    """Query colors and weights for the search."""
-
-    colors: List[str] = Field(..., description="List of hex color codes")
-    weights: List[float] = Field(..., description="List of corresponding weights")
-
-
-class SearchResult(BaseModel):
-    """Individual search result with image information."""
-
-    image_id: str = Field(..., description="Unique identifier for the image")
-    distance: float = Field(..., description="Sinkhorn-EMD distance from query")
-    dominant_colors: List[str] = Field(..., description="Dominant colors in the image")
-    file_path: Optional[str] = Field(None, description="Path to the image file")
-    image_url: Optional[str] = Field(None, description="URL of the image")
-
-
-class SearchMetadata(BaseModel):
-    """Performance metadata for the search operation."""
-
-    ann_time_ms: int = Field(..., description="ANN search time in milliseconds")
-    rerank_time_ms: int = Field(..., description="Reranking time in milliseconds")
-    total_time_ms: int = Field(..., description="Total search time in milliseconds")
-    index_size: int = Field(
-        ..., description="Total number of images in the search index"
-    )
-
-
-class SearchResponse(BaseModel):
-    """Complete search response as specified in Section H."""
-
-    query_id: str = Field(..., description="Unique identifier for this search query")
-    query: QueryColors = Field(..., description="Original query colors and weights")
-    results_count: int = Field(..., description="Number of results returned")
-    results: List[SearchResult] = Field(..., description="Ranked search results")
-    metadata: SearchMetadata = Field(..., description="Performance timing metadata")
-
-
-class VisualizationResponse(BaseModel):
-    """Response for visualization endpoints."""
-
-    query_id: str = Field(..., description="Unique identifier for this visualization")
-    query: QueryColors = Field(..., description="Original query colors and weights")
-    visualization_type: str = Field(..., description="Type of visualization generated")
-    image_data: str = Field(..., description="Base64 encoded image data")
-    mime_type: str = Field(..., description="MIME type of the image")
-
-
 # Initialize FastAPI app with lifespan
 app = FastAPI(
     title="Chromatica Color Search Engine",
@@ -320,6 +348,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.include_router(search_router.router)
 
 # Get absolute path to static directory for mounting
 static_dir = Path(__file__).parent / "static"
@@ -458,313 +488,6 @@ async def api_info():
             "ready" if index is not None and store is not None else "initializing"
         ),
     }
-
-
-@app.get("/search", response_model=SearchResponse)
-async def search_images(
-    colors: str = Query(...),
-    weights: str = Query(...),
-    k: int = Query(50),
-    n_results: Optional[int] = Query(None),
-    fuzz: float = Query(1.0),
-    fast_mode: bool = Query(False),
-    batch_size: int = Query(5),
-):
-    """
-    Search for images based on color similarity using the two-stage search pipeline.
-
-    This endpoint implements the complete search functionality as specified in Section H:
-    1. Parse and validate color and weight parameters
-    2. Create a query histogram using tri-linear soft assignment
-    3. Perform ANN search using FAISS HNSW index
-    4. Rerank candidates using Sinkhorn-EMD
-    5. Return results in the exact JSON structure specified
-
-    Args:
-        colors: Comma-separated hex color codes (e.g., "ea6a81,f6d727")
-        weights: Comma-separated weights (e.g., "0.49,0.51")
-        k: Number of results to return (default: 50, max: 200)
-        n_results: Alternative parameter for number of results (overrides k if provided)
-        fuzz: Query fuzziness multiplier (default: 1.0)
-        fast_mode: Use fast approximate reranking (default: False)
-        batch_size: Batch size for reranking (default: 5)
-
-    Returns:
-        SearchResponse: Complete search results with performance metadata
-
-    Raises:
-        HTTPException: If parameters are invalid or search fails
-    """
-    global index, store
-
-    # Use n_results if provided, otherwise use k
-    result_count = min(n_results if n_results is not None else k, MAX_SEARCH_RESULTS)
-
-    # Calculate max_rerank based on the requested results
-    max_rerank = min(RERANK_K, result_count * 5)  # Use 5x multiplier for better results
-
-    # Log search request
-    search_logger.info(f"=== SEARCH REQUEST START ===")
-    search_logger.info(f"Colors: {colors}")
-    search_logger.info(f"Weights: {weights}")
-    search_logger.info(f"Results count (requested): {result_count}")
-    search_logger.info(f"Fast mode: {fast_mode}")
-    search_logger.info(f"Batch size: {batch_size}")
-    search_logger.info(f"Fuzz: {fuzz}")
-
-    # Validate that search components are initialized
-    if index is None or store is None:
-        search_logger.error("Search components not initialized - returning 503")
-        raise HTTPException(
-            status_code=503,
-            detail="Search system is not available. Please try again later.",
-        )
-
-    # Generate unique query ID
-    query_id = str(uuid.uuid4())
-    search_logger.info(f"Query ID: {query_id}")
-
-    # Start timing for total search
-    total_start_time = time.time()
-
-    try:
-        # Parse and validate query parameters
-        try:
-            # Parse colors
-            color_list = [c.strip() for c in colors.split(",") if c.strip()]
-            if not color_list:
-                raise ValueError("At least one color must be specified")
-
-            # Validate hex color format and strip '#' prefix if present
-            processed_colors = []
-            for color in color_list:
-                # Strip '#' prefix if present
-                color = color.lstrip("#")
-
-                if not all(c in "0123456789ABCDEFabcdef" for c in color):
-                    raise ValueError(f"Invalid hex color format: {color}")
-                if len(color) not in [3, 6]:
-                    raise ValueError(f"Hex color must be 3 or 6 characters: {color}")
-                processed_colors.append(color)
-
-            # Update color_list with processed colors
-            color_list = processed_colors
-
-            # Parse weights
-            weight_list = [float(w.strip()) for w in weights.split(",") if w.strip()]
-            if not weight_list:
-                raise ValueError("At least one weight must be specified")
-
-            # Validate weights
-            if len(color_list) != len(weight_list):
-                raise ValueError("Number of colors must match number of weights")
-
-            if not all(w > 0 for w in weight_list):
-                raise ValueError("All weights must be positive")
-
-            # Normalize weights to sum to 1.0
-            weight_sum = sum(weight_list)
-            weight_list = [w / weight_sum for w in weight_list]
-
-            search_logger.info(
-                f"Parsed {len(color_list)} colors and weights successfully"
-            )
-            search_logger.info(
-                f"Normalized weights: {[f'{w:.3f}' for w in weight_list]}"
-            )
-
-        except ValueError as e:
-            search_logger.error(f"Parameter validation failed: {e}")
-            raise HTTPException(status_code=400, detail=f"Invalid parameters: {str(e)}")
-
-        # Create query histogram
-        try:
-            search_logger.info("Creating query histogram...")
-            histogram_start = time.time()
-            query_histogram = create_query_histogram(color_list, weight_list)
-            histogram_time = time.time() - histogram_start
-
-            # Validate the generated histogram
-            if query_histogram.shape != (TOTAL_BINS,):
-                raise ValueError(f"Invalid histogram shape: {query_histogram.shape}")
-
-            search_logger.info(
-                f"Query histogram created successfully in {histogram_time:.3f}s"
-            )
-            search_logger.info(f"Histogram shape: {query_histogram.shape}")
-            search_logger.info(f"Histogram sum: {query_histogram.sum():.6f}")
-
-        except Exception as e:
-            search_logger.error(f"Failed to create query histogram: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to process query colors: {str(e)}"
-            )
-
-        # Perform the search asynchronously
-        try:
-            mode_str = (
-                "FAST MODE (L2 distance)" if fast_mode else "NORMAL MODE (Sinkhorn-EMD)"
-            )
-            search_logger.info(f"Starting search with k={result_count} in {mode_str}")
-
-            # Track concurrent searches
-            increment_concurrent_searches()
-
-            # For fast mode, we need to request more results than we'll actually rerank
-            # to ensure we have enough candidates
-            # In both modes, search for more candidates than we need for better results
-            search_k = max(
-                result_count * 2, 50
-            )  # Get more candidates for better quality
-
-            # In fast mode, we can rerank all results since L2 distance is fast
-            rerank_k = result_count  # Rerank exactly what was requested
-            search_logger.info(
-                f"{mode_str}: Will rerank top {rerank_k} results out of {search_k} candidates"
-            )
-
-            search_start = time.time()
-            # Perform the search with correct parameters for both modes
-            results = find_similar(
-                query_histogram=query_histogram,
-                k=result_count,
-                max_rerank=max_rerank,  # Pass the calculated max_rerank value
-                index=index,
-                store=store,
-                fast_mode=fast_mode,
-            )
-
-            # Log results safely using attribute access
-            for i, result in enumerate(results):
-                fp = getattr(result, 'file_path', None)
-                dist = getattr(result, 'distance', None)
-                url = getattr(result, 'image_url', None)
-                search_logger.info(
-                    f"Result {i+1}: Image: {fp}, Distance: {dist}, URL: {url}"
-                )
-
-            search_time = time.time() - search_start
-
-            # Limit to requested result count
-            if len(results) > result_count:
-                search_logger.info(
-                    f"Limiting {len(results)} results to requested {result_count}"
-                )
-                results = results[:result_count]
-
-            # Update performance stats
-            update_performance_stats(search_time)
-            decrement_concurrent_searches()
-
-            if not results:
-                search_logger.warning("Search returned no results")
-                # Return empty results instead of error
-                return SearchResponse(
-                    query_id=query_id,
-                    query=QueryColors(colors=color_list, weights=weight_list),
-                    results_count=0,
-                    results=[],
-                    metadata=SearchMetadata(
-                        ann_time_ms=0,
-                        rerank_time_ms=0,
-                        total_time_ms=0,
-                        index_size=store.get_image_count() if store else 0,
-                    ),
-                )
-
-            search_logger.info(f"Search completed successfully in {search_time:.3f}s")
-            search_logger.info(f"Found {len(results)} results")
-
-        except Exception as e:
-            search_logger.error(f"Search operation failed: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Search operation failed: {str(e)}"
-            )
-
-        # Format results according to Section H specification
-        try:
-            formatted_results = []
-
-            for i, result in enumerate(results):
-                try:
-                    # Extract dominant colors from image
-                    dominant_colors = ["#000000"] * 5  # Default fallback colors
-
-                    # Access dataclass attributes from search layer
-                    file_path = getattr(result, "file_path", None)
-
-                    if file_path and Path(file_path).exists():
-                        try:
-                            # Try to extract dominant colors if the file exists
-                            # We need to implement the extract_dominant_colors function
-                            # or use a placeholder for now
-                            dominant_colors = extract_dominant_colors(file_path)
-                        except Exception as color_ex:
-                            search_logger.warning(
-                                f"Failed to extract colors for {file_path}: {color_ex}"
-                            )
-                    else:
-                        search_logger.warning(
-                            f"Could not access file for image {getattr(result, 'image_id', 'unknown')}, using fallback colors"
-                        )
-
-                    formatted_results.append(
-                        SearchResult(
-                            image_id=getattr(result, "image_id", "unknown"),
-                            distance=float(getattr(result, "distance", 1.0)),
-                            dominant_colors=dominant_colors,
-                            file_path=file_path,
-                            image_url=getattr(result, "image_url", None),  # Include the image URL
-                        )
-                    )
-                except Exception as e:
-                    search_logger.error(f"Error processing result {i}: {e}")
-                    # Continue with next result instead of failing entire request
-                    continue
-
-            # Calculate timing metadata
-            total_time = time.time() - total_start_time
-            total_time_ms = int(total_time * 1000)
-
-            # For now, we'll use placeholder timing values
-            ann_time_ms = int(total_time_ms * 0.3)  # Placeholder: 30% of total time
-            rerank_time_ms = int(total_time_ms * 0.7)  # Placeholder: 70% of total time
-
-            # Create the response
-            response = SearchResponse(
-                query_id=query_id,
-                query=QueryColors(colors=color_list, weights=weight_list),
-                results_count=len(formatted_results),
-                results=formatted_results,
-                metadata=SearchMetadata(
-                    ann_time_ms=ann_time_ms,
-                    rerank_time_ms=rerank_time_ms,
-                    total_time_ms=total_time_ms,
-                    index_size=store.get_image_count() if store else 0,
-                ),
-            )
-
-            search_logger.info(f"=== SEARCH REQUEST COMPLETE ===")
-            search_logger.info(f"Query ID: {query_id}")
-            search_logger.info(f"Total time: {total_time:.3f}s")
-            search_logger.info(f"Results returned: {len(formatted_results)}")
-            search_logger.info(f"Index size: {store.get_image_count() if store else 0}")
-
-            return response
-
-        except Exception as e:
-            search_logger.error(f"Failed to format search results: {e}")
-            raise HTTPException(
-                status_code=500, detail=f"Failed to format search results: {str(e)}"
-            )
-
-    except HTTPException:
-        # Re-raise HTTP exceptions
-        raise
-    except Exception as e:
-        # Catch any other unexpected errors
-        search_logger.error(f"Unexpected error in search endpoint: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.get("/image/{image_id}")
@@ -971,58 +694,6 @@ async def visualize_results(
         raise HTTPException(
             status_code=500, detail=f"Collage generation failed: {str(e)}"
         )
-
-
-# Request model for command execution
-class CommandRequest(BaseModel):
-    command: str = Field(..., description="Command to execute")
-    args: List[str] = Field(..., description="Command arguments")
-    tool_type: str = Field(..., description="Type of tool being executed")
-    dataset: str = Field(..., description="Dataset path for the tool")
-
-
-# Response model for command execution
-class CommandResponse(BaseModel):
-    success: bool = Field(..., description="Whether the command executed successfully")
-    output: str = Field(..., description="Command output or error message")
-    error: Optional[str] = Field(None, description="Error message if command failed")
-
-
-class ParallelSearchRequest(BaseModel):
-    """Request model for parallel search operations"""
-
-    queries: List[Dict[str, Any]] = Field(..., description="List of search queries")
-    max_concurrent: int = Field(
-        10, description="Maximum number of concurrent searches", ge=1, le=50
-    )
-
-
-class ParallelSearchResponse(BaseModel):
-    """Response model for parallel search operations"""
-
-    total_queries: int = Field(..., description="Total number of queries processed")
-    successful_queries: int = Field(..., description="Number of successful queries")
-    failed_queries: int = Field(..., description="Number of failed queries")
-    total_time_ms: int = Field(..., description="Total processing time in milliseconds")
-    results: List[Dict[str, Any]] = Field(
-        ..., description="Search results for each query"
-    )
-
-
-class PerformanceStatsResponse(BaseModel):
-    """Response model for performance statistics"""
-
-    total_searches: int = Field(..., description="Total number of searches performed")
-    concurrent_searches: int = Field(
-        ..., description="Current number of concurrent searches"
-    )
-    max_concurrent_searches: int = Field(
-        ..., description="Maximum concurrent searches reached"
-    )
-    average_search_time: float = Field(
-        ..., description="Average search time in seconds"
-    )
-    recent_search_times: List[float] = Field(..., description="Recent search times")
 
 
 @app.post("/search/parallel", response_model=ParallelSearchResponse)
@@ -1406,154 +1077,6 @@ async def execute_command(request: CommandRequest):
         return CommandResponse(
             success=False, output="Command execution failed", error=error_msg
         )
-
-
-def extract_dominant_colors(image_path: str, num_colors: int = 5) -> List[str]:
-    """
-    Extract dominant colors from an image using K-means clustering.
-
-    Args:
-        image_path: Path to the image file
-        num_colors: Number of dominant colors to extract (default: 5)
-
-    Returns:
-        List of hex color codes representing dominant colors
-    """
-    try:
-        # Read the image
-        image = cv2.imread(image_path)
-        if image is None:
-            return ["#000000"] * num_colors
-
-        # Convert to RGB (OpenCV uses BGR)
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Reshape the image to be a list of pixels
-        pixels = image.reshape(-1, 3).astype(np.float32)
-
-        # Take a sample if the image is large
-        if len(pixels) > 10000:
-            indices = np.random.choice(len(pixels), 10000, replace=False)
-            pixels = pixels[indices]
-
-        # Apply K-means clustering
-        kmeans = KMeans(n_clusters=num_colors, n_init=3, random_state=42)
-        kmeans.fit(pixels)
-
-        # Get the colors
-        colors = kmeans.cluster_centers_.astype(int)
-
-        # Convert to hex codes
-        hex_colors = []
-        for color in colors:
-            r, g, b = color
-            hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            hex_colors.append(hex_color)
-
-        return hex_colors
-
-    except Exception as e:
-        logger.error(f"Failed to extract dominant colors from {image_path}: {e}")
-        return ["#000000"] * num_colors
-
-
-def extract_dominant_colors_with_weights(image_bytes: bytes, num_colors: int = 5) -> Tuple[List[str], List[float]]:
-    """
-    Extract dominant colors from an image using K-means clustering and return colors with weights.
-
-    Args:
-        image_bytes: Image file as bytes
-        num_colors: Number of dominant colors to extract (default: 5)
-
-    Returns:
-        Tuple of (list of hex color codes, list of weights/proportions)
-    """
-    try:
-        # Convert bytes to numpy array
-        nparr = np.frombuffer(image_bytes, np.uint8)
-        
-        # Decode image
-        image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        if image is None:
-            # Try alternative decoding with PIL as fallback
-            try:
-                from PIL import Image
-                import io
-                img = Image.open(io.BytesIO(image_bytes))
-                image = np.array(img)
-                if len(image.shape) == 3:
-                    # Convert PIL RGB to OpenCV BGR if needed
-                    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            except ImportError:
-                logger.warning("PIL/Pillow not available, using OpenCV only")
-        
-        if image is None:
-            colors = ["#000000"] * num_colors
-            weights = [1.0 / num_colors] * num_colors
-            return colors, weights
-
-        # Convert to RGB (OpenCV uses BGR)
-        if len(image.shape) == 3 and image.shape[2] == 3:
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        # Handle grayscale
-        if len(image.shape) == 2:
-            image = cv2.cvtColor(image, cv2.COLOR_GRAY2RGB)
-
-        # Reshape the image to be a list of pixels
-        pixels = image.reshape(-1, 3).astype(np.float32)
-
-        # Take a sample if the image is large
-        if len(pixels) > 10000:
-            indices = np.random.choice(len(pixels), 10000, replace=False)
-            pixels = pixels[indices]
-
-        # Apply K-means clustering
-        kmeans = KMeans(n_clusters=num_colors, n_init=10, random_state=42)
-        kmeans.fit(pixels)
-
-        # Get the colors
-        colors = kmeans.cluster_centers_.astype(int)
-
-        # Count labels to get proportions (weights)
-        labels = kmeans.labels_
-        unique, counts = np.unique(labels, return_counts=True)
-        label_counts = dict(zip(unique, counts))
-        
-        # Calculate weights (proportions)
-        total_pixels = len(labels)
-        weights = []
-        for i in range(num_colors):
-            count = label_counts.get(i, 0)
-            weight = count / total_pixels if total_pixels > 0 else 1.0 / num_colors
-            weights.append(weight)
-
-        # Convert to hex codes
-        hex_colors = []
-        for color in colors:
-            r, g, b = color
-            # Clamp to valid range
-            r = max(0, min(255, r))
-            g = max(0, min(255, g))
-            b = max(0, min(255, b))
-            hex_color = f"#{r:02x}{g:02x}{b:02x}"
-            hex_colors.append(hex_color)
-
-        # Normalize weights to sum to 1.0
-        total_weight = sum(weights)
-        if total_weight > 0:
-            weights = [w / total_weight for w in weights]
-        else:
-            weights = [1.0 / num_colors] * num_colors
-
-        return hex_colors, weights
-
-    except Exception as e:
-        logger.error(f"Failed to extract dominant colors from image: {e}")
-        colors = ["#000000"] * num_colors
-        weights = [1.0 / num_colors] * num_colors
-        return colors, weights
-
 
 @app.post("/api/extract-colors")
 async def extract_colors_from_image(

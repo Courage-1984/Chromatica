@@ -38,27 +38,21 @@ from .utils.config import RERANK_BATCH_SIZE
 from .utils.config import VERBOSE_SEARCH_LOGS, LOG_TOP_COLORS_N
 from .utils.config import PERCOLOR_MIN_MASS, PERCOLOR_TOP_K, PERCOLOR_ENFORCE_STRICT
 
+from .api.models import SearchResult
+
+
 # Configure logging for this module
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class SearchResult:
-    """Result of a complete search operation for a single image."""
-
-    image_id: str
-    file_path: str
-    distance: float
-    rank: int
-    ann_score: float  # Original ANN distance score
-    confidence: float = 1.0
-    image_url: Optional[str] = None  # URL of the image
 
 
 # Global query cache for avoiding repeated computations
 _query_cache: Dict[str, List[SearchResult]] = {}
 _cache_lock = threading.Lock()
 _cache_max_size = 1000  # Maximum number of cached queries
+
+# --- Search Engine Constants (Required for API contract and limiting search) ---
+MAX_SEARCH_RESULTS = 200  # As defined in previous project steps
+RERANK_K = 500  # Default number of candidates to rerank
 
 # Performance monitoring
 _performance_stats = {
@@ -108,24 +102,25 @@ def _create_search_results(
 ) -> List[SearchResult]:
     """Helper to create SearchResult objects from image_ids and distances (Fast Mode/Fallback)."""
     results = []
-    
+
     num_results = min(k, len(image_ids))
-    
+
     for i in range(num_results):
         image_id = image_ids[i]
-        
+
         # Get metadata (assuming it contains 'file_path' and 'image_url')
         metadata = store.get_image_info(image_id) or {}
-        
+
         results.append(
             SearchResult(
                 image_id=image_id,
-                file_path=metadata.get('file_path', 'N/A'),  # <-- NEW
+                file_path=metadata.get("file_path", "N/A"),  # <-- NEW
                 distance=float(distances[i]),
-                rank=i + 1,                                  # <-- NEW
-                ann_score=float(distances[i]),               # <-- NEW (ANN distance for fallback)
-                confidence=1 / (1 + float(distances[i])), 
-                image_url=metadata.get('image_url'),         # <-- NEW
+                rank=i + 1,  # <-- NEW
+                ann_score=float(distances[i]),  # <-- NEW (ANN distance for fallback)
+                confidence=1 / (1 + float(distances[i])),
+                image_url=metadata.get("image_url"),  # <-- NEW
+                dominant_colors=metadata.get("dominant_colors", []),
                 # metadata=metadata or {}, # Re-add if you still use metadata field
             )
         )
@@ -299,23 +294,23 @@ def find_similar(
     Performs the two-stage color search with robust fallback.
     """
     start_time = time.time()
-    
+
     # 1. Stage 1: Fast ANN Search (Always performed)
     # Use max_rerank (which is RERANK_K) for normal mode candidates
     num_ann_candidates = max_rerank if not fast_mode else k 
-    
+
     # Preprocess query to suppress near-neutrals and sharpen peaks
     preprocessed_query = _apply_query_adjustments(query_histogram)
 
     # D: distances (Hellinger L2), I: indices (FAISS IDs)
     # NOTE: Do NOT pre-transform here; the index applies Hellinger internally.
     D, I = index.search(preprocessed_query, num_ann_candidates) 
-    
+
     # Check if any results were returned
     if I.size == 0 or I[0].size == 0:
         logger.warning("FAISS search returned no candidates.")
         return []
-        
+
     ann_candidate_faiss_ids = I.flatten().astype(int)
     ann_distances = D.flatten()
     # -------------------------------------------------------------------------------
@@ -352,10 +347,10 @@ def find_similar(
                 tops = histogram_top_hex_colors(h, top_n=LOG_TOP_COLORS_N)
                 logger.info(f"Fast result: id={r.image_id}, d={r.distance:.3f}, tops={tops}")
         return results
-    
+
     else:
         logger.info(f"Normal Search: Starting Stage 2 (Reranking {len(ann_candidate_ids)} candidates).")
-        
+
         # --- FIX: ROBUST TRY/EXCEPT BLOCK FOR FAILURE ---
         try:
             # 2.1 CRITICAL: Retrieve RAW histograms from DuckDB
@@ -363,7 +358,7 @@ def find_similar(
 
             # Retrieve raw histograms from the provided metadata store
             raw_histograms = store.get_raw_histograms(ann_candidate_ids)
-            
+
             # Filter out missing or empty histograms (sum == 0 implies not loaded)
             valid_indices = [i for i, hist in enumerate(raw_histograms) if hist is not None and np.sum(hist) > 0]
             valid_ids = [ann_candidate_ids[i] for i in valid_indices]
@@ -374,10 +369,10 @@ def find_similar(
                 logger.error("Reranking failed: No histograms retrieved. Falling back to FAISS results.")
                 # Return the results from the first stage (if they exist)
                 return _create_search_results(ann_candidate_ids, ann_distances, store, k)
-            
+
             if len(valid_hists) == 0:
                 raise RuntimeError("DuckDB returned no valid raw histograms for reranking.")
-                
+
             logger.info(f"Successfully retrieved {len(valid_hists)} raw histograms for reranking.")
 
             # 2.1.1 Enforce color presence: filter by hue mass under query hue mixture
@@ -446,15 +441,15 @@ def find_similar(
                 chroma_mask=combined_mask,
                 alpha_l1=RERANK_ALPHA_L1,
             )
-            
+
             rerank_time = time.time()
             logger.info(
                 f"Stage 2 (Sinkhorn) completed in {rerank_time - stage1_time:.4f}s. "
             )
-            
+
             # 2.3 Format and return top k results
             final_results = []
-            
+
             # Create a dictionary mapping candidate image_id to its initial ANN distance
             ann_scores_map = dict(zip(ann_candidate_ids, ann_distances))
 
@@ -465,21 +460,31 @@ def find_similar(
             for i, result in enumerate(rerank_results):
                 if i >= k:
                     break
-                
+
                 metadata = store.get_image_info(result.image_id) or {}
-                
+
+                # 💡 NEW: Calculate dominant colors from the raw histogram 💡
+                tops = histogram_top_hex_colors(
+                    id_to_hist.get(result.image_id, np.zeros_like(query_histogram)),
+                    top_n=LOG_TOP_COLORS_N,
+                )
+
                 final_results.append(
                     SearchResult(
                         image_id=result.image_id,
-                        file_path=metadata.get('file_path', 'N/A'),
+                        file_path=metadata.get("file_path", "N/A"),
                         distance=result.distance,
                         rank=i + 1,
-                        ann_score=float(ann_scores_map.get(result.image_id, 0.0)), # Get the original score
-                        confidence=result.confidence, 
-                        image_url=metadata.get('image_url'),
+                        ann_score=float(
+                            ann_scores_map.get(result.image_id, 0.0)
+                        ),  # Get the original score
+                        confidence=result.confidence,
+                        image_url=metadata.get("image_url"),
+                        dominant_colors=tops,
                         # metadata=metadata or {}, # Re-add if needed
                     )
                 )
+
                 if VERBOSE_SEARCH_LOGS:
                     tops = histogram_top_hex_colors(id_to_hist.get(result.image_id, np.zeros_like(query_histogram)), top_n=LOG_TOP_COLORS_N)
                     hm = id_to_hue_mass.get(result.image_id, 0.0)
@@ -490,7 +495,7 @@ def find_similar(
                     logger.info(
                         f"Reranked result: id={result.image_id}, d={result.distance:.3f}, ann={ann_scores_map.get(result.image_id, 0.0):.3f}, hue_mass={hm:.3f}, percolor={percolor}, tops={tops}"
                     )
-            
+
             return final_results
 
         except Exception as e:
