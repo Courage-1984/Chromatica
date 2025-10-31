@@ -2979,6 +2979,310 @@ window.generateRerankingAnimation = async function () {
     }
 };
 
+// ============================================================================
+// ADVANCED FEATURES HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Show/hide advanced filters panel
+ */
+window.showAdvancedFilters = function() {
+    const panel = document.getElementById('advancedFilters');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.toggleAdvancedFilters = window.showAdvancedFilters;
+
+/**
+ * Show color wheel modal
+ */
+window.showColorWheel = function() {
+    const modal = document.getElementById('colorWheelModal') || createColorWheelModal();
+    modal.style.display = 'block';
+    setTimeout(() => {
+        const container = document.getElementById('colorWheelContainer');
+        if (container && window.createColorWheel) {
+            window.createColorWheel('colorWheelContainer');
+        }
+    }, 100);
+};
+
+/**
+ * Create color wheel modal
+ */
+function createColorWheelModal() {
+    const modal = document.createElement('div');
+    modal.id = 'colorWheelModal';
+    modal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); overflow-y: auto;';
+    
+    const content = document.createElement('div');
+    content.style.cssText = 'background: var(--base); margin: 5% auto; padding: 30px; border: 1px solid var(--surface2); width: 90%; max-width: 600px; border-radius: 12px; max-height: 90vh; overflow-y: auto;';
+    
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: var(--text);">🎨 Interactive Color Wheel (HSL/HSV)</h3>
+            <button onclick="document.getElementById('colorWheelModal').style.display='none'" 
+                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+        <div id="colorWheelContainer" style="text-align: center;"></div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    return modal;
+}
+
+/**
+ * Show export options modal
+ */
+window.showExportOptions = function() {
+    const modal = document.getElementById('exportOptionsModal') || createExportOptionsModal();
+    modal.style.display = 'block';
+};
+
+/**
+ * Create export options modal
+ */
+function createExportOptionsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'exportOptionsModal';
+    modal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);';
+    
+    const content = document.createElement('div');
+    content.style.cssText = 'background: var(--base); margin: 5% auto; padding: 30px; border: 1px solid var(--surface2); width: 90%; max-width: 700px; border-radius: 12px; max-height: 90vh; overflow-y: auto;';
+    
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: var(--text);">📤 Export Palette</h3>
+            <button onclick="document.getElementById('exportOptionsModal').style.display='none'" 
+                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+            <button onclick="exportPalette('css'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--blue); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                CSS Variables
+            </button>
+            <button onclick="exportPalette('scss'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--mauve); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                SCSS/SASS
+            </button>
+            <button onclick="exportPalette('json'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--green); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                JSON
+            </button>
+            <button onclick="exportPalette('ase'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--red); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Adobe Swatch (.ase)
+            </button>
+            <button onclick="exportPalette('sketch'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--yellow); color: var(--base); border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Sketch
+            </button>
+            <button onclick="exportPalette('figma'); document.getElementById('exportOptionsModal').style.display='none';" 
+                style="background: var(--teal); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Figma
+            </button>
+        </div>
+        <div style="margin-top: 20px; padding: 15px; background: var(--surface0); border-radius: 8px;">
+            <h4 style="color: var(--text); margin: 0 0 10px 0;">Export Grid/Palette Image</h4>
+            <p style="color: var(--subtext1); font-size: 13px; margin: 0 0 15px 0;">Export search results or palette as an image</p>
+            <button onclick="exportSearchResultsAsImage()" 
+                style="background: var(--lavender); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin-right: 10px;">
+                Export Search Results Grid
+            </button>
+            <button onclick="exportPaletteAsImage()" 
+                style="background: var(--sapphire); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                Export Palette Image
+            </button>
+        </div>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    return modal;
+}
+
+/**
+ * Show gradient options modal
+ */
+window.showGradientOptions = function() {
+    const modal = document.getElementById('gradientOptionsModal') || createGradientOptionsModal();
+    modal.style.display = 'block';
+};
+
+/**
+ * Create gradient options modal
+ */
+function createGradientOptionsModal() {
+    const modal = document.createElement('div');
+    modal.id = 'gradientOptionsModal';
+    modal.style.cssText = 'display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7);';
+    
+    const content = document.createElement('div');
+    content.style.cssText = 'background: var(--base); margin: 5% auto; padding: 30px; border: 1px solid var(--surface2); width: 90%; max-width: 600px; border-radius: 12px; max-height: 90vh; overflow-y: auto;';
+    
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="margin: 0; color: var(--text);">🌈 Generate Gradient</h3>
+            <button onclick="document.getElementById('gradientOptionsModal').style.display='none'" 
+                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px;">Gradient Type:</label>
+            <select id="gradientType" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
+                <option value="css">CSS String</option>
+                <option value="linear">Linear Image</option>
+                <option value="radial">Radial Image</option>
+            </select>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px;">Width: <span id="gradientWidthValue">800</span>px</label>
+            <input type="range" id="gradientWidth" min="200" max="2000" step="50" value="800" style="width: 100%;"
+                oninput="document.getElementById('gradientWidthValue').textContent = this.value;">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px;">Height: <span id="gradientHeightValue">200</span>px</label>
+            <input type="range" id="gradientHeight" min="100" max="1000" step="50" value="200" style="width: 100%;"
+                oninput="document.getElementById('gradientHeightValue').textContent = this.value;">
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px;">Direction:</label>
+            <select id="gradientDirection" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
+                <option value="horizontal">Horizontal</option>
+                <option value="vertical">Vertical</option>
+                <option value="diagonal">Diagonal</option>
+            </select>
+        </div>
+        <button onclick="generateGradientFromModal()" 
+            style="width: 100%; background: var(--teal); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            Generate Gradient
+        </button>
+    `;
+    
+    modal.appendChild(content);
+    document.body.appendChild(modal);
+    return modal;
+}
+
+/**
+ * Generate gradient from modal inputs
+ */
+window.generateGradientFromModal = function() {
+    const type = document.getElementById('gradientType').value;
+    const width = parseInt(document.getElementById('gradientWidth').value);
+    const height = parseInt(document.getElementById('gradientHeight').value);
+    const direction = document.getElementById('gradientDirection').value;
+    
+    if (window.generateGradient) {
+        window.generateGradient(type, width, height, direction);
+    }
+    document.getElementById('gradientOptionsModal').style.display = 'none';
+};
+
+/**
+ * Load preset palette
+ */
+window.loadPreset = function(name, colors) {
+    // Clear current colors
+    const colorInputs = document.getElementById('colorInputs');
+    if (colorInputs) {
+        colorInputs.innerHTML = '';
+    }
+    
+    // Add preset colors
+    colors.forEach((color, index) => {
+        const weight = Math.floor(100 / colors.length);
+        if (window.addColorRow) {
+            window.addColorRow(`#${color}`, weight);
+        }
+    });
+    
+    if (window.updateColorPalette) {
+        window.updateColorPalette();
+    }
+    
+    showSuccess('Preset Loaded', `${name} palette loaded successfully!`);
+};
+
+/**
+ * Export search results as image
+ */
+window.exportSearchResultsAsImage = async function() {
+    try {
+        const resultsGrid = document.getElementById('resultsGrid');
+        if (!resultsGrid || resultsGrid.children.length === 0) {
+            showError('Export Error', 'No search results to export');
+            return;
+        }
+        
+        if (typeof html2canvas === 'undefined') {
+            showError('Export Error', 'html2canvas library not loaded');
+            return;
+        }
+        
+        const canvas = await html2canvas(resultsGrid, {
+            backgroundColor: 'var(--base)',
+            scale: 2,
+            logging: false
+        });
+        
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `search-results-${Date.now()}.png`;
+        a.click();
+        
+        showSuccess('Export Success', 'Search results exported as image');
+    } catch (error) {
+        console.error('Export error:', error);
+        showError('Export Error', error.message);
+    }
+};
+
+/**
+ * Export palette as image
+ */
+window.exportPaletteAsImage = async function() {
+    try {
+        const colors = window.colors || [];
+        if (colors.length === 0) {
+            showError('Export Error', 'No colors to export');
+            return;
+        }
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
+        
+        const totalWeight = window.weights ? window.weights.reduce((a, b) => a + b, 0) : colors.length * 100;
+        
+        let x = 0;
+        colors.forEach((color, index) => {
+            const weight = window.weights ? window.weights[index] : 100;
+            const width = (weight / totalWeight) * canvas.width;
+            
+            ctx.fillStyle = color;
+            ctx.fillRect(x, 0, width, canvas.height);
+            
+            x += width;
+        });
+        
+        const dataUrl = canvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `palette-${Date.now()}.png`;
+        a.click();
+        
+        showSuccess('Export Success', 'Palette exported as image');
+    } catch (error) {
+        console.error('Export error:', error);
+        showError('Export Error', error.message);
+    }
+};
+
 window.generateImageGlobe = async function () {
     await loadVisualizationModule('imageGlobe');
     scrollTo3DVisualizationsHeader();

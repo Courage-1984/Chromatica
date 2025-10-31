@@ -55,3 +55,14 @@ _small_covers_db_1_10k/
 _covers01_100k_db copy/
 _covers02_100k/
 
+_covers01_100k_db_TEST/
+
+.pytest_cache/
+
+.playwright-mcp/
+
+__pycache__/
+
+_covers01_100k_TEST/
+_covers02_100k_TEST/
+

@@ -105,10 +105,13 @@ async def search_images(
 
     # Validate that search components are initialized
     if index is None or store is None:
-        search_logger.error("Search components not initialized - returning 503")
+        search_logger.error("Search components not initialized - index files not found")
         raise HTTPException(
             status_code=503,
-            detail="Search system is not available. Please try again later.",
+            detail=(
+                "Search system is not available. Index files not found. "
+                "Please build the index first using: python scripts/build_index.py <image_directory> --output-dir <index_directory>"
+            ),
         )
 
     # Generate unique query ID

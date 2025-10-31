@@ -194,3 +194,93 @@ class ColorExtractionResponse(BaseModel):
     num_colors: int = Field(
         ..., description="The number of colors successfully extracted."
     )
+
+
+# --- Advanced Search Features Models ---
+
+
+class AdvancedSearchFilters(BaseModel):
+    """Advanced search filters model."""
+
+    exclude_colors: Optional[List[str]] = Field(
+        None, description="Colors to exclude from results (hex codes)"
+    )
+    similarity_range: Optional[float] = Field(
+        None, description="Color similarity range (0.0-1.0)", ge=0.0, le=1.0
+    )
+    temperature: Optional[str] = Field(
+        None, description="Color temperature filter (warm/cool/neutral/all)"
+    )
+    brightness_min: Optional[float] = Field(
+        None, description="Minimum brightness (0.0-1.0)", ge=0.0, le=1.0
+    )
+    brightness_max: Optional[float] = Field(
+        None, description="Maximum brightness (0.0-1.0)", ge=0.0, le=1.0
+    )
+    saturation_min: Optional[float] = Field(
+        None, description="Minimum saturation (0.0-1.0)", ge=0.0, le=1.0
+    )
+    saturation_max: Optional[float] = Field(
+        None, description="Maximum saturation (0.0-1.0)", ge=0.0, le=1.0
+    )
+    dominant_color_count_min: Optional[int] = Field(
+        None, description="Minimum dominant color count", ge=1
+    )
+    dominant_color_count_max: Optional[int] = Field(
+        None, description="Maximum dominant color count", ge=1
+    )
+
+
+class FavoritePalette(BaseModel):
+    """Favorite color palette model."""
+
+    id: Optional[str] = Field(None, description="Favorite ID")
+    name: str = Field(..., description="Palette name")
+    colors: List[str] = Field(..., description="List of hex color codes")
+    weights: List[float] = Field(..., description="List of weights")
+    created_at: Optional[str] = Field(None, description="Creation timestamp")
+
+
+class PaletteExportRequest(BaseModel):
+    """Palette export request model."""
+
+    colors: List[str] = Field(..., description="List of hex color codes")
+    weights: Optional[List[float]] = Field(None, description="List of weights")
+    format_type: str = Field(..., description="Export format (css, scss, json, ase, sketch, figma)")
+    metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
+
+
+class ColorHarmonyAnalysis(BaseModel):
+    """Color harmony analysis model."""
+
+    harmony_type: str = Field(..., description="Detected harmony type")
+    confidence: float = Field(..., description="Confidence score (0.0-1.0)")
+    description: str = Field(..., description="Harmony description")
+    suggestions: Optional[List[Dict[str, Any]]] = Field(
+        None, description="Improvement suggestions"
+    )
+
+
+class GradientGenerationRequest(BaseModel):
+    """Gradient generation request model."""
+
+    colors: List[str] = Field(..., description="List of hex color codes")
+    weights: Optional[List[float]] = Field(None, description="List of weights")
+    width: Optional[int] = Field(800, description="Image width")
+    height: Optional[int] = Field(200, description="Image height")
+    direction: Optional[str] = Field("horizontal", description="Gradient direction")
+    gradient_type: Optional[str] = Field("linear", description="Gradient type")
+
+
+class ColorStatistics(BaseModel):
+    """Color statistics model."""
+
+    most_common_colors: List[Dict[str, Any]] = Field(
+        ..., description="Most common colors with frequencies"
+    )
+    color_distribution: Dict[str, int] = Field(..., description="Color distribution chart")
+    average_brightness: float = Field(..., description="Average brightness")
+    average_saturation: float = Field(..., description="Average saturation")
+    temperature_distribution: Dict[str, int] = Field(
+        ..., description="Temperature distribution"
+    )

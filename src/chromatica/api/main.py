@@ -42,6 +42,7 @@ from .routers import search as search_router
 from .routers import stats as stats_router
 from .routers import system as system_router
 from .routers import extract as extract_router
+from .routers import advanced as advanced_router
 
 from ..utils.config import (
     LOG_DIR,
@@ -289,41 +290,69 @@ async def lifespan(app: FastAPI):
         logger.info(f"FAISS path: {FAISS_PATH}")
         logger.info(f"DuckDB path: {DB_PATH}")
 
-        # Check if index files exist
-        if not FAISS_PATH.exists():
-            raise FileNotFoundError(f"FAISS index not found at {FAISS_PATH}")
-        if not DB_PATH.exists():
-            raise FileNotFoundError(f"DuckDB database not found at {DB_PATH}")
+        # Check if index files exist - handle gracefully
+        if not FAISS_PATH.exists() or not DB_PATH.exists():
+            logger.warning("=" * 80)
+            logger.warning("⚠️  WARNING: Index files not found!")
+            logger.warning(f"   FAISS index: {FAISS_PATH.exists()} at {FAISS_PATH}")
+            logger.warning(f"   DuckDB database: {DB_PATH.exists()} at {DB_PATH}")
+            logger.warning("=" * 80)
+            logger.warning("📋 To build the index, run:")
+            logger.warning(f"   python scripts/build_index.py <image_directory> --output-dir {INDEX_DIR}")
+            logger.warning("=" * 80)
+            logger.warning("🔄 Application will start in LIMITED MODE (advanced features only)")
+            logger.warning("   Search functionality will be disabled until index is built.")
+            logger.warning("=" * 80)
+            
+            # Set index and store to None - search will be disabled but app can start
+            index = None
+            store = None
+        else:
+            # Initialize search components if index exists
+            index = AnnIndex(index_path=str(FAISS_PATH))
+            store = MetadataStore(db_path=str(DB_PATH))
 
-        # Initialize search components
-        index = AnnIndex(index_path=str(FAISS_PATH))
-        store = MetadataStore(db_path=str(DB_PATH))
+        # Initialize components if they exist
+        if index is not None and store is not None:
+            # Add diagnostic logging
+            logger.info(f"FAISS index loaded with {index.get_total_vectors()} vectors")
 
-        # Add diagnostic logging
-        logger.info(f"FAISS index loaded with {index.get_total_vectors()} vectors")
+            # Check DuckDB records
+            store.check_stored_ids(limit=5)
 
-        # Check DuckDB records
-        store.check_stored_ids(limit=5)
-
-        # 庁 CRITICAL: Set the global state for the routers to access
-        # PASS THE LOADED 'index' AND 'store' OBJECTS
-        set_global_state(
-            index=index,
-            store=store,
-            increment_func=increment_concurrent_searches,
-            decrement_func=decrement_concurrent_searches,
-            update_func=update_performance_stats,
-            performance_stats=PERFORMANCE_STATS,  # 庁 PASS THE STATS DICT
-            start_time=START_TIME,
-        )
-
-        # Verify counts match
-        faiss_count = index.get_total_vectors()
-        duckdb_count = store.get_image_count()
-        if faiss_count != duckdb_count:
-            logger.warning(
-                f"Count mismatch! FAISS: {faiss_count}, DuckDB: {duckdb_count}"
+            # 庁 CRITICAL: Set the global state for the routers to access
+            # PASS THE LOADED 'index' AND 'store' OBJECTS
+            set_global_state(
+                index=index,
+                store=store,
+                increment_func=increment_concurrent_searches,
+                decrement_func=decrement_concurrent_searches,
+                update_func=update_performance_stats,
+                performance_stats=PERFORMANCE_STATS,  # 庁 PASS THE STATS DICT
+                start_time=START_TIME,
             )
+
+            # Verify counts match
+            faiss_count = index.get_total_vectors()
+            duckdb_count = store.get_image_count()
+            if faiss_count != duckdb_count:
+                logger.warning(
+                    f"Count mismatch! FAISS: {faiss_count}, DuckDB: {duckdb_count}"
+                )
+        else:
+            # Set global state with None values - advanced features will still work
+            set_global_state(
+                index=None,
+                store=None,
+                increment_func=increment_concurrent_searches,
+                decrement_func=decrement_concurrent_searches,
+                update_func=update_performance_stats,
+                performance_stats=PERFORMANCE_STATS,
+                start_time=START_TIME,
+            )
+            logger.info("✅ Application started in LIMITED MODE - advanced features available")
+            logger.info("   Use color palette tools, harmony analysis, gradients, and statistics")
+            logger.info("   Search functionality disabled until index is built")
 
     except Exception as e:
         logger.error(f"Failed to load search components: {e}")
@@ -350,6 +379,7 @@ app.include_router(search_router.router)
 app.include_router(stats_router.router)
 app.include_router(system_router.router)
 app.include_router(extract_router.router)
+app.include_router(advanced_router.router)
 
 # Get absolute path to static directory for mounting
 static_dir = Path(__file__).parent / "static"
