@@ -184,14 +184,11 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     z-index: 9999 !important;
 }
 
+
 .color-palette-swatch {
     display: flex !important;
     align-content: center !important;
     justify-content: center !important;
 }
 
-.modal {
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-}
+

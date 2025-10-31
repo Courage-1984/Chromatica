@@ -115,8 +115,7 @@
             <div class="advanced-filters" id="advancedFilters"
                 style="margin: 20px 0; padding: 20px; background: var(--surface0); border-radius: 12px; border: 1px solid var(--surface1); display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h4
-                        style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                    <h4 style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
                         🎛️ Advanced Filters</h4>
                     <button onclick="toggleAdvancedFilters()"
                         style="background: var(--surface2); color: var(--text); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">Hide</button>
@@ -125,7 +124,8 @@
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
                     <!-- Negative Color Search -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Exclude Colors (Negative Search)</label>
                         <input type="text" id="excludeColors" placeholder="e.g., FF0000,00FF00"
                             style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--base); color: var(--text); font-size: 13px;">
@@ -134,7 +134,8 @@
 
                     <!-- Similarity Range -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Similarity Range: <span id="similarityRangeValue">0.5</span></label>
                         <input type="range" id="similarityRange" min="0" max="1" step="0.01" value="0.5"
                             style="width: 100%;"
@@ -143,7 +144,8 @@
 
                     <!-- Temperature Filter -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Color Temperature</label>
                         <select id="temperatureFilter"
                             style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--base); color: var(--text); font-size: 13px;">
@@ -156,7 +158,8 @@
 
                     <!-- Brightness Range -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Brightness Range</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="range" id="brightnessMin" min="0" max="1" step="0.01" value="0"
@@ -170,7 +173,8 @@
 
                     <!-- Saturation Range -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Saturation Range</label>
                         <div style="display: flex; gap: 10px;">
                             <input type="range" id="saturationMin" min="0" max="1" step="0.01" value="0"
@@ -184,11 +188,11 @@
 
                     <!-- Dominant Color Count -->
                     <div>
-                        <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
+                        <label
+                            style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px; font-weight: 500;">
                             Dominant Color Count</label>
                         <div style="display: flex; gap: 10px;">
-                            <input type="number" id="dominantColorCountMin" min="1" max="20" value="1"
-                                placeholder="Min"
+                            <input type="number" id="dominantColorCountMin" min="1" max="20" value="1" placeholder="Min"
                                 style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--base); color: var(--text); font-size: 13px;">
                             <input type="number" id="dominantColorCountMax" min="1" max="20" value="20"
                                 placeholder="Max"
@@ -217,15 +221,18 @@
                         style="background: var(--mauve); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🎭</span> Triadic
                     </button>
-                    <button onclick="loadPreset('split-complementary', ['FF0000', '00FFFF', 'FFFF00'])" class="preset-btn"
+                    <button onclick="loadPreset('split-complementary', ['FF0000', '00FFFF', 'FFFF00'])"
+                        class="preset-btn"
                         style="background: var(--yellow); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>✨</span> Split-Complementary
                     </button>
-                    <button onclick="loadPreset('tetradic', ['FF0000', '00FF00', '0000FF', 'FFFF00'])" class="preset-btn"
+                    <button onclick="loadPreset('tetradic', ['FF0000', '00FF00', '0000FF', 'FFFF00'])"
+                        class="preset-btn"
                         style="background: var(--teal); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🎪</span> Tetradic
                     </button>
-                    <button onclick="loadPreset('monochrome', ['FF0000', 'CC0000', '990000', '660000'])" class="preset-btn"
+                    <button onclick="loadPreset('monochrome', ['FF0000', 'CC0000', '990000', '660000'])"
+                        class="preset-btn"
                         style="background: var(--red); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>⬛</span> Monochrome
                     </button>
@@ -275,7 +282,8 @@
                         style="background: var(--lavender); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         ⭐ Save Favorite
                     </button>
-                    <button onclick="loadFavorites(); document.getElementById('favoritesList').style.display = document.getElementById('favoritesList').style.display === 'none' ? 'block' : 'none';"
+                    <button
+                        onclick="loadFavorites(); document.getElementById('favoritesList').style.display = document.getElementById('favoritesList').style.display === 'none' ? 'block' : 'none';"
                         style="background: var(--sapphire); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         📋 Favorites
                     </button>
@@ -941,7 +949,8 @@
         <!-- Advanced Visualization Tools -->
         <div class="visualization-tools-section">
             <h2>🎨 Advanced Visualization Tools</h2>
-            <p style="text-align: center; color: var(--subtext1); margin-bottom: 30px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+            <p
+                style="text-align: center; color: var(--subtext1); margin-bottom: 30px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
                 Professional-grade tools for color analysis, search result visualization, and data exploration.
             </p>
 
@@ -1519,7 +1528,8 @@
                             <h6>Analysis Results</h6>
                             <div class="results-content" id="histogramAnalysisResultsContent">
                                 <!-- Results will be populated here -->
-                            </div </div>
+                            </div>
+                        </div>
                         </div>
                     </div>
 
@@ -1530,8 +1540,7 @@
                             <h4 class="tool-title">Distance Debugger</h4>
                         </div>
                         <div class="tool-description">
-                            Debug and analyze Sinkhorn-EMD distance calculations, identify numerical stability issues,
-                            and
+                        Debug and analyze Sinkhorn-EMD distance calculations, identify numerical stability issues, and
                             validate distance metrics.
                         </div>
                         <div class="tool-features">
@@ -1554,8 +1563,7 @@
                         <div class="tool-panel" id="distanceDebuggerPanel" style="display: none;">
                             <div class="panel-header">
                                 <h5>🐛 Distance Debugger Configuration</h5>
-                                <button class="panel-close"
-                                    onclick="toggleToolPanel('distanceDebuggerPanel')">×</button>
+                            <button class="panel-close" onclick="toggleToolPanel('distanceDebuggerPanel')">×</button>
                             </div>
 
                             <div class="panel-content">
@@ -1681,8 +1689,7 @@
                                         Debugger</button>
                                     <button class="action-btn secondary-btn"
                                         onclick="resetDistanceDebuggerForm()">Reset</button>
-                                    <button class="action-btn info-btn"
-                                        onclick="showDistanceDebuggerHelp()">Help</button>
+                                <button class="action-btn info-btn" onclick="showDistanceDebuggerHelp()">Help</button>
                                 </div>
                             </div>
 
@@ -1691,6 +1698,7 @@
                                 <h6>Debug Results</h6>
                                 <div class="results-content" id="distanceDebuggerResultsContent">
                                     <!-- Results will be populated here -->
+                            </div>
                                 </div>
                             </div>
                         </div>
@@ -1741,8 +1749,8 @@
 
                                     <div class="input-group">
                                         <label for="queryVisualizerWeights">Color Weights:</label>
-                                        <input type="text" id="queryVisualizerWeights" class="text-input"
-                                            placeholder="0.6,0.4" value="0.6,0.4">
+                                <input type="text" id="queryVisualizerWeights" class="text-input" placeholder="0.6,0.4"
+                                    value="0.6,0.4">
                                         <small>Enter weights separated by commas (will be normalized to sum to
                                             1.0)</small>
                                     </div>
@@ -1895,10 +1903,8 @@
                                 <div class="panel-actions">
                                     <button class="action-btn primary-btn" onclick="executeQueryVisualizer()">Generate
                                         Visualization</button>
-                                    <button class="action-btn secondary-btn"
-                                        onclick="resetQueryVisualizerForm()">Reset</button>
-                                    <button class="action-btn info-btn"
-                                        onclick="showQueryVisualizerHelp()">Help</button>
+                            <button class="action-btn secondary-btn" onclick="resetQueryVisualizerForm()">Reset</button>
+                            <button class="action-btn info-btn" onclick="showQueryVisualizerHelp()">Help</button>
                                 </div>
                             </div>
 
@@ -1907,6 +1913,7 @@
                                 <h6>Visualization Results</h6>
                                 <div class="results-content" id="queryVisualizerResultsContent">
                                     <!-- Results will be populated here -->
+                        </div>
                                 </div>
                             </div>
                         </div>
@@ -1987,8 +1994,7 @@
                                     <h6>Harmony Metrics</h6>
                                     <div class="input-group">
                                         <label for="harmonyThreshold">Harmony Threshold:</label>
-                                        <input type="range" id="harmonyThreshold" min="0" max="100" value="75"
-                                            class="range-input">
+                            <input type="range" id="harmonyThreshold" min="0" max="100" value="75" class="range-input">
                                         <span id="harmonyThresholdValue">75%</span>
                                     </div>
 
@@ -2032,8 +2038,7 @@
                                 <div class="panel-actions">
                                     <button class="action-btn primary-btn" onclick="executeColorAnalysis()">Run
                                         Analysis</button>
-                                    <button class="action-btn secondary-btn"
-                                        onclick="resetColorAnalysisForm()">Reset</button>
+                        <button class="action-btn secondary-btn" onclick="resetColorAnalysisForm()">Reset</button>
                                     <button class="action-btn info-btn" onclick="showColorAnalysisHelp()">Help</button>
                                 </div>
                             </div>
@@ -2076,10 +2081,8 @@
                 </div>
 
                 <!-- Enhanced Details Modal -->
-                <div id="detailsModal" class="modal">
+                <div id="detailsModal" class="modal" style="display: none;">
                     <div class="modal-content details-modal">
-                        <span class="close">&times;</span>
-                        <h2>Image Details</h2>
                         <div id="imageDetailsContent">
                             <!-- Content will be populated dynamically -->
                         </div>
@@ -2087,7 +2090,7 @@
                 </div>
 
                 <!-- Tool Information Modal -->
-                <div id="toolModal" class="modal">
+    <div id="toolModal" class="modal" style="display: none;">
                     <div class="modal-content">
                         <span class="close" onclick="closeToolModal()">&times;</span>
                         <div id="toolModalContent"></div>
@@ -2099,17 +2102,19 @@
                     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 1000; overflow: auto;">
                     <div class="modal-content"
                         style="background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1); width: 90%; max-width: 700px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 90vh; overflow-y: auto;">
-                        <span class="close"
-                            onclick="document.getElementById('suggestPaletteModal').style.display='none'"
+            <span class="close" onclick="document.getElementById('suggestPaletteModal').style.display='none'"
                             style="position: absolute; top: 15px; right: 20px; color: var(--text); font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</span>
                         
-                        <h2 style="color: var(--text); margin-top: 0; margin-bottom: 10px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+            <h2
+                style="color: var(--text); margin-top: 0; margin-bottom: 10px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
                             🎨 Suggest Color Palette</h2>
                         
-                        <div style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--surface1);">
+            <div
+                style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--surface1);">
                             <p style="color: var(--subtext1); margin: 0; font-size: 14px; line-height: 1.6;">
                                 <strong style="color: var(--text);">Current Colors:</strong>
-                                <span id="currentColorsDisplay" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;"></span>
+                    <span id="currentColorsDisplay"
+                        style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;"></span>
                             </p>
                             <p style="color: var(--subtext0); margin: 10px 0 0 0; font-size: 12px; font-style: italic;">
                                 Palettes will be generated based on your first color selection
@@ -2122,24 +2127,30 @@
                             <div class="scheme-mode" onclick="generatePalette('monochromatic')"
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">⬛</div>
-                                <h3 style="margin: 0 0 8px 0; color: var(--mauve); font-size: 16px; font-weight: 600;">Monochromatic</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Different shades and tints of a single color</p>
+                    <h3 style="margin: 0 0 8px 0; color: var(--mauve); font-size: 16px; font-weight: 600;">Monochromatic
+                    </h3>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Different shades
+                        and tints of a single color</p>
                             </div>
 
                             <!-- Complementary -->
                             <div class="scheme-mode" onclick="generatePalette('complementary')"
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">🎨</div>
-                                <h3 style="margin: 0 0 8px 0; color: var(--blue); font-size: 16px; font-weight: 600;">Complementary</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Two colors opposite on the color wheel</p>
+                    <h3 style="margin: 0 0 8px 0; color: var(--blue); font-size: 16px; font-weight: 600;">Complementary
+                    </h3>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Two colors opposite
+                        on the color wheel</p>
                             </div>
 
                             <!-- Analogous -->
                             <div class="scheme-mode" onclick="generatePalette('analogous')"
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">🌈</div>
-                                <h3 style="margin: 0 0 8px 0; color: var(--green); font-size: 16px; font-weight: 600;">Analogous</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Colors adjacent on the color wheel</p>
+                    <h3 style="margin: 0 0 8px 0; color: var(--green); font-size: 16px; font-weight: 600;">Analogous
+                    </h3>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Colors adjacent on
+                        the color wheel</p>
                             </div>
 
                             <!-- Triadic -->
@@ -2147,40 +2158,48 @@
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">🎭</div>
                                 <h3 style="margin: 0 0 8px 0; color: var(--red); font-size: 16px; font-weight: 600;">Triadic</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Three colors evenly spaced on the wheel</p>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Three colors evenly
+                        spaced on the wheel</p>
                             </div>
 
                             <!-- Split Complementary -->
                             <div class="scheme-mode" onclick="generatePalette('split-complementary')"
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">✨</div>
-                                <h3 style="margin: 0 0 8px 0; color: var(--peach); font-size: 16px; font-weight: 600;">Split Complementary</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">One color and two adjacent to its complement</p>
+                    <h3 style="margin: 0 0 8px 0; color: var(--peach); font-size: 16px; font-weight: 600;">Split
+                        Complementary</h3>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">One color and two
+                        adjacent to its complement</p>
                             </div>
 
                             <!-- Random Harmony -->
                             <div class="scheme-mode" onclick="generatePalette('random')"
                                 style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
                                 <div style="font-size: 32px; margin-bottom: 10px;">🎲</div>
-                                <h3 style="margin: 0 0 8px 0; color: var(--yellow); font-size: 16px; font-weight: 600;">Random Harmony</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Randomly selected harmonious colors</p>
+                    <h3 style="margin: 0 0 8px 0; color: var(--yellow); font-size: 16px; font-weight: 600;">Random
+                        Harmony</h3>
+                    <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Randomly selected
+                        harmonious colors</p>
                             </div>
                         </div>
 
-                        <div id="generatedPalette" style="margin-top: 30px; display: none; padding: 20px; background: var(--surface0); border-radius: 10px; border: 2px solid var(--surface1);">
+            <div id="generatedPalette"
+                style="margin-top: 30px; display: none; padding: 20px; background: var(--surface0); border-radius: 10px; border: 2px solid var(--surface1);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                                <h3 style="color: var(--text); margin: 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Generated Palette</h3>
+                    <h3 style="color: var(--text); margin: 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                        Generated Palette</h3>
                                 <span id="paletteCount" style="color: var(--subtext1); font-size: 12px;"></span>
                             </div>
                             <div id="palettePreview"
-                                style="display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; min-height: 80px; align-items: stretch;"></div>
+                    style="display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; min-height: 80px; align-items: stretch;">
+                </div>
                             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
                                 <button onclick="document.getElementById('suggestPaletteModal').style.display='none'"
                                     style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
                                     Cancel
                                 </button>
                                 <button onclick="applyGeneratedPalette()"
-                                    style="background: var(--blue); color: #000000; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
+                        style="background: var(--blue); color: #000000; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
                                     ✓ Apply Palette
                                 </button>
                             </div>
@@ -2201,8 +2220,7 @@
 
                         <div id="imageUploadArea"
                             style="border: 3px dashed var(--surface2); border-radius: 12px; padding: 40px; text-align: center; background: var(--surface0); cursor: pointer; transition: all 0.3s; margin-bottom: 20px;"
-                            ondrop="handleDrop(event)" ondragover="handleDragOver(event)"
-                            ondragleave="handleDragLeave(event)"
+                ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)"
                             onclick="document.getElementById('imageFileInput').click()">
                             <div style="font-size: 48px; margin-bottom: 15px;">📎</div>
                             <div style="color: var(--text); font-size: 16px; font-weight: bold; margin-bottom: 10px;">
@@ -2218,8 +2236,7 @@
                         </div>
 
                         <div style="margin-bottom: 20px;">
-                            <label
-                                style="display: block; color: var(--text); margin-bottom: 10px; font-weight: bold;">Number
+                <label style="display: block; color: var(--text); margin-bottom: 10px; font-weight: bold;">Number
                                 of colors to extract:</label>
                             <input type="number" id="numColorsToExtract" min="1" max="10" value="5"
                                 style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 14px;">
@@ -2228,8 +2245,7 @@
                         </div>
 
                         <div id="extractionStatus" style="display: none; margin-bottom: 20px;">
-                            <div
-                                style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: center;">
                                 <div style="color: var(--yellow); font-size: 18px; margin-bottom: 10px;">⏳</div>
                                 <div style="color: var(--text);">Extracting colors...</div>
                             </div>
@@ -2239,7 +2255,7 @@
                             <button onclick="closeImageUploadModal()"
                                 style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
                             <button onclick="extractColorsFromImage()"
-                                style="background: var(--teal); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract
+                    style="background: var(--teal); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract
                                 Colors</button>
                         </div>
                     </div>
@@ -2248,7 +2264,7 @@
 
             <!-- Sticky Restart Button -->
             <div id="restartButton"
-                style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: #000000; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
+        style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: #000000; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
                 onclick="restartServer()" title="Restart Chromatica Server">
                 🔄 Restart Server
             </div>

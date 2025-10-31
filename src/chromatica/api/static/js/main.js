@@ -1660,9 +1660,9 @@ function showImageDetails(result, rank) {
     }
 
     const modalContent = `
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--surface2);">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid var(--surface2); position: relative;">
             <h2 style="margin: 0; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Image Details - Rank #${rank}</h2>
-            <button class="close" style="background: none; border: none; font-size: 24px; color: var(--text); cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            <button class="close" onclick="window.closeDetailsModal()" style="background: var(--yellow) !important; border: none !important; font-size: 32px !important; color: #000000 !important; cursor: pointer !important; padding: 0 !important; width: 40px !important; height: 40px !important; border-radius: 50% !important; display: flex !important; align-items: center !important; justify-content: center !important; position: absolute !important; top: 15px !important; right: 20px !important; z-index: 1001 !important; transition: all 0.2s !important; font-weight: bold !important;">&times;</button>
         </div>
         <div class="modal-body" style="padding: 20px; max-height: 60vh; overflow-y: auto;">
             <div class="details-section" style="margin-bottom: 25px;">
@@ -1789,43 +1789,74 @@ function showImageDetails(result, rank) {
         </div>
     `;
 
-    modal.innerHTML = modalContent;
+    // Set content in the modal content div, not the modal itself
+    const modalContentDiv = document.getElementById('imageDetailsContent');
+    if (modalContentDiv) {
+        modalContentDiv.innerHTML = modalContent;
+    }
 
-    // Apply 70% size and center the modal
+    // Show the modal with proper styling
     modal.style.cssText = `
-        display: block;
-        position: fixed;
-        z-index: 1000;
-        left: 50%;
-        top: 50%;
-        transform: translate(-50%, -50%);
-        width: 70%;
-        max-width: 800px;
-        max-height: 85vh;
-        background: var(--base);
-        border: 1px solid var(--surface2);
-        border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        overflow: hidden;
+        display: flex !important;
+        position: fixed !important;
+        z-index: 1000 !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        transform: none !important;
+        background-color: rgba(0, 0, 0, 0.85) !important;
+        align-items: center !important;
+        justify-content: center !important;
+        overflow-y: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
     `;
 
-    // Add event listener to close button
-    const closeBtn = modal.querySelector('.close');
+    // Ensure modal-content has proper styling
+    const modalContentEl = modal.querySelector('.modal-content');
+    if (modalContentEl) {
+        modalContentEl.style.cssText = `
+            background: var(--base) !important;
+            border: 2px solid var(--surface1) !important;
+            border-radius: 12px !important;
+            width: 90% !important;
+            max-width: 800px !important;
+            max-height: 90vh !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            position: relative !important;
+            overflow: hidden !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        `;
+    }
+
+    // Add event listener to close button - find the dynamically created one
+    const closeBtn = modalContentDiv ? modalContentDiv.querySelector('.close') : modal.querySelector('.close');
     if (closeBtn) {
-        closeBtn.onclick = function () {
-            modal.style.display = 'none';
+        closeBtn.onclick = function (e) {
+            e.stopPropagation();
+            window.closeDetailsModal();
         };
     }
 
-    // Close modal when clicking outside
-    const closeModal = (event) => {
+    // Close modal when clicking outside the modal-content
+    modal.onclick = function (event) {
         if (event.target === modal) {
-            modal.style.display = 'none';
+            window.closeDetailsModal();
         }
     };
 
-    // Remove previous event listeners and add new one
-    modal.onclick = closeModal;
+    // Prevent modal-content clicks from closing the modal
+    if (modalContentEl) {
+        modalContentEl.onclick = function (e) {
+            e.stopPropagation();
+        };
+    }
 }
 
 // Function to download preview grid as image
@@ -5025,6 +5056,14 @@ window.showToolInfo = function (toolId) {
 // Function to close the tool modal
 window.closeToolModal = function () {
     const modal = document.getElementById('toolModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+};
+
+// Function to close the details modal
+window.closeDetailsModal = function () {
+    const modal = document.getElementById('detailsModal');
     if (modal) {
         modal.style.display = 'none';
     }
