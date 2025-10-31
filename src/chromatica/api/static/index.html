@@ -36,42 +36,28 @@
         <div class="color-input-section">
             <h2>Color Query</h2>
             <div id="colorInputs">
-                <div class="color-row">
-                    <input type="color" class="color-picker" value="#FF0000">
-                    <select class="color-format-select"
-                        style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px;">
-                        <option value="HEX">HEX</option>
-                        <option value="RGB">RGB</option>
-                        <option value="HSL">HSL</option>
-                        <option value="HSV">HSV</option>
-                        <option value="CMYK">CMYK</option>
-                    </select>
-                    <input type="text" class="color-format-input" placeholder="#FF0000" value="#FF0000"
-                        style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px; width: 120px;">
-                    <button class="randomize-color-btn" onclick="randomizeColorRow(this)" title="Randomize this color"
-                        style="background: var(--lavender); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px;">🔀</button>
-                    <input type="range" class="weight-slider" min="0" max="100" value="100" step="1">
-                    <span class="weight-value">100%</span>
-                    <button onclick="removeColor(this)"
-                        style="background: #e53e3e; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Remove</button>
-                </div>
+                <!-- Initial row will be created by addColorRow() on page load -->
             </div>
             <!-- Color Suggestions -->
             <div id="colorSuggestions"></div>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
-                <button class="add-color-btn" onclick="addColor()">➕ Add Another Color</button>
-                <button class="suggest-palette-btn" onclick="showSuggestPaletteModal()"
-                    style="background: var(--mauve); color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                <button onclick="addColor()"
+                    style="background: var(--blue); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
+                    <span style="font-size: 16px;">➕</span>
+                    <span>Add Another Color</span>
+                </button>
+                <button onclick="showSuggestPaletteModal()"
+                    style="background: var(--mauve); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🎨</span>
                     <span>Suggest Palette</span>
                 </button>
                 <button onclick="rollDice()"
-                    style="background: var(--yellow); color: var(--base); padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: bold;">
+                    style="background: var(--yellow); color: var(--base); padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🎲</span>
                     <span>Roll Dice</span>
                 </button>
                 <button onclick="showImageUploadModal()"
-                    style="background: var(--teal); color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    style="background: var(--teal); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🖼️</span>
                     <span>Input Image</span>
                 </button>
@@ -2260,76 +2246,95 @@
                 </div>
 
                 <!-- Suggest Palette Modal -->
-                <div id="suggestPaletteModal" class="modal">
-                    <div class="modal-content" style="width: 90%; max-width: 600px;">
+                <div id="suggestPaletteModal" class="modal"
+                    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 1000; overflow: auto;">
+                    <div class="modal-content"
+                        style="background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1); width: 90%; max-width: 700px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); max-height: 90vh; overflow-y: auto;">
                         <span class="close"
-                            onclick="document.getElementById('suggestPaletteModal').style.display='none'">&times;</span>
-                        <h2 style="color: var(--text); margin-top: 0;">🎨 Suggest Color Palette</h2>
+                            onclick="document.getElementById('suggestPaletteModal').style.display='none'"
+                            style="position: absolute; top: 15px; right: 20px; color: var(--text); font-size: 32px; font-weight: bold; cursor: pointer; line-height: 1; transition: color 0.2s;">&times;</span>
+                        
+                        <h2 style="color: var(--text); margin-top: 0; margin-bottom: 10px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                            🎨 Suggest Color Palette</h2>
+                        
+                        <div style="background: var(--surface0); padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--surface1);">
+                            <p style="color: var(--subtext1); margin: 0; font-size: 14px; line-height: 1.6;">
+                                <strong style="color: var(--text);">Current Colors:</strong>
+                                <span id="currentColorsDisplay" style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap;"></span>
+                            </p>
+                            <p style="color: var(--subtext0); margin: 10px 0 0 0; font-size: 12px; font-style: italic;">
+                                Palettes will be generated based on your first color selection
+                            </p>
+                        </div>
 
                         <div class="scheme-modes"
-                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin: 20px 0;">
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0;">
                             <!-- Monochromatic -->
                             <div class="scheme-mode" onclick="generatePalette('monochromatic')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--mauve);">Monochromatic</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Different shades and
-                                    tints of a
-                                    single color</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">⬛</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--mauve); font-size: 16px; font-weight: 600;">Monochromatic</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Different shades and tints of a single color</p>
                             </div>
 
                             <!-- Complementary -->
                             <div class="scheme-mode" onclick="generatePalette('complementary')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--blue);">Complementary</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Two colors opposite on
-                                    the color
-                                    wheel</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">🎨</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--blue); font-size: 16px; font-weight: 600;">Complementary</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Two colors opposite on the color wheel</p>
                             </div>
 
                             <!-- Analogous -->
                             <div class="scheme-mode" onclick="generatePalette('analogous')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--green);">Analogous</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Colors adjacent on the
-                                    color
-                                    wheel</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">🌈</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--green); font-size: 16px; font-weight: 600;">Analogous</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Colors adjacent on the color wheel</p>
                             </div>
 
                             <!-- Triadic -->
                             <div class="scheme-mode" onclick="generatePalette('triadic')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--red);">Triadic</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Three colors evenly
-                                    spaced on the
-                                    wheel</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">🎭</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--red); font-size: 16px; font-weight: 600;">Triadic</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Three colors evenly spaced on the wheel</p>
                             </div>
 
                             <!-- Split Complementary -->
                             <div class="scheme-mode" onclick="generatePalette('split-complementary')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--peach);">Split Complementary</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">One color and two
-                                    adjacent to its
-                                    complement</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">✨</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--peach); font-size: 16px; font-weight: 600;">Split Complementary</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">One color and two adjacent to its complement</p>
                             </div>
 
                             <!-- Random Harmony -->
                             <div class="scheme-mode" onclick="generatePalette('random')"
-                                style="cursor: pointer; padding: 15px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 8px; transition: all 0.2s;">
-                                <h3 style="margin: 0 0 10px 0; color: var(--yellow);">Random Harmony</h3>
-                                <p style="color: var(--subtext1); margin: 0; font-size: 14px;">Randomly selected
-                                    harmonious
-                                    colors</p>
+                                style="cursor: pointer; padding: 20px; background: var(--surface0); border: 2px solid var(--surface2); border-radius: 10px; transition: all 0.3s; text-align: center;">
+                                <div style="font-size: 32px; margin-bottom: 10px;">🎲</div>
+                                <h3 style="margin: 0 0 8px 0; color: var(--yellow); font-size: 16px; font-weight: 600;">Random Harmony</h3>
+                                <p style="color: var(--subtext1); margin: 0; font-size: 12px; line-height: 1.4;">Randomly selected harmonious colors</p>
                             </div>
                         </div>
 
-                        <div id="generatedPalette" style="margin-top: 20px; display: none;">
-                            <h3 style="color: var(--text);">Generated Palette</h3>
-                            <div id="palettePreview" style="display: flex; gap: 10px; margin: 15px 0;"></div>
-                            <button onclick="applyGeneratedPalette()"
-                                style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
-                                Apply Palette
-                            </button>
+                        <div id="generatedPalette" style="margin-top: 30px; display: none; padding: 20px; background: var(--surface0); border-radius: 10px; border: 2px solid var(--surface1);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3 style="color: var(--text); margin: 0; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">Generated Palette</h3>
+                                <span id="paletteCount" style="color: var(--subtext1); font-size: 12px;"></span>
+                            </div>
+                            <div id="palettePreview"
+                                style="display: flex; gap: 8px; margin: 15px 0; flex-wrap: wrap; min-height: 80px; align-items: stretch;"></div>
+                            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                                <button onclick="document.getElementById('suggestPaletteModal').style.display='none'"
+                                    style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                                    Cancel
+                                </button>
+                                <button onclick="applyGeneratedPalette()"
+                                    style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
+                                    ✓ Apply Palette
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

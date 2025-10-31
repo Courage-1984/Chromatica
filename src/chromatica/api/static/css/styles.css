@@ -2644,3 +2644,9 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     transform: scale(1.1);
 }
 
+.modal {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+}
+

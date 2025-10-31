@@ -190,3 +190,8 @@ background: #e53e3e !important;
     justify-content: center !important;
 }
 
+.modal {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+}

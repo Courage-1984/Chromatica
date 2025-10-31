@@ -17,9 +17,25 @@ window.addColor = function () {
 // Update colors, weights, and color palette
 window.updateColors = function () {
     console.log('Updating colors');
-    const colorPickers = document.querySelectorAll('.color-picker');
-    window.colors = Array.from(colorPickers).map(picker => picker.value);
+    // Try multiple selectors to find all color pickers (including hidden ones)
+    let colorPickers = document.querySelectorAll('input.color-picker[type="color"]');
+    if (colorPickers.length === 0) {
+        colorPickers = document.querySelectorAll('.color-picker');
+    }
+    if (colorPickers.length === 0) {
+        // Fallback: find all color inputs
+        colorPickers = document.querySelectorAll('input[type="color"]');
+    }
+    window.colors = Array.from(colorPickers).map(picker => {
+        const value = picker.value;
+        // Ensure hex format with #
+        if (value && value !== '') {
+            return value.startsWith('#') ? value : '#' + value;
+        }
+        return null;
+    }).filter(color => color && color !== '#' && color !== '#null');
     console.log('Colors updated:', window.colors);
+    console.log('Found', colorPickers.length, 'color pickers,', window.colors.length, 'valid colors');
 };
 
 window.updateWeights = function () {
@@ -1199,16 +1215,49 @@ window.performSearch = async function () {
         const weights = [];
         let totalWeight = 0;
 
-        colorRows.forEach(row => {
-            const picker = row.querySelector('.color-picker');
+        colorRows.forEach((row, index) => {
+            // Try multiple selectors to find the hidden color picker
+            let picker = row.querySelector('input[data-color-picker="true"]');
+            if (!picker) {
+                picker = row.querySelector('input.color-picker[type="color"]');
+            }
+            if (!picker) {
+                picker = row.querySelector('.color-picker[type="color"]');
+            }
+            if (!picker) {
+                picker = row.querySelector('input.color-picker');
+            }
+            if (!picker) {
+                picker = row.querySelector('.color-picker');
+            }
+            if (!picker) {
+                // Fallback: find any color input in the row
+                picker = row.querySelector('input[type="color"]');
+            }
             const slider = row.querySelector('.weight-slider');
 
             if (picker && slider) {
-                const color = picker.value.substring(1); // Remove # from hex color
-                const weight = parseInt(slider.value);
-                colors.push(color);
-                weights.push(weight);
-                totalWeight += weight;
+                let color = picker.value;
+                console.log(`[Search] Row ${index}: Found picker with value:`, color, 'picker id:', picker.id);
+                // Ensure we have the color value and remove # if present
+                if (color && color !== '') {
+                    if (color.startsWith('#')) {
+                        color = color.substring(1); // Remove # from hex color
+                    }
+                    const weight = parseInt(slider.value) || 100;
+                    colors.push(color);
+                    weights.push(weight);
+                    totalWeight += weight;
+                    console.log(`[Search] Row ${index}: Added color ${color} with weight ${weight}`);
+                } else {
+                    console.warn(`[Search] Row ${index}: Color picker found but has no value:`, picker, 'picker.value:', picker.value);
+                }
+            } else {
+                console.warn(`[Search] Row ${index}: Missing picker or slider:`, { 
+                    picker: !!picker, 
+                    slider: !!slider,
+                    availableInputs: row.querySelectorAll('input').length
+                });
             }
         });
 
@@ -2560,6 +2609,9 @@ function addColorRow(color, weight = 100) {
     colorPicker.type = 'color';
     colorPicker.className = 'color-picker';
     colorPicker.value = color;
+    colorPicker.id = 'color-picker-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    // Ensure it's accessible even when hidden
+    colorPicker.setAttribute('data-color-picker', 'true');
     // We'll handle the event listener in a unified way below
     // Not adding event listener here to avoid duplicates
 
@@ -2575,13 +2627,13 @@ function addColorRow(color, weight = 100) {
     });
     formatSelect.value = 'HEX';
 
-    // Color format input
+    // Color format input - increased width for long color formats
     const formatInput = document.createElement('input');
     formatInput.type = 'text';
     formatInput.className = 'color-format-input';
     formatInput.placeholder = '#FF0000';
     formatInput.value = color;
-    formatInput.style.cssText = 'padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px; width: 120px;';
+    formatInput.style.cssText = 'padding: 8px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px; width: 250px; min-width: 250px; flex: 1;';
 
     // Randomize button
     const randomizeBtn = document.createElement('button');
@@ -2645,94 +2697,481 @@ function addColorRow(color, weight = 100) {
     removeButton.textContent = 'Remove';
     removeButton.onclick = () => window.removeColor(removeButton);
 
-    // Append all elements to the color row
-    // Create info container for extra color details
-    const infoContainer = document.createElement('div');
-    infoContainer.className = 'color-info-container';
-    infoContainer.style.display = 'flex';
-    infoContainer.style.flexDirection = 'column';
-    infoContainer.style.marginLeft = '10px';
+    // Restructure layout: Create input container with label above and complementary below
+    const inputContainer = document.createElement('div');
+    inputContainer.style.display = 'flex';
+    inputContainer.style.flexDirection = 'column';
+    inputContainer.style.gap = '6px';
+    inputContainer.style.marginRight = '10px';
 
-    // Add color name with enhanced styling
-    colorName.style.fontWeight = 'bold';
-    infoContainer.appendChild(colorName);
+    // Color name above input
+    const colorNameLabel = document.createElement('div');
+    colorNameLabel.style.fontSize = '11px';
+    colorNameLabel.style.color = 'var(--subtext1)';
+    colorNameLabel.style.fontWeight = '500';
+    colorNameLabel.style.marginBottom = '2px';
+    colorNameLabel.textContent = resolvedColorName;
 
-    // Add RGB values
-    const rgb = hexToRgb(color);
-    const rgbInfo = document.createElement('span');
-    rgbInfo.className = 'color-rgb-info';
-    rgbInfo.style.fontSize = '11px';
-    rgbInfo.style.color = 'var(--subtext0)';
-    rgbInfo.textContent = `RGB: ${rgb.r}, ${rgb.g}, ${rgb.b}`;
-    infoContainer.appendChild(rgbInfo);
+    // Input wrapper
+    const inputWrapper = document.createElement('div');
+    inputWrapper.style.display = 'flex';
+    inputWrapper.style.gap = '6px';
+    inputWrapper.style.alignItems = 'center';
 
-    // Add HSL values
-    const hsl = hexToHsl(color);
-    const hslInfo = document.createElement('span');
-    hslInfo.className = 'color-hsl-info';
-    hslInfo.style.fontSize = '11px';
-    hslInfo.style.color = 'var(--subtext0)';
-    hslInfo.textContent = `HSL: ${Math.round(hsl.h)}°, ${Math.round(hsl.s * 100)}%, ${Math.round(hsl.l * 100)}%`;
-    infoContainer.appendChild(hslInfo);
+    // Hide default color picker and use custom simple picker
+    // Keep it accessible for queries but visually hidden
+    colorPicker.style.display = 'none';
+    colorPicker.style.position = 'absolute';
+    colorPicker.style.visibility = 'hidden';
+    colorPicker.style.width = '0';
+    colorPicker.style.height = '0';
+    colorPicker.style.opacity = '0';
+    colorPicker.style.pointerEvents = 'none';
 
-    // Add complementary color info
-    const complementaryColor = getComplementaryColor(color);
-    const complementaryName = getColorName(complementaryColor);
-
+    // Create simple color picker button
+    const simpleColorPicker = document.createElement('button');
+    simpleColorPicker.type = 'button';
+    simpleColorPicker.className = 'simple-color-picker';
+    simpleColorPicker.style.cssText = 'width: 50px; height: 40px; border: 2px solid var(--surface2); border-radius: 6px; cursor: pointer; background: ' + color + '; padding: 0; position: relative; overflow: hidden; flex-shrink: 0;';
+    simpleColorPicker.title = 'Click to pick color';
+    
+    // Create simple color picker modal
+    const createSimpleColorPicker = () => {
+        const pickerModal = document.createElement('div');
+        pickerModal.id = 'simpleColorPickerModal_' + Date.now();
+        pickerModal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; display: flex; justify-content: center; align-items: center;';
+        
+        const pickerContent = document.createElement('div');
+        pickerContent.style.cssText = 'background: var(--base); padding: 20px; border-radius: 12px; border: 2px solid var(--surface1); max-width: 400px; width: 90%;';
+        
+        const pickerCanvas = document.createElement('canvas');
+        pickerCanvas.width = 300;
+        pickerCanvas.height = 300;
+        pickerCanvas.style.cssText = 'width: 100%; height: auto; border-radius: 8px; cursor: crosshair; border: 2px solid var(--surface2);';
+        
+        const lightnessSlider = document.createElement('input');
+        lightnessSlider.type = 'range';
+        lightnessSlider.min = '0';
+        lightnessSlider.max = '100';
+        lightnessSlider.value = '50';
+        lightnessSlider.style.cssText = 'width: 100%; margin: 15px 0;';
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Close';
+        closeBtn.style.cssText = 'background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px;';
+        closeBtn.onclick = () => pickerModal.remove();
+        
+        // Draw simple color wheel
+        const ctx = pickerCanvas.getContext('2d');
+        const centerX = pickerCanvas.width / 2;
+        const centerY = pickerCanvas.height / 2;
+        const radius = 140;
+        
+        // Helper function to convert HSL to RGB
+        const hslToRgb = (h, s, l) => {
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1/6) return p + (q - p) * 6 * t;
+                    if (t < 1/2) return q;
+                    if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                    return p;
+                };
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            return {
+                r: Math.round(r * 255),
+                g: Math.round(g * 255),
+                b: Math.round(b * 255)
+            };
+        };
+        
+        const drawColorWheel = (lightness) => {
+            for (let angle = 0; angle < 360; angle += 2) {
+                const hue = angle;
+                for (let r = 0; r < radius; r += 3) {
+                    const saturation = (r / radius) * 100;
+                    const x = centerX + Math.cos(angle * Math.PI / 180) * r;
+                    const y = centerY + Math.sin(angle * Math.PI / 180) * r;
+                    const rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+                    ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+                    ctx.fillRect(x, y, 3, 3);
+                }
+            }
+        };
+        
+        drawColorWheel(50);
+        
+        // Floating color display - shows current color while dragging
+        const floatingColorDisplay = document.createElement('div');
+        floatingColorDisplay.id = 'floatingColorDisplay_' + Date.now();
+        floatingColorDisplay.style.cssText = 'position: fixed; top: 20px; left: 20px; background: var(--base); border: 2px solid var(--mauve); border-radius: 12px; padding: 15px; z-index: 2100; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); display: none; min-width: 200px;';
+        
+        const colorSwatchDisplay = document.createElement('div');
+        colorSwatchDisplay.style.cssText = 'width: 60px; height: 60px; border-radius: 8px; border: 2px solid var(--surface2); margin: 0 auto 10px;';
+        
+        const colorHexDisplay = document.createElement('div');
+        colorHexDisplay.style.cssText = 'text-align: center; font-family: monospace; font-size: 18px; font-weight: bold; color: var(--text); margin-bottom: 5px;';
+        
+        const colorNameDisplay = document.createElement('div');
+        colorNameDisplay.style.cssText = 'text-align: center; font-size: 12px; color: var(--subtext1); font-weight: 500;';
+        
+        floatingColorDisplay.appendChild(colorSwatchDisplay);
+        floatingColorDisplay.appendChild(colorHexDisplay);
+        floatingColorDisplay.appendChild(colorNameDisplay);
+        document.body.appendChild(floatingColorDisplay);
+        
+        lightnessSlider.addEventListener('input', (e) => {
+            ctx.clearRect(0, 0, pickerCanvas.width, pickerCanvas.height);
+            drawColorWheel(e.target.value);
+            // Update floating display if visible
+            if (floatingColorDisplay.style.display === 'block' && isDragging) {
+                // Recalculate color with new lightness
+                const lastEvent = { clientX: 0, clientY: 0 }; // Will be updated on next mousemove
+                // For now, just redraw - display will update on next mouse move
+            }
+        });
+        
+        // Helper to update color from canvas coordinates
+        const updateColorFromCanvas = (e) => {
+            const rect = pickerCanvas.getBoundingClientRect();
+            let x = e.clientX - rect.left - centerX;
+            let y = e.clientY - rect.top - centerY;
+            
+            // Clamp coordinates to canvas bounds for continuous dragging outside
+            const distance = Math.sqrt(x * x + y * y);
+            if (distance > radius) {
+                // Clamp to edge of circle
+                const angle = Math.atan2(y, x);
+                x = Math.cos(angle) * radius;
+                y = Math.sin(angle) * radius;
+            }
+            
+            const clampedDistance = Math.sqrt(x * x + y * y);
+            const angle = (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            const hue = angle;
+            const saturation = (clampedDistance / radius) * 100;
+            const lightness = parseFloat(lightnessSlider.value);
+            
+            const rgb = hslToRgb(hue / 360, saturation / 100, lightness / 100);
+            const hex = rgbToHex(rgb.r, rgb.g, rgb.b);
+            
+            // Update floating display with current color
+            colorSwatchDisplay.style.backgroundColor = hex;
+            colorHexDisplay.textContent = hex;
+            colorNameDisplay.textContent = getColorName(hex);
+            floatingColorDisplay.style.display = 'block';
+            
+            // Update actual color picker (but don't trigger full update while dragging)
+            colorPicker.value = hex;
+            formatInput.value = convertColorToFormat(hex, formatSelect.value);
+            simpleColorPicker.style.background = hex;
+            
+            // Trigger updateSimplePicker if available to update color name and complementary
+            // We need to get the colorRow from the colorPicker's parent
+            const colorRow = colorPicker.closest('.color-row');
+            if (colorRow && colorRow._updateSimplePicker) {
+                // Call updateSimplePicker to update color name and complementary color
+                try {
+                    colorRow._updateSimplePicker();
+                } catch (e) {
+                    console.warn('[Modal Color Picker] Error calling updateSimplePicker:', e);
+                }
+            } else {
+                console.warn('[Modal Color Picker] ColorRow or _updateSimplePicker not found', {
+                    colorRow: !!colorRow,
+                    hasUpdateFunction: colorRow ? !!colorRow._updateSimplePicker : false
+                });
+            }
+        };
+        
+        let isDragging = false;
+        
+        // Global mouse move handler (defined before use)
+        const handleGlobalMouseMove = (e) => {
+            if (isDragging) {
+                updateColorFromCanvas(e);
+            }
+        };
+        
+        pickerCanvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            floatingColorDisplay.style.display = 'block';
+            updateColorFromCanvas(e);
+            // Add global listener for dragging outside canvas
+            document.addEventListener('mousemove', handleGlobalMouseMove);
+        });
+        
+        pickerCanvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                updateColorFromCanvas(e);
+            }
+        });
+        
+        pickerCanvas.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                document.removeEventListener('mousemove', handleGlobalMouseMove);
+                
+                // Final update: trigger all update functions
+                const colorRow = colorPicker.closest('.color-row');
+                if (colorRow && colorRow._updateSimplePicker) {
+                    colorRow._updateSimplePicker();
+                }
+                
+                // Manually trigger input and change events to ensure all listeners fire
+                const inputEvent = new Event('input', { bubbles: true });
+                const changeEvent = new Event('change', { bubbles: true });
+                colorPicker.dispatchEvent(inputEvent);
+                colorPicker.dispatchEvent(changeEvent);
+                
+                // Final update with full handler trigger
+                if (window.handleColorPickerChange) {
+                    window.handleColorPickerChange({ target: colorPicker });
+                }
+                
+                floatingColorDisplay.style.display = 'none';
+                floatingColorDisplay.remove();
+                pickerModal.remove();
+            }
+        });
+        
+        // Global mouseup to handle release outside canvas
+        const handleGlobalMouseUp = () => {
+            if (isDragging) {
+                isDragging = false;
+                document.removeEventListener('mousemove', handleGlobalMouseMove);
+                document.removeEventListener('mouseup', handleGlobalMouseUp);
+                
+                // Final update: trigger all update functions
+                const colorRow = colorPicker.closest('.color-row');
+                if (colorRow && colorRow._updateSimplePicker) {
+                    colorRow._updateSimplePicker();
+                }
+                
+                // Manually trigger input and change events to ensure all listeners fire
+                const inputEvent = new Event('input', { bubbles: true });
+                const changeEvent = new Event('change', { bubbles: true });
+                colorPicker.dispatchEvent(inputEvent);
+                colorPicker.dispatchEvent(changeEvent);
+                
+                // Final update with full handler trigger
+                if (window.handleColorPickerChange) {
+                    window.handleColorPickerChange({ target: colorPicker });
+                }
+                
+                floatingColorDisplay.style.display = 'none';
+                floatingColorDisplay.remove();
+                pickerModal.remove();
+            }
+        };
+        document.addEventListener('mouseup', handleGlobalMouseUp);
+        
+        pickerCanvas.addEventListener('mouseleave', () => {
+            // Don't stop dragging - allow dragging outside canvas
+            // Display will continue to update via global mousemove
+        });
+        
+        // Also support click (without drag)
+        pickerCanvas.addEventListener('click', (e) => {
+            if (!isDragging) {
+                updateColorFromCanvas(e);
+                
+                // Trigger all update functions
+                const colorRow = colorPicker.closest('.color-row');
+                if (colorRow && colorRow._updateSimplePicker) {
+                    colorRow._updateSimplePicker();
+                }
+                
+                // Manually trigger input and change events to ensure all listeners fire
+                const inputEvent = new Event('input', { bubbles: true });
+                const changeEvent = new Event('change', { bubbles: true });
+                colorPicker.dispatchEvent(inputEvent);
+                colorPicker.dispatchEvent(changeEvent);
+                
+                // Trigger full update
+                if (window.handleColorPickerChange) {
+                    window.handleColorPickerChange({ target: colorPicker });
+                }
+                
+                floatingColorDisplay.style.display = 'none';
+                floatingColorDisplay.remove();
+                pickerModal.remove();
+            }
+        });
+        
+        // Update floating display when lightness changes
+        lightnessSlider.addEventListener('input', (e) => {
+            if (isDragging) {
+                // Get current mouse position to update color
+                // For now, just redraw wheel - the display will update on next mouse move
+                ctx.clearRect(0, 0, pickerCanvas.width, pickerCanvas.height);
+                drawColorWheel(e.target.value);
+            }
+        });
+        
+        // Close button should also hide floating display
+        closeBtn.onclick = () => {
+            floatingColorDisplay.style.display = 'none';
+            floatingColorDisplay.remove();
+            pickerModal.remove();
+        };
+        
+        // Click outside modal to close
+        pickerModal.addEventListener('click', (e) => {
+            if (e.target === pickerModal) {
+                document.removeEventListener('mousemove', handleGlobalMouseMove);
+                floatingColorDisplay.style.display = 'none';
+                floatingColorDisplay.remove();
+                pickerModal.remove();
+            }
+        });
+        
+        // Clean up global listener when modal closes
+        const originalCloseBtnOnclick = closeBtn.onclick;
+        closeBtn.onclick = () => {
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+            floatingColorDisplay.style.display = 'none';
+            floatingColorDisplay.remove();
+            pickerModal.remove();
+        };
+        
+        pickerContent.appendChild(pickerCanvas);
+        pickerContent.appendChild(lightnessSlider);
+        pickerContent.appendChild(closeBtn);
+        pickerModal.appendChild(pickerContent);
+        document.body.appendChild(pickerModal);
+    };
+    
+    simpleColorPicker.onclick = createSimpleColorPicker;
+    
+    // Complementary color below input
+    let complementaryColor = getComplementaryColor(color);
+    let complementaryName = getColorName(complementaryColor);
+    
     const complementaryContainer = document.createElement('div');
     complementaryContainer.className = 'complementary-color';
     complementaryContainer.style.display = 'flex';
     complementaryContainer.style.alignItems = 'center';
+    complementaryContainer.style.gap = '6px';
     complementaryContainer.style.marginTop = '4px';
+    complementaryContainer.style.cursor = 'pointer';
+    complementaryContainer.title = 'Click to use complementary color';
 
     const complementarySwatch = document.createElement('div');
-    complementarySwatch.style.width = '15px';
-    complementarySwatch.style.height = '15px';
+    complementarySwatch.style.width = '20px';
+    complementarySwatch.style.height = '20px';
     complementarySwatch.style.backgroundColor = complementaryColor;
     complementarySwatch.style.border = '1px solid var(--surface2)';
-    complementarySwatch.style.borderRadius = '3px';
-    complementarySwatch.style.marginRight = '6px';
+    complementarySwatch.style.borderRadius = '4px';
+    complementarySwatch.style.flexShrink = '0';
 
     const complementaryInfo = document.createElement('span');
-    complementaryInfo.style.fontSize = '11px';
+    complementaryInfo.style.fontSize = '10px';
     complementaryInfo.style.color = 'var(--subtext0)';
-    complementaryInfo.textContent = `Complementary: ${complementaryName} (${complementaryColor})`;
+    complementaryInfo.textContent = `Complementary: ${complementaryName}`;
 
     complementaryContainer.appendChild(complementarySwatch);
     complementaryContainer.appendChild(complementaryInfo);
-    infoContainer.appendChild(complementaryContainer);
+    
+    // Update complementary color when main color changes
+    const updateComplementary = () => {
+        complementaryColor = getComplementaryColor(colorPicker.value);
+        complementaryName = getColorName(complementaryColor);
+        complementarySwatch.style.backgroundColor = complementaryColor;
+        complementaryInfo.textContent = `Complementary: ${complementaryName}`;
+        complementaryContainer.title = 'Click to use complementary color: ' + complementaryColor;
+    };
+    
+    // Update simple picker, color name, format input, and complementary when color changes
+    const updateSimplePicker = () => {
+        const currentColor = colorPicker.value;
+        console.log('[updateSimplePicker] Updating for color:', currentColor);
+        
+        // Update simple color picker button
+        simpleColorPicker.style.background = currentColor;
+        
+        // Update format input
+        updateFormatInput();
+        
+        // Update color name label
+        const newColorName = getColorName(currentColor);
+        colorNameLabel.textContent = newColorName;
+        console.log('[updateSimplePicker] Updated color name to:', newColorName);
+        
+        // Update complementary color
+        updateComplementary();
+        
+        // Update global colors array
+        if (window.updateColors) {
+            window.updateColors();
+        }
+    };
+    
+    // Store updateSimplePicker reference on the colorRow for randomizeColorRow to use
+    colorRow._updateSimplePicker = updateSimplePicker;
+    
+    // Listen to color picker changes (both input and change events)
+    // Use capture phase to ensure we catch events even if stopPropagation is called
+    colorPicker.addEventListener('input', updateSimplePicker, true);
+    colorPicker.addEventListener('change', updateSimplePicker, true);
+    
+    // Click complementary to use it
+    complementaryContainer.onclick = () => {
+        colorPicker.value = complementaryColor;
+        formatInput.value = convertColorToFormat(complementaryColor, formatSelect.value);
+        simpleColorPicker.style.background = complementaryColor;
+        updateComplementary(); // Update to get new complementary of the complementary
+        if (window.handleColorPickerChange) {
+            window.handleColorPickerChange({ target: colorPicker });
+        }
+    };
 
+    // Build input container
+    inputContainer.appendChild(colorNameLabel);
+    inputWrapper.appendChild(simpleColorPicker);
+    inputWrapper.appendChild(formatSelect);
+    inputWrapper.appendChild(formatInput);
+    inputContainer.appendChild(inputWrapper);
+    inputContainer.appendChild(complementaryContainer);
+
+    // IMPORTANT: Append the hidden colorPicker to the colorRow so it's in the DOM and findable
+    // It's hidden but needs to be accessible for queries and event listeners
     colorRow.appendChild(colorPicker);
-    colorRow.appendChild(formatSelect);
-    colorRow.appendChild(formatInput);
+
+    // Append elements to row
+    colorRow.appendChild(inputContainer);
     colorRow.appendChild(randomizeBtn);
     colorRow.appendChild(weightSlider);
     colorRow.appendChild(weightValue);
     colorRow.appendChild(removeButton);
-    colorRow.appendChild(infoContainer);
-
-    // Add styles for color name
-    const colorNameElement = colorRow.querySelector('.color-name');
-    if (colorNameElement) {
-        colorNameElement.style.fontSize = '12px';
-        colorNameElement.style.color = 'var(--subtext0)';
-        colorNameElement.style.marginLeft = '10px';
-        colorNameElement.style.fontStyle = 'italic';
-        colorNameElement.style.display = 'inline-block'; // Ensure visibility
-    }
 
     colorInputs.appendChild(colorRow);
 
     // Add event listeners to new elements
-    const newColorPicker = colorRow.querySelector('.color-picker');
+    // Use the actual colorPicker variable we created, not querySelector
+    const newColorPicker = colorPicker; // Use the variable directly since we just created it
     const newWeightSlider = colorRow.querySelector('.weight-slider');
     const weightDisplay = colorRow.querySelector('.weight-value');
-    const colorNameDisplay = colorRow.querySelector('.color-name');
 
     if (newColorPicker) {
+        console.log('[addColorRow] Attaching event listeners to color picker:', newColorPicker.id || 'no-id');
         // Attach the unified handler
-        newColorPicker.addEventListener('change', window.handleColorPickerChange);
-        newColorPicker.addEventListener('input', window.handleColorPickerChange); // For live updates
+        if (window.handleColorPickerChange) {
+            newColorPicker.addEventListener('change', window.handleColorPickerChange);
+            newColorPicker.addEventListener('input', window.handleColorPickerChange); // For live updates
+        }
+    } else {
+        console.warn('[addColorRow] Color picker not found for event listeners!');
     }
 
     if (newWeightSlider && weightDisplay) {
@@ -3615,6 +4054,55 @@ window.turnOff3DVisualization = function () {
 window.showSuggestPaletteModal = function () {
     const modal = document.getElementById('suggestPaletteModal');
     if (modal) {
+        // Update current colors display
+        window.updateColors();
+        const currentColors = window.colors || [];
+        const currentColorsDisplay = document.getElementById('currentColorsDisplay');
+        
+        if (currentColorsDisplay) {
+            currentColorsDisplay.innerHTML = '';
+            if (currentColors.length === 0) {
+                currentColorsDisplay.innerHTML = '<span style="color: var(--subtext0); font-style: italic;">No colors selected</span>';
+            } else {
+                currentColors.forEach(color => {
+                    const colorSwatch = document.createElement('div');
+                    colorSwatch.style.width = '40px';
+                    colorSwatch.style.height = '40px';
+                    colorSwatch.style.backgroundColor = color;
+                    colorSwatch.style.borderRadius = '6px';
+                    colorSwatch.style.border = '2px solid var(--surface2)';
+                    colorSwatch.style.cursor = 'pointer';
+                    colorSwatch.style.position = 'relative';
+                    colorSwatch.title = color;
+                    
+                    // Add hex label on hover
+                    const hexLabel = document.createElement('div');
+                    hexLabel.style.position = 'absolute';
+                    hexLabel.style.bottom = '-25px';
+                    hexLabel.style.left = '50%';
+                    hexLabel.style.transform = 'translateX(-50%)';
+                    hexLabel.style.background = 'rgba(0, 0, 0, 0.8)';
+                    hexLabel.style.color = 'white';
+                    hexLabel.style.padding = '2px 6px';
+                    hexLabel.style.borderRadius = '4px';
+                    hexLabel.style.fontSize = '10px';
+                    hexLabel.style.whiteSpace = 'nowrap';
+                    hexLabel.style.display = 'none';
+                    hexLabel.textContent = color;
+                    colorSwatch.appendChild(hexLabel);
+                    
+                    colorSwatch.addEventListener('mouseenter', () => {
+                        hexLabel.style.display = 'block';
+                    });
+                    colorSwatch.addEventListener('mouseleave', () => {
+                        hexLabel.style.display = 'none';
+                    });
+                    
+                    currentColorsDisplay.appendChild(colorSwatch);
+                });
+            }
+        }
+        
         // Reset any previously generated palette
         const generatedPaletteDiv = document.getElementById('generatedPalette');
         if (generatedPaletteDiv) {
@@ -3625,13 +4113,15 @@ window.showSuggestPaletteModal = function () {
         // Add hover effects to scheme modes
         const schemeModes = modal.querySelectorAll('.scheme-mode');
         schemeModes.forEach(mode => {
-            mode.addEventListener('mouseover', () => {
-                mode.style.transform = 'scale(1.02)';
+            mode.addEventListener('mouseenter', () => {
+                mode.style.transform = 'translateY(-2px) scale(1.02)';
                 mode.style.borderColor = 'var(--mauve)';
+                mode.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
             });
-            mode.addEventListener('mouseout', () => {
-                mode.style.transform = 'scale(1)';
+            mode.addEventListener('mouseleave', () => {
+                mode.style.transform = 'translateY(0) scale(1)';
                 mode.style.borderColor = 'var(--surface2)';
+                mode.style.boxShadow = 'none';
             });
         });
 
@@ -3643,8 +4133,11 @@ window.showSuggestPaletteModal = function () {
 window.generatePalette = function (scheme) {
     console.log('Generating palette for scheme:', scheme);
 
-    // Get the currently selected colors
+    // Get the currently selected colors - use ALL colors, not just first
+    window.updateColors();
     const currentColors = window.colors || [];
+    
+    // Use the primary (first) color as the base, but consider all colors for correlation
     let baseColor = currentColors[0] || '#FF0000';
     if (baseColor.startsWith('#')) {
         baseColor = baseColor.substring(1);
@@ -3654,15 +4147,31 @@ window.generatePalette = function (scheme) {
     switch (scheme) {
         case 'monochromatic':
             newColors = generateMonochromaticScheme(baseColor);
+            // If user has multiple colors, add variations that correlate with them
+            if (currentColors.length > 1) {
+                newColors = enhancePaletteWithCorrelation(newColors, currentColors, 'monochromatic');
+            }
             break;
         case 'complementary':
             newColors = [baseColor, getComplementaryColor(baseColor)];
+            // If user has multiple colors, try to match their complementary relationships
+            if (currentColors.length > 1) {
+                newColors = enhancePaletteWithCorrelation(newColors, currentColors, 'complementary');
+            }
             break;
         case 'analogous':
             newColors = generateAnalogousScheme(baseColor);
+            // Correlate with user's existing analogous colors
+            if (currentColors.length > 1) {
+                newColors = enhancePaletteWithCorrelation(newColors, currentColors, 'analogous');
+            }
             break;
         case 'triadic':
             newColors = generateTriadicScheme(baseColor);
+            // Correlate with user's triadic colors if they exist
+            if (currentColors.length > 1) {
+                newColors = enhancePaletteWithCorrelation(newColors, currentColors, 'triadic');
+            }
             break;
         case 'split-complementary':
             // Generate split complementary colors
@@ -3673,19 +4182,42 @@ window.generatePalette = function (scheme) {
                 hslToHex((hsl.h + 30) % 360, hsl.s, hsl.l),
                 hslToHex((hsl.h - 30 + 360) % 360, hsl.s, hsl.l)
             ];
+            // Correlate with user's colors
+            if (currentColors.length > 1) {
+                newColors = enhancePaletteWithCorrelation(newColors, currentColors, 'split-complementary');
+            }
             break;
         case 'random':
-            // Generate a random harmonious palette
-            const randomHue = Math.floor(Math.random() * 360);
-            newColors = [
-                hslToHex(randomHue, 70, 50),
-                hslToHex((randomHue + 120) % 360, 70, 50),
-                hslToHex((randomHue + 240) % 360, 70, 50),
-                hslToHex(randomHue, 85, 35),
-                hslToHex(randomHue, 60, 65)
-            ];
+            // Generate a random harmonious palette, but try to correlate with user colors
+            if (currentColors.length > 0) {
+                // Use the average hue of user's colors
+                const avgHsl = getAverageHsl(currentColors);
+                const randomHue = avgHsl ? avgHsl.h : Math.floor(Math.random() * 360);
+                newColors = [
+                    hslToHex(randomHue, 70, 50),
+                    hslToHex((randomHue + 120) % 360, 70, 50),
+                    hslToHex((randomHue + 240) % 360, 70, 50),
+                    hslToHex(randomHue, 85, 35),
+                    hslToHex(randomHue, 60, 65)
+                ];
+            } else {
+                const randomHue = Math.floor(Math.random() * 360);
+                newColors = [
+                    hslToHex(randomHue, 70, 50),
+                    hslToHex((randomHue + 120) % 360, 70, 50),
+                    hslToHex((randomHue + 240) % 360, 70, 50),
+                    hslToHex(randomHue, 85, 35),
+                    hslToHex(randomHue, 60, 65)
+                ];
+            }
             break;
     }
+
+    // Ensure all colors have # prefix
+    newColors = newColors.map(color => {
+        if (!color.startsWith('#')) return '#' + color;
+        return color;
+    });
 
     // Store the generated palette
     window.generatedPalette = newColors;
@@ -3693,46 +4225,83 @@ window.generatePalette = function (scheme) {
     // Show the preview
     const previewDiv = document.getElementById('palettePreview');
     const generatedPaletteDiv = document.getElementById('generatedPalette');
+    const paletteCount = document.getElementById('paletteCount');
 
     if (previewDiv && generatedPaletteDiv) {
         // Clear previous preview
         previewDiv.innerHTML = '';
 
-        // Create swatches for each color
-        newColors.forEach(color => {
-            if (!color.startsWith('#')) color = '#' + color;
+        // Update palette count
+        if (paletteCount) {
+            paletteCount.textContent = `${newColors.length} colors`;
+        }
 
+        // Create swatches for each color
+        newColors.forEach((color, index) => {
             const swatch = document.createElement('div');
             swatch.style.flex = '1';
-            swatch.style.height = '60px';
-            swatch.style.borderRadius = '6px';
+            swatch.style.minWidth = '80px';
+            swatch.style.height = '80px';
+            swatch.style.borderRadius = '8px';
             swatch.style.backgroundColor = color;
             swatch.style.position = 'relative';
             swatch.style.border = '2px solid var(--surface2)';
             swatch.style.cursor = 'pointer';
+            swatch.style.transition = 'all 0.2s';
             swatch.title = `${color} - ${getColorName(color)}`;
 
-            // Add color name and hex
+            // Add color info overlay
             const colorInfo = document.createElement('div');
             colorInfo.style.position = 'absolute';
             colorInfo.style.bottom = '0';
             colorInfo.style.left = '0';
             colorInfo.style.right = '0';
-            colorInfo.style.background = 'rgba(0, 0, 0, 0.7)';
+            colorInfo.style.background = 'rgba(0, 0, 0, 0.75)';
             colorInfo.style.color = 'white';
-            colorInfo.style.padding = '4px';
-            colorInfo.style.fontSize = '10px';
+            colorInfo.style.padding = '6px';
+            colorInfo.style.fontSize = '11px';
             colorInfo.style.textAlign = 'center';
-            colorInfo.style.borderRadius = '0 0 4px 4px';
+            colorInfo.style.borderRadius = '0 0 6px 6px';
+            colorInfo.style.fontFamily = 'monospace';
             colorInfo.textContent = color;
 
             swatch.appendChild(colorInfo);
 
+            // Hover effect
+            swatch.addEventListener('mouseenter', () => {
+                swatch.style.transform = 'translateY(-4px) scale(1.05)';
+                swatch.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.3)';
+                swatch.style.borderColor = 'var(--mauve)';
+            });
+            swatch.addEventListener('mouseleave', () => {
+                swatch.style.transform = 'translateY(0) scale(1)';
+                swatch.style.boxShadow = 'none';
+                swatch.style.borderColor = 'var(--surface2)';
+            });
+
             // Click to copy
             swatch.addEventListener('click', () => {
                 navigator.clipboard.writeText(color);
-                swatch.style.transform = 'scale(1.05)';
-                setTimeout(() => swatch.style.transform = 'scale(1)', 200);
+                swatch.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    swatch.style.transform = '';
+                }, 200);
+                // Show temporary feedback
+                const feedback = document.createElement('div');
+                feedback.textContent = '✓ Copied!';
+                feedback.style.position = 'absolute';
+                feedback.style.top = '50%';
+                feedback.style.left = '50%';
+                feedback.style.transform = 'translate(-50%, -50%)';
+                feedback.style.background = 'var(--green)';
+                feedback.style.color = 'white';
+                feedback.style.padding = '4px 8px';
+                feedback.style.borderRadius = '4px';
+                feedback.style.fontSize = '12px';
+                feedback.style.fontWeight = 'bold';
+                feedback.style.pointerEvents = 'none';
+                swatch.appendChild(feedback);
+                setTimeout(() => feedback.remove(), 1000);
             });
 
             previewDiv.appendChild(swatch);
@@ -3742,6 +4311,76 @@ window.generatePalette = function (scheme) {
         generatedPaletteDiv.style.display = 'block';
     }
 };
+
+// Helper function to get average HSL from multiple colors
+function getAverageHsl(colors) {
+    if (!colors || colors.length === 0) return null;
+    
+    const hslColors = colors.map(c => hexToHsl(c)).filter(h => h !== null);
+    if (hslColors.length === 0) return null;
+    
+    // Calculate average hue (handling circular nature)
+    let hueSum = 0;
+    let sSum = 0;
+    let lSum = 0;
+    
+    hslColors.forEach(hsl => {
+        hueSum += hsl.h;
+        sSum += hsl.s;
+        lSum += hsl.l;
+    });
+    
+    return {
+        h: Math.round(hueSum / hslColors.length),
+        s: Math.round(sSum / hslColors.length),
+        l: Math.round(lSum / hslColors.length)
+    };
+}
+
+// Enhance palette by correlating with user's existing colors
+function enhancePaletteWithCorrelation(palette, userColors, schemeType) {
+    if (!userColors || userColors.length <= 1) return palette;
+    
+    // Convert to arrays with # prefix
+    const normalizedPalette = palette.map(c => c.startsWith('#') ? c : '#' + c);
+    const normalizedUserColors = userColors.map(c => c.startsWith('#') ? c : '#' + c);
+    
+    // For schemes with specific relationships, try to maintain those relationships
+    // while adjusting colors to be closer to user's existing palette
+    
+    const userHsl = normalizedUserColors.map(c => hexToHsl(c));
+    const baseHsl = userHsl[0];
+    
+    // Adjust palette colors to be more correlated with user colors
+    // by finding the closest user color and adjusting saturation/lightness to match
+    return normalizedPalette.map(paletteColor => {
+        const paletteHsl = hexToHsl(paletteColor);
+        if (!paletteHsl) return paletteColor;
+        
+        // Find closest user color by hue distance
+        let closestUserHsl = baseHsl;
+        let minHueDistance = 360;
+        
+        userHsl.forEach(userH => {
+            if (!userH) return;
+            const hueDist = Math.min(
+                Math.abs(paletteHsl.h - userH.h),
+                360 - Math.abs(paletteHsl.h - userH.h)
+            );
+            if (hueDist < minHueDistance) {
+                minHueDistance = hueDist;
+                closestUserHsl = userH;
+            }
+        });
+        
+        // Blend saturation and lightness toward user's color characteristics
+        // Keep the hue from the generated palette to maintain the scheme relationship
+        const blendedS = paletteHsl.s * 0.7 + closestUserHsl.s * 0.3;
+        const blendedL = paletteHsl.l * 0.7 + closestUserHsl.l * 0.3;
+        
+        return hslToHex(paletteHsl.h, blendedS, blendedL);
+    });
+}
 
 // Apply the generated palette
 window.applyGeneratedPalette = function () {
@@ -4312,6 +4951,12 @@ window.closeToolModal = function () {
 };
 
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize with default color if no rows exist
+    const colorInputs = document.getElementById('colorInputs');
+    if (colorInputs && colorInputs.children.length === 0) {
+        addColorRow('#FF0000', 100);
+    }
+    
     // Add hover effects to scheme modes
     const schemeModes = document.querySelectorAll('.scheme-mode');
     schemeModes.forEach(mode => {
@@ -4332,7 +4977,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Set up event handlers for initial color row(s)
+    // Set up event handlers for initial color row(s) - these should be handled by addColorRow now
     const initialColorRows = document.querySelectorAll('.color-row');
     initialColorRows.forEach(colorRow => {
         const colorPicker = colorRow.querySelector('.color-picker');
@@ -5269,26 +5914,98 @@ function convertFormatToHex(colorString, format) {
  * Randomize the color in a specific row
  */
 window.randomizeColorRow = function (buttonElement) {
+    console.log('[Randomize] Button clicked, buttonElement:', buttonElement);
     const colorRow = buttonElement.closest('.color-row');
-    if (!colorRow) return;
+    if (!colorRow) {
+        console.warn('[Randomize] Color row not found');
+        return;
+    }
+    console.log('[Randomize] Found color row:', colorRow);
 
-    const colorPicker = colorRow.querySelector('.color-picker');
-    if (!colorPicker) return;
+    // Try multiple ways to find the color picker (it's hidden with display: none)
+    let colorPicker = colorRow.querySelector('input.color-picker[type="color"]');
+    if (!colorPicker) {
+        colorPicker = colorRow.querySelector('.color-picker');
+    }
+    if (!colorPicker) {
+        // Try finding by checking all input elements
+        const allInputs = colorRow.querySelectorAll('input');
+        colorPicker = Array.from(allInputs).find(input => input.type === 'color');
+    }
+    
+    if (!colorPicker) {
+        console.warn('[Randomize] Color picker not found. Available elements:', colorRow.querySelectorAll('input'));
+        return;
+    }
+    console.log('[Randomize] Found color picker:', colorPicker);
 
     // Generate random hex color
     const randomHex = '#' + randomHexColor();
+    console.log('[Randomize] Generated random color:', randomHex);
+    
+    // Set color picker value
     colorPicker.value = randomHex;
 
-    // Update format input
-    const formatSelect = colorRow.querySelector('.color-format-select');
-    const formatInput = colorRow.querySelector('.color-format-input');
-    if (formatSelect && formatInput) {
-        formatInput.value = convertColorToFormat(randomHex, formatSelect.value);
+    // Try to use the stored updateSimplePicker function if available
+    if (colorRow._updateSimplePicker) {
+        console.log('[Randomize] Using stored updateSimplePicker function');
+        colorRow._updateSimplePicker();
+    } else {
+        // Fallback: manual updates
+        console.log('[Randomize] Using fallback manual updates');
+        
+        // Update format input
+        const formatSelect = colorRow.querySelector('.color-format-select');
+        const formatInput = colorRow.querySelector('.color-format-input');
+        if (formatSelect && formatInput) {
+            formatInput.value = convertColorToFormat(randomHex, formatSelect.value);
+            console.log('[Randomize] Updated format input:', formatInput.value);
+        }
+
+        // Update simple color picker button
+        const simpleColorPicker = colorRow.querySelector('.simple-color-picker');
+        if (simpleColorPicker) {
+            simpleColorPicker.style.background = randomHex;
+            console.log('[Randomize] Updated simple color picker');
+        }
+
+        // Update color name label (it's in the inputContainer - first div child)
+        const inputContainer = colorRow.querySelector('div[style*="flex-direction: column"]');
+        if (inputContainer) {
+            const colorNameLabel = inputContainer.querySelector('div:first-child');
+            if (colorNameLabel) {
+                const newColorName = getColorName(randomHex);
+                colorNameLabel.textContent = newColorName;
+                console.log('[Randomize] Updated color name label:', newColorName);
+            }
+        }
+
+        // Update complementary color
+        const complementarySwatch = colorRow.querySelector('.complementary-color > div:first-child');
+        const complementaryInfo = colorRow.querySelector('.complementary-color span');
+        if (complementarySwatch && complementaryInfo) {
+            const complementaryColor = getComplementaryColor(randomHex);
+            const complementaryName = getColorName(complementaryColor);
+            complementarySwatch.style.backgroundColor = complementaryColor;
+            complementaryInfo.textContent = `Complementary: ${complementaryName}`;
+            console.log('[Randomize] Updated complementary color:', complementaryColor);
+        }
     }
+
+    // Manually trigger input and change events to ensure all listeners fire
+    const inputEvent = new Event('input', { bubbles: true });
+    const changeEvent = new Event('change', { bubbles: true });
+    colorPicker.dispatchEvent(inputEvent);
+    colorPicker.dispatchEvent(changeEvent);
 
     // Trigger color picker change handler
     if (window.handleColorPickerChange) {
         window.handleColorPickerChange({ target: colorPicker });
+    }
+
+    // Update color palette
+    if (window.updateColorPalette) {
+        window.updateColorPalette();
     }
 
     console.log('[Randomize] Changed color row to:', randomHex);
