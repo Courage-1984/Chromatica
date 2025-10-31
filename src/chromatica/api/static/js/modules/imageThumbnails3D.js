@@ -14,17 +14,91 @@
     let textureLoader = null;
 
     /**
-     * Fetch image data from the API
+     * Generate random hex color
+     */
+    function randomHexColor() {
+        return Math.floor(Math.random() * 16777215).toString(16).toUpperCase().padStart(6, '0');
+    }
+
+    /**
+     * Fetch image data from the API using multiple random color queries for diversity
      */
     async function fetchImageData(limit = 300) {
         try {
-            // Use a broad search to get diverse sample of images
-            const response = await fetch(`/search?colors=808080&weights=1.0&k=${limit}&fast_mode=true`);
-            if (!response.ok) throw new Error('Failed to fetch image data');
+            console.log(`[Thumbnails 3D] Fetching ${limit} diverse images using multiple random queries...`);
             
-            const data = await response.json();
-            console.log(`[Thumbnails 3D] Fetched ${data.results?.length || 0} images`);
-            return data.results || [];
+            // Calculate how many queries we need (API limit is 50 per request)
+            const maxPerQuery = 50; // API MAX_SEARCH_RESULTS
+            const numQueries = Math.ceil(limit / maxPerQuery);
+            const perQuery = Math.min(maxPerQuery, limit);
+            
+            console.log(`[Thumbnails 3D] Will make ${numQueries} queries for ${perQuery} images each`);
+            
+            // Collect all unique results
+            const allResults = new Map(); // Use Map to deduplicate by image_id
+            const seenImageIds = new Set();
+            
+            // Make multiple queries with random colors for diversity
+            const queries = [];
+            for (let i = 0; i < numQueries; i++) {
+                // Generate random colors for diversity
+                const randomColors = [];
+                const numColors = Math.floor(Math.random() * 2) + 1; // 1-2 colors
+                for (let j = 0; j < numColors; j++) {
+                    randomColors.push(randomHexColor());
+                }
+                const colors = randomColors.join(',');
+                const weights = Array(numColors).fill(1.0 / numColors).map(w => w.toFixed(3)).join(',');
+                
+                queries.push(
+                    fetch(`/search?colors=${colors}&weights=${weights}&k=${perQuery}&fast_mode=true`)
+                        .then(res => {
+                            if (!res.ok) {
+                                console.warn(`[Thumbnails 3D] Query ${i+1} failed: ${res.status}`);
+                                return { results: [] };
+                            }
+                            return res.json();
+                        })
+                        .then(data => {
+                            if (data.results) {
+                                data.results.forEach(result => {
+                                    // Deduplicate by image_id
+                                    if (!seenImageIds.has(result.image_id)) {
+                                        seenImageIds.add(result.image_id);
+                                        allResults.set(result.image_id, result);
+                                    }
+                                });
+                            }
+                            return data.results?.length || 0;
+                        })
+                        .catch(error => {
+                            console.warn(`[Thumbnails 3D] Query ${i+1} error:`, error);
+                            return 0;
+                        })
+                );
+            }
+            
+            // Wait for all queries to complete
+            const results = await Promise.all(queries);
+            const totalFetched = Array.from(allResults.values()).length;
+            console.log(`[Thumbnails 3D] Fetched ${totalFetched} unique images from ${numQueries} queries`);
+            
+            // Convert to array and limit to requested amount
+            let finalResults = Array.from(allResults.values());
+            
+            // If we have more than requested, randomly sample
+            if (finalResults.length > limit) {
+                console.log(`[Thumbnails 3D] Sampling ${limit} images from ${finalResults.length} total`);
+                // Shuffle and take first N
+                for (let i = finalResults.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [finalResults[i], finalResults[j]] = [finalResults[j], finalResults[i]];
+                }
+                finalResults = finalResults.slice(0, limit);
+            }
+            
+            console.log(`[Thumbnails 3D] Returning ${finalResults.length} images`);
+            return finalResults;
         } catch (error) {
             console.error('[Thumbnails 3D] Error fetching image data:', error);
             throw error;
