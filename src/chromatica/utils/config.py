@@ -22,7 +22,9 @@ import os
 from pathlib import Path
 from dataclasses import dataclass
 
-from typing import Callable, Optional
+from typing import Callable, Optional, Dict, Any
+import threading
+import time
 
 # CRITICAL FIX: Import the types needed for the GlobalState dataclass
 from ..indexing.store import AnnIndex, MetadataStore
@@ -191,8 +193,9 @@ class GlobalState:
     increment_concurrent_searches: Callable[[], None]
     decrement_concurrent_searches: Callable[[], None]
     update_performance_stats: Callable[[float], None]
+    performance_stats: Dict[str, Any]  # 💡 ADDED
+    start_time: float  # 💡 ADDED
     # Add any other global state variables needed by the router here
-
 
 # This function will be defined and populated in main.py's startup
 global_state_container: GlobalState = GlobalState(
@@ -201,16 +204,28 @@ global_state_container: GlobalState = GlobalState(
     increment_concurrent_searches=lambda: None,
     decrement_concurrent_searches=lambda: None,
     update_performance_stats=lambda x: None,
+    performance_stats={},  # 💡 ADDED (Default empty dict)
+    start_time=0.0,  # 💡 ADDED
 )
 
 
-def set_global_state(index, store, increment_func, decrement_func, update_func):
+def set_global_state(
+    index,
+    store,
+    increment_func,
+    decrement_func,
+    update_func,
+    performance_stats: Dict[str, Any],  # 💡 ADDED ARG
+    start_time: float,  # 💡 ADDED ARG
+):
     """Sets the global state container during application startup."""
     global_state_container.index = index
     global_state_container.store = store
     global_state_container.increment_concurrent_searches = increment_func
     global_state_container.decrement_concurrent_searches = decrement_func
     global_state_container.update_performance_stats = update_func
+    global_state_container.performance_stats = performance_stats  # 💡 ASSIGN
+    global_state_container.start_time = start_time  # 💡 ASSIGN
 
 
 def get_global_state() -> GlobalState:

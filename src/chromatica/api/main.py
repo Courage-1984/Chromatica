@@ -39,6 +39,8 @@ import subprocess
 from dataclasses import asdict
 
 from .routers import search as search_router
+from .routers import stats as stats_router
+from .routers import system as system_router
 
 from ..utils.config import (
     LOG_DIR,
@@ -98,6 +100,37 @@ import json
 api_logger, webui_logger, search_logger, visualization_logger = setup_logging()
 logger = api_logger  # Keep backward compatibility
 
+START_TIME = time.time()
+
+
+# Add new imports
+from typing import Tuple
+from ..core.query import hex_to_lab, normalize_weights
+from ..indexing.pipeline import process_image
+from ..utils.config import MAX_SEARCH_RESULTS, MAX_COLOR_COUNT
+
+# 庁 NEW: Use thread-safe global state for performance tracking (Keep this section)
+max_concurrent_searches = 2
+
+PERFORMANCE_STATS = {
+    "total_searches": 0,
+    "total_time": 0.0,
+    "concurrent_searches": 0,
+    "max_concurrent_searches": max_concurrent_searches,
+    "search_times": [],
+    "lock": threading.Lock(),
+}
+
+performance_stats = {
+    "total_searches": 0,
+    "total_time": 0.0,
+    "concurrent_searches": 0,
+    "max_concurrent_searches": max_concurrent_searches,
+    "search_times": [],
+    "lock": threading.Lock(),
+}
+
+
 # Global variables for the search components
 index: Optional[AnnIndex] = None
 store: Optional[MetadataStore] = None
@@ -105,34 +138,22 @@ store: Optional[MetadataStore] = None
 # Thread pool for CPU-intensive operations
 thread_pool: Optional[ThreadPoolExecutor] = None
 
-# Performance monitoring
-performance_stats = {
-    "total_searches": 0,
-    "concurrent_searches": 0,
-    "max_concurrent_searches": 0,
-    "average_search_time": 0.0,
-    "search_times": [],
-}
-
 # Thread lock for stats updates
 stats_lock = threading.Lock()
 
-# 💡 NEW: Use thread-safe global state for performance tracking
-MAX_CONCURRENT_SEARCHES = 2
-PERFORMANCE_STATS = {
-    "total_searches": 0,
-    "total_time": 0.0,
-    "concurrent_searches": 0,
-    "lock": threading.Lock(),
-}
 
-
-# --- Performance Tracking Functions (Keep these, but make them local or adjust their scope) ---
-def update_performance_stats(search_time: float):
-    # Keep these as helper functions within main.py
+def update_performance_stats(duration: float):
+    """Adds a search duration to the performance statistics."""
     with PERFORMANCE_STATS["lock"]:
         PERFORMANCE_STATS["total_searches"] += 1
-        PERFORMANCE_STATS["total_time"] += search_time
+        PERFORMANCE_STATS["total_time"] += duration
+
+        # 💡 CRITICAL: Update the new 'search_times' list
+        PERFORMANCE_STATS["search_times"].append(duration)
+
+        # Keep the list size manageable for a rolling average (e.g., last 100 searches)
+        if len(PERFORMANCE_STATS["search_times"]) > 100:
+            PERFORMANCE_STATS["search_times"].pop(0)
 
 
 def increment_concurrent_searches():
@@ -151,27 +172,6 @@ def decrement_concurrent_searches():
         PERFORMANCE_STATS["concurrent_searches"] = max(
             0, PERFORMANCE_STATS["concurrent_searches"] - 1
         )
-
-
-# -----------------------------------------------------------------------------------------
-
-def update_performance_stats(search_time: float) -> None:
-    """Update performance statistics in a thread-safe manner."""
-    global performance_stats
-    with stats_lock:
-        performance_stats["total_searches"] += 1
-        performance_stats["search_times"].append(search_time)
-
-        # Keep only last 1000 search times for rolling average
-        if len(performance_stats["search_times"]) > 1000:
-            performance_stats["search_times"] = performance_stats["search_times"][
-                -1000:
-            ]
-
-        # Update average search time
-        performance_stats["average_search_time"] = sum(
-            performance_stats["search_times"]
-        ) / len(performance_stats["search_times"])
 
 
 def increment_concurrent_searches() -> None:
@@ -193,12 +193,6 @@ def decrement_concurrent_searches() -> None:
             0, performance_stats["concurrent_searches"] - 1
         )
 
-
-# Add new imports
-from typing import Tuple
-from ..core.query import hex_to_lab, normalize_weights
-from ..indexing.pipeline import process_image
-from ..utils.config import MAX_SEARCH_RESULTS, MAX_COLOR_COUNT
 
 # Configuration constants derived from environment or defaults
 INDEX_DIR = os.environ.get(
@@ -318,6 +312,8 @@ async def lifespan(app: FastAPI):
             increment_func=increment_concurrent_searches,
             decrement_func=decrement_concurrent_searches,
             update_func=update_performance_stats,
+            performance_stats=PERFORMANCE_STATS,  # 庁 PASS THE STATS DICT
+            start_time=START_TIME,
         )
 
         # Verify counts match
@@ -350,6 +346,9 @@ app = FastAPI(
 )
 
 app.include_router(search_router.router)
+app.include_router(stats_router.router)
+app.include_router(system_router.router)
+
 
 # Get absolute path to static directory for mounting
 static_dir = Path(__file__).parent / "static"

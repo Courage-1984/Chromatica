@@ -366,3 +366,15 @@ python scripts/build_covers_index.py _covers02_100k/done.json _covers02_100k/ima
 $env:CHROMATICA_INDEX_DIR = "$PWD\_covers01_100k_db"
 
 python -m src.chromatica.api.main
+
+
+http://127.0.0.1:8000/get_stats
+
+
+# Using curl
+curl -X POST http://127.0.0.1:8000/restart
+
+# Using Python requests
+import requests
+response = requests.post("http://127.0.0.1:8000/restart")
+
