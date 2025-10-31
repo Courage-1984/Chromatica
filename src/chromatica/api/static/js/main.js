@@ -2795,7 +2795,10 @@ async function loadAllVisualizationModules() {
         'similarityLandscape',
         'rerankingAnimation',
         'imageGlobe',
-        'connectionsGraph'
+        'connectionsGraph',
+        'otTransport3D',
+        'hnswGraphExplorer',
+        'colorDensityVolume'
     ];
 
     try {
@@ -2922,6 +2925,16 @@ window.exportGraphData = async function() {
         return func.apply(this, arguments);
     }
 };
+
+// New visualizations wrappers
+window.generateOTTransport3D = async function(){ await loadVisualizationModule('otTransport3D'); const func = window.generateOTTransport3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.exportOTTransportData = async function(){ await loadVisualizationModule('otTransport3D'); const func = window.exportOTTransportData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+
+window.generateHNSWExplorer = async function(){ await loadVisualizationModule('hnswGraphExplorer'); const func = window.generateHNSWExplorer; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.exportHNSWData = async function(){ await loadVisualizationModule('hnswGraphExplorer'); const func = window.exportHNSWData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+
+window.generateColorDensityVolume = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.generateColorDensityVolume; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.exportColorDensityData = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.exportColorDensityData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
 // ============================================================================
 // 3D VISUALIZATION SHARED UTILITIES
@@ -3092,6 +3105,40 @@ window.randomHistogramImageId = async function() {
         console.error('[Random] Error fetching random image ID:', error);
         alert('Failed to fetch random image ID. Please enter one manually.');
     }
+};
+
+// Random for OT Transport 3D
+window.randomOTColors = function() {
+    const numColors = Math.floor(Math.random() * 3) + 1;
+    const colors = Array.from({ length: numColors }, () => randomHexColor());
+    const el = document.getElementById('otColors'); if (el) el.value = colors.join(',');
+    console.log('[Random] Generated OT colors:', colors.join(','));
+};
+window.randomOTWeights = function() {
+    const el = document.getElementById('otColors');
+    const num = el?.value ? el.value.split(',').length : 1;
+    const ws = Array.from({ length: num }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
+    const sum = ws.reduce((a,b)=>parseFloat(a)+parseFloat(b),0);
+    const norm = ws.map(w => (parseFloat(w)/sum).toFixed(3));
+    const we = document.getElementById('otWeights'); if (we) we.value = norm.join(',');
+    console.log('[Random] Generated OT weights:', norm.join(','));
+};
+
+// Random for HNSW Explorer
+window.randomHNSWColors = function() {
+    const numColors = Math.floor(Math.random() * 3) + 1;
+    const colors = Array.from({ length: numColors }, () => randomHexColor());
+    const el = document.getElementById('hnswColors'); if (el) el.value = colors.join(',');
+    console.log('[Random] Generated HNSW colors:', colors.join(','));
+};
+window.randomHNSWWeights = function() {
+    const el = document.getElementById('hnswColors');
+    const num = el?.value ? el.value.split(',').length : 1;
+    const ws = Array.from({ length: num }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
+    const sum = ws.reduce((a,b)=>parseFloat(a)+parseFloat(b),0);
+    const norm = ws.map(w => (parseFloat(w)/sum).toFixed(3));
+    const we = document.getElementById('hnswWeights'); if (we) we.value = norm.join(',');
+    console.log('[Random] Generated HNSW weights:', norm.join(','));
 };
 
 // ============================================================================

@@ -128,23 +128,50 @@
 
         const colors = Array.isArray(histogramData.dominant_colors) ? histogramData.dominant_colors : [];
         // Compute a safe max proportion to avoid division by zero
-        let maxProportion = Math.max(...colors.map(c => (typeof c.p === 'number' ? c.p : 0)));
-        const hasValidP = colors.some(c => typeof c.p === 'number' && isFinite(c.p) && c.p > 0);
+        // Handle both string format and object format
+        let maxProportion = Math.max(...colors.map(c => {
+            if (typeof c === 'string') return 1.0; // string format gets equal weight
+            return (typeof c.p === 'number' && isFinite(c.p) && c.p > 0) ? c.p : ((typeof c.weight === 'number' && isFinite(c.weight) && c.weight > 0) ? c.weight : 0);
+        }));
+        const hasValidP = colors.some(c => {
+            if (typeof c === 'string') return true;
+            return (typeof c.p === 'number' && isFinite(c.p) && c.p > 0) || (typeof c.weight === 'number' && isFinite(c.weight) && c.weight > 0);
+        });
         if (!isFinite(maxProportion) || maxProportion <= 0) {
             // Fallback if proportions are missing or zero; we'll normalize later
             maxProportion = 1;
         }
 
         colors.forEach((colorData, index) => {
-            const rawHex = (colorData && typeof colorData === 'object') ? colorData.hex : colorData;
+            // Handle both string format ["#FF0000"] and object format [{hex:"#FF0000",p:0.5}]
+            let rawHex = null;
+            let proportion = 1.0 / Math.max(1, colors.length); // default equal weight
+            
+            if (typeof colorData === 'string') {
+                rawHex = colorData;
+                proportion = 1.0 / colors.length; // equal weight for string format
+            } else if (colorData && typeof colorData === 'object') {
+                rawHex = colorData.hex || colorData.color || null;
+                proportion = (typeof colorData.p === 'number' && isFinite(colorData.p) && colorData.p > 0)
+                    ? colorData.p
+                    : (typeof colorData.weight === 'number' && isFinite(colorData.weight) && colorData.weight > 0)
+                        ? colorData.weight
+                        : proportion;
+            } else {
+                console.warn('[Histogram Cloud] Skipping invalid color data:', colorData);
+                return;
+            }
+            
+            if (!rawHex) {
+                console.warn('[Histogram Cloud] No hex color found for:', colorData);
+                return;
+            }
+            
             const hex = (typeof rawHex === 'string') ? rawHex.replace('#','').toUpperCase() : null;
             if (!hex || !/^[0-9A-F]{6}$/.test(hex)) {
                 console.warn('[Histogram Cloud] Skipping invalid hex color:', rawHex);
                 return;
             }
-            const proportion = (typeof colorData.p === 'number' && isFinite(colorData.p))
-                ? colorData.p
-                : (1 / Math.max(1, colors.length));
 
             // Convert hex to Lab (simplified)
             const lab = hexToLab('#' + hex);

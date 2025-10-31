@@ -37,26 +37,94 @@
     }
 
     /**
-     * Simple 3D positioning based on distance from query
+     * Position results in 3D space based on similarity/distance
+     * Similar results cluster together, creating a "landscape" of similarity
      */
     function positionResults(results) {
-        // Use distance to create a landscape
-        // Closer results are higher and closer to center
-        return results.map((result, index) => {
-            const distance = result.distance || 1.0;
-            const angle = (index / results.length) * Math.PI * 2;
+        if (!results || results.length === 0) return [];
+        
+        // Normalize distances to [0, 1] range
+        const distances = results.map(r => r.distance || 1.0);
+        const minDist = Math.min(...distances);
+        const maxDist = Math.max(...distances);
+        const distRange = maxDist - minDist || 1.0;
+        
+        // Extract dominant colors for positioning
+        const positions = results.map((result, index) => {
+            const normalizedDist = distRange > 0 ? (result.distance - minDist) / distRange : 0.5;
             
-            // Position in 3D space: spiral outward based on distance
-            const radius = distance * 30;
-            const height = (1 - distance) * 100; // Closer = higher
+            // Get dominant color for positioning in Lab space
+            let colorHex = '#808080';
+            if (result.dominant_colors && result.dominant_colors.length > 0) {
+                const firstColor = result.dominant_colors[0];
+                if (typeof firstColor === 'string') {
+                    colorHex = firstColor.startsWith('#') ? firstColor : '#' + firstColor;
+                } else if (firstColor && typeof firstColor === 'object') {
+                    colorHex = firstColor.hex || (firstColor.color ? (firstColor.color.startsWith('#') ? firstColor.color : '#' + firstColor.color) : '#808080');
+                }
+            }
+            
+            // Convert to Lab for positioning
+            const lab = hexToLab(colorHex);
+            
+            // Position in 3D space: use Lab coordinates scaled + distance for height
+            // Similar colors cluster together, distance determines height
+            const x = lab.a * 0.8; // Scale a* component
+            const y = normalizedDist * 80; // Height based on distance (farther = lower)
+            const z = lab.b * 0.8; // Scale b* component
             
             return {
-                x: Math.cos(angle) * radius,
-                y: height,
-                z: Math.sin(angle) * radius,
-                result: result
+                x: isFinite(x) ? x : (Math.random() - 0.5) * 50,
+                y: isFinite(y) ? y : normalizedDist * 80,
+                z: isFinite(z) ? z : (Math.random() - 0.5) * 50,
+                result: result,
+                colorHex: colorHex
             };
         });
+        
+        return positions;
+    }
+    
+    function hexToLab(hex) {
+        hex = hex.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16) / 255;
+        const g = parseInt(hex.substring(2, 4), 16) / 255;
+        const b = parseInt(hex.substring(4, 6), 16) / 255;
+        
+        const [X, Y, Z] = rgbToXyz(r, g, b);
+        const [L, a, b_] = xyzToLab(X, Y, Z);
+        
+        return { L, a, b: b_ };
+    }
+    
+    function rgbToXyz(r, g, b) {
+        r = r > 0.04045 ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+        g = g > 0.04045 ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+        b = b > 0.04045 ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+        return [
+            r * 0.4124564 + g * 0.3575761 + b * 0.1804375,
+            r * 0.2126729 + g * 0.7151522 + b * 0.0721750,
+            r * 0.0193339 + g * 0.1191920 + b * 0.9503041
+        ];
+    }
+    
+    function xyzToLab(X, Y, Z) {
+        const Xn = 0.95047, Yn = 1.00000, Zn = 1.08883;
+        const fx = f(X / Xn);
+        const fy = f(Y / Yn);
+        const fz = f(Z / Zn);
+        const L = 116 * fy - 16;
+        const a = 500 * (fx - fy);
+        const b_ = 200 * (fy - fz);
+        return [L, a, b_];
+    }
+    
+    function f(t) {
+        const delta = 6 / 29;
+        if (t > delta * delta * delta) {
+            return Math.pow(t, 1 / 3);
+        }
+        return t / (3 * delta * delta) + 4 / 29;
     }
 
     /**
@@ -131,36 +199,38 @@
 
         const positions = positionResults(results);
 
-        // Create spheres for each result
+        // Create separate spheres for each result (no connections)
         positions.forEach((pos, index) => {
             const result = pos.result;
             const distance = result.distance || 1.0;
 
-            // Get color from dominant colors or default
-            let colorHex = '#808080';
-            if (result.dominant_colors && result.dominant_colors.length > 0) {
-                colorHex = result.dominant_colors[0].hex || result.dominant_colors[0];
-            }
-
+            // Use color from positioning calculation
+            const colorHex = pos.colorHex || '#808080';
             const rgb = hexToRgb(colorHex);
-            const size = Math.max(2, 10 - distance * 5);
+            
+            // Size based on distance (closer = larger, but reasonable range)
+            const normalizedDist = distance / (Math.max(...results.map(r => r.distance || 1.0)) || 1.0);
+            const size = Math.max(2, Math.min(8, 10 - normalizedDist * 6));
 
             const geometry = new THREE.SphereGeometry(size, 16, 16);
             const material = new THREE.MeshPhongMaterial({
                 color: new THREE.Color(rgb.r / 255, rgb.g / 255, rgb.b / 255),
                 emissive: new THREE.Color(rgb.r / 510, rgb.g / 510, rgb.b / 510),
+                emissiveIntensity: 0.3,
                 transparent: true,
-                opacity: 0.8
+                opacity: 0.85
             });
 
             const sphere = new THREE.Mesh(geometry, material);
             sphere.position.set(pos.x, pos.y, pos.z);
-            sphere.userData = { result, index };
+            sphere.userData = { result, index, distance };
 
-            // Add label (text sprite would be better, but simple approach)
+            // Add as separate sphere (no connections - this is a landscape, not a path)
             scene.add(sphere);
             resultPoints.push(sphere);
         });
+        
+        console.log(`[Similarity Landscape] Created ${resultPoints.length} separate spheres positioned by similarity`);
     }
 
     function hexToRgb(hex) {
