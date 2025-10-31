@@ -100,10 +100,10 @@ function createExportModal() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: var(--text);">Export Data</h3>
             <button onclick="document.getElementById('exportModal').style.display='none'" 
-                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
         </div>
         <pre id="exportContent" style="background: var(--surface0); padding: 15px; border-radius: 8px; overflow-x: auto; color: var(--text); font-family: 'JetBrainsMono Nerd Font Mono', monospace; font-size: 12px; max-height: 60vh; overflow-y: auto;"></pre>
-        <button id="copyExportBtn" style="margin-top: 15px; background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Copy to Clipboard</button>
+        <button id="copyExportBtn" style="margin-top: 15px; background: var(--teal); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Copy to Clipboard</button>
     `;
     
     modal.appendChild(content);
@@ -262,7 +262,7 @@ function showGradientResult(data) {
             <div style="margin-bottom: 20px;">
                 <h4 style="color: var(--text);">Gradient Image (${data.width}x${data.height}):</h4>
                 <img src="${data.data_url}" style="max-width: 100%; border: 1px solid var(--surface2); border-radius: 8px; margin-bottom: 15px;" alt="Generated Gradient">
-                <button onclick="downloadGradientImage('${data.data_url}')" style="background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Download Image</button>
+                <button onclick="downloadGradientImage('${data.data_url}')" style="background: var(--teal); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">Download Image</button>
             </div>
         `;
     }
@@ -283,7 +283,7 @@ function createGradientModal() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: var(--text);">Generated Gradient</h3>
             <button onclick="document.getElementById('gradientModal').style.display='none'" 
-                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
         </div>
         <div id="gradientContent"></div>
     `;
@@ -487,7 +487,7 @@ function showFavoritesList(favorites) {
             <div style="background: var(--surface0); padding: 15px; border-radius: 8px; border: 1px solid var(--surface2);">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <h5 style="margin: 0; color: var(--text);">${fav.name}</h5>
-                    <button onclick="deleteFavorite('${fav.id}')" style="background: var(--red); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">×</button>
+                    <button onclick="deleteFavorite('${fav.id}')" style="background: var(--red); color: #000000; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">×</button>
                 </div>
                 <div style="display: flex; gap: 5px; margin-bottom: 10px;">`;
         
@@ -496,7 +496,7 @@ function showFavoritesList(favorites) {
         });
         
         html += `</div>
-                <button onclick="loadFavorite('${fav.id}')" style="width: 100%; background: var(--teal); color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Load</button>
+                <button onclick="loadFavorite('${fav.id}')" style="width: 100%; background: var(--teal); color: #000000; border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">Load</button>
             </div>`;
     });
     

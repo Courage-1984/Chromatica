@@ -449,7 +449,7 @@ window.updateVisualization = function (data) {
                         position: absolute;
                         bottom: 0;
                         background: rgba(0, 0, 0, 0.7);
-                        color: white;
+                        color: #000000;
                         padding: 3px 5px;
                         font-size: 10px;
                         text-align: center;
@@ -469,7 +469,7 @@ window.updateVisualization = function (data) {
                 <a href="#resultsSection" style="
                     display: inline-block;
                     background: var(--blue);
-                    color: white;
+                    color: #000000;
                     padding: 8px 16px;
                     border-radius: 8px;
                     text-decoration: none;
@@ -481,7 +481,7 @@ window.updateVisualization = function (data) {
                 <button onclick="window.downloadPreviewGrid()" style="
                     display: inline-block;
                     background: var(--green);
-                    color: white;
+                    color: #000000;
                     border: none;
                     padding: 8px 16px;
                     border-radius: 8px;
@@ -863,7 +863,7 @@ window.generateResultsCollage = function () {
     const generateButton = document.createElement('button');
     generateButton.onclick = () => window.generateResultsCollage();
     generateButton.style.background = 'var(--mauve)';
-    generateButton.style.color = 'white';
+    generateButton.style.color = '#000000';
     generateButton.style.border = 'none';
     generateButton.style.padding = '10px 20px';
     generateButton.style.borderRadius = '6px';
@@ -879,7 +879,7 @@ window.generateResultsCollage = function () {
     downloadButton.id = 'downloadCollageBtn';
     downloadButton.onclick = () => window.downloadCollage();
     downloadButton.style.background = 'var(--green)';
-    downloadButton.style.color = 'white';
+    downloadButton.style.color = '#000000';
     downloadButton.style.border = 'none';
     downloadButton.style.padding = '10px 20px';
     downloadButton.style.borderRadius = '6px';
@@ -951,7 +951,7 @@ window.generateResultsCollage = function () {
         overlay.style.position = 'absolute'; overlay.style.inset = '0'; overlay.style.background = 'rgba(0,0,0,0.6)'; overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s ease'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
         if (index < 3) { const rankColors = ['var(--yellow)', 'var(--subtext0)', 'var(--peach)']; const rankEmoji = ['🥇', '🥈', '🥉']; const badge = document.createElement('div'); badge.style.position = 'absolute'; badge.style.top = '5px'; badge.style.left = '5px'; badge.style.backgroundColor = rankColors[index]; badge.style.color = '#000'; badge.style.padding = '3px 6px'; badge.style.borderRadius = '20px'; badge.style.fontSize = '12px'; badge.style.fontWeight = 'bold'; badge.style.zIndex = '2'; badge.innerHTML = `${rankEmoji[index]}${index + 1}`; imgContainer.appendChild(badge); }
         const distanceIndicator = document.createElement('div');
-        distanceIndicator.style.position = 'absolute'; distanceIndicator.style.bottom = '0'; distanceIndicator.style.left = '0'; distanceIndicator.style.right = '0'; distanceIndicator.style.padding = '4px'; distanceIndicator.style.backgroundColor = 'rgba(0,0,0,0.7)'; distanceIndicator.style.color = 'white'; distanceIndicator.style.fontSize = '10px'; distanceIndicator.style.textAlign = 'center'; distanceIndicator.textContent = `d: ${distance}`;
+        distanceIndicator.style.position = 'absolute'; distanceIndicator.style.bottom = '0'; distanceIndicator.style.left = '0'; distanceIndicator.style.right = '0'; distanceIndicator.style.padding = '4px'; distanceIndicator.style.backgroundColor = 'rgba(0,0,0,0.7)'; distanceIndicator.style.color = '#000000'; distanceIndicator.style.fontSize = '10px'; distanceIndicator.style.textAlign = 'center'; distanceIndicator.textContent = `d: ${distance}`;
         imgContainer.addEventListener('mouseover', () => { img.style.transform = 'scale(1.05)'; overlay.style.opacity = '0.3'; });
         imgContainer.addEventListener('mouseout', () => { img.style.transform = 'scale(1)'; overlay.style.opacity = '0'; });
         imgContainer.addEventListener('click', () => window.showImageInModal(imgSrc));
@@ -1283,7 +1283,7 @@ window.updateSearchResults = function (data) {
 
         const overlayText = document.createElement('div');
         overlayText.className = 'overlay-text';
-        overlayText.style.color = 'white';
+        overlayText.style.color = '#000000';
         overlayText.style.fontSize = '14px';
         overlayText.style.fontWeight = 'bold';
         overlayText.innerHTML = 'Click to view';

@@ -69,7 +69,7 @@ window.createColorWheel = function(containerId = 'colorWheelContainer') {
     // Add button
     const addButton = document.createElement('button');
     addButton.textContent = 'Add Color to Palette';
-    addButton.style.cssText = 'width: 100%; background: var(--teal); color: white; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin-top: 15px;';
+    addButton.style.cssText = 'width: 100%; background: var(--teal); color: #000000; border: none; padding: 12px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin-top: 15px;';
     
     let currentHue = 0;
     let currentSaturation = 100;

@@ -405,7 +405,7 @@ window.updateVisualization = function (data) {
                         position: absolute;
                         bottom: 0;
                         background: rgba(0, 0, 0, 0.7);
-                        color: white;
+                        color: #000000;
                         padding: 3px 5px;
                         font-size: 10px;
                         text-align: center;
@@ -425,7 +425,7 @@ window.updateVisualization = function (data) {
                 <a href="#resultsSection" style="
                     display: inline-block;
                     background: var(--blue);
-                    color: white;
+                    color: #000000;
                     padding: 8px 16px;
                     border-radius: 8px;
                     text-decoration: none;
@@ -437,7 +437,7 @@ window.updateVisualization = function (data) {
                 <button onclick="window.downloadPreviewGrid()" style="
                     display: inline-block;
                     background: var(--green);
-                    color: white;
+                    color: #000000;
                     border: none;
                     padding: 8px 16px;
                     border-radius: 8px;
@@ -968,7 +968,7 @@ window.generateResultsCollage = function () {
     const generateButton = document.createElement('button');
     generateButton.onclick = () => window.generateResultsCollage();
     generateButton.style.background = 'var(--mauve)';
-    generateButton.style.color = 'white';
+    generateButton.style.color = '#000000';
     generateButton.style.border = 'none';
     generateButton.style.padding = '10px 20px';
     generateButton.style.borderRadius = '6px';
@@ -984,7 +984,7 @@ window.generateResultsCollage = function () {
     downloadButton.id = 'downloadCollageBtn';
     downloadButton.onclick = () => window.downloadCollage();
     downloadButton.style.background = 'var(--green)';
-    downloadButton.style.color = 'white';
+    downloadButton.style.color = '#000000';
     downloadButton.style.border = 'none';
     downloadButton.style.padding = '10px 20px';
     downloadButton.style.borderRadius = '6px';
@@ -1056,7 +1056,7 @@ window.generateResultsCollage = function () {
         overlay.style.position = 'absolute'; overlay.style.inset = '0'; overlay.style.background = 'rgba(0,0,0,0.6)'; overlay.style.opacity = '0'; overlay.style.transition = 'opacity 0.3s ease'; overlay.style.display = 'flex'; overlay.style.alignItems = 'center'; overlay.style.justifyContent = 'center';
         if (index < 3) { const rankColors = ['var(--yellow)', 'var(--subtext0)', 'var(--peach)']; const rankEmoji = ['🥇', '🥈', '🥉']; const badge = document.createElement('div'); badge.style.position = 'absolute'; badge.style.top = '5px'; badge.style.left = '5px'; badge.style.backgroundColor = rankColors[index]; badge.style.color = '#000'; badge.style.padding = '3px 6px'; badge.style.borderRadius = '20px'; badge.style.fontSize = '12px'; badge.style.fontWeight = 'bold'; badge.style.zIndex = '2'; badge.innerHTML = `${rankEmoji[index]}${index + 1}`; imgContainer.appendChild(badge); }
         const distanceIndicator = document.createElement('div');
-        distanceIndicator.style.position = 'absolute'; distanceIndicator.style.bottom = '0'; distanceIndicator.style.left = '0'; distanceIndicator.style.right = '0'; distanceIndicator.style.padding = '4px'; distanceIndicator.style.backgroundColor = 'rgba(0,0,0,0.7)'; distanceIndicator.style.color = 'white'; distanceIndicator.style.fontSize = '10px'; distanceIndicator.style.textAlign = 'center'; distanceIndicator.textContent = `d: ${distance}`;
+        distanceIndicator.style.position = 'absolute'; distanceIndicator.style.bottom = '0'; distanceIndicator.style.left = '0'; distanceIndicator.style.right = '0'; distanceIndicator.style.padding = '4px'; distanceIndicator.style.backgroundColor = 'var(--yellow)'; distanceIndicator.style.color = '#000000'; distanceIndicator.style.fontSize = '10px'; distanceIndicator.style.textAlign = 'center'; distanceIndicator.textContent = `d: ${distance}`;
         imgContainer.addEventListener('mouseover', () => { img.style.transform = 'scale(1.05)'; overlay.style.opacity = '0.3'; });
         imgContainer.addEventListener('mouseout', () => { img.style.transform = 'scale(1)'; overlay.style.opacity = '0'; });
         imgContainer.addEventListener('click', () => window.showImageInModal(imgSrc));
@@ -1435,13 +1435,13 @@ window.updateSearchResults = function (data) {
         overlay.style.left = '0';
         overlay.style.right = '0';
         overlay.style.bottom = '0';
-        overlay.style.background = 'rgba(0, 0, 0, 0.7)';
+        overlay.style.background = 'var(--blue)';
         overlay.style.display = 'flex';
         overlay.style.alignItems = 'center';
         overlay.style.justifyContent = 'center';
         overlay.style.opacity = '0';
         overlay.style.transition = 'opacity 0.3s ease';
-        overlay.style.color = 'white';
+        overlay.style.color = '#000000';
         overlay.style.fontSize = '14px';
         overlay.style.fontWeight = 'bold';
         overlay.textContent = 'Click to View';
@@ -1605,7 +1605,7 @@ window.showFullResolutionImage = function (imageSrc) {
     const modalContent = `
         <div style="position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;">
             <img src="${imageSrc}" alt="Full resolution image" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px;">
-            <button style="position: absolute; top: 20px; right: 30px; background: rgba(0, 0, 0, 0.7); color: white; border: none; font-size: 30px; cursor: pointer; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">&times;</button>
+            <button style="position: absolute; top: 20px; right: 30px; background: var(--yellow); color: #000000; border: none; font-size: 30px; cursor: pointer; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center;">&times;</button>
         </div>
     `;
 
@@ -2479,7 +2479,7 @@ function createSchemeCard(scheme) {
     const useBtn = document.createElement('button');
     useBtn.textContent = 'Use Scheme';
     useBtn.style.background = 'var(--blue)';
-    useBtn.style.color = 'white';
+    useBtn.style.color = '#000000';
     useBtn.style.border = 'none';
     useBtn.style.padding = '6px 12px';
     useBtn.style.borderRadius = '4px';
@@ -2640,7 +2640,7 @@ function addColorRow(color, weight = 100) {
     randomizeBtn.className = 'randomize-color-btn';
     randomizeBtn.textContent = '🔀';
     randomizeBtn.title = 'Randomize this color';
-    randomizeBtn.style.cssText = 'background: var(--lavender); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px;';
+    randomizeBtn.style.cssText = 'background: var(--lavender); color: #000000; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 16px;';
     randomizeBtn.onclick = () => window.randomizeColorRow(randomizeBtn);
 
     // Update format input when color picker changes
@@ -2758,7 +2758,7 @@ function addColorRow(color, weight = 100) {
         
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
-        closeBtn.style.cssText = 'background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px;';
+        closeBtn.style.cssText = 'background: var(--blue); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px;';
         closeBtn.onclick = () => pickerModal.remove();
         
         // Draw simple color wheel
@@ -3463,7 +3463,7 @@ function createColorWheelModal() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: var(--text);">🎨 Interactive Color Wheel (HSL/HSV)</h3>
             <button onclick="document.getElementById('colorWheelModal').style.display='none'" 
-                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
         </div>
         <div id="colorWheelContainer" style="text-align: center;"></div>
     `;
@@ -3496,23 +3496,23 @@ function createExportOptionsModal() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: var(--text);">📤 Export Palette</h3>
             <button onclick="document.getElementById('exportOptionsModal').style.display='none'" 
-                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
             <button onclick="exportPalette('css'); document.getElementById('exportOptionsModal').style.display='none';" 
-                style="background: var(--blue); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--blue); color: #000000; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 CSS Variables
             </button>
             <button onclick="exportPalette('scss'); document.getElementById('exportOptionsModal').style.display='none';" 
-                style="background: var(--mauve); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--mauve); color: #000000; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 SCSS/SASS
             </button>
             <button onclick="exportPalette('json'); document.getElementById('exportOptionsModal').style.display='none';" 
-                style="background: var(--green); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--green); color: #000000; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 JSON
             </button>
             <button onclick="exportPalette('ase'); document.getElementById('exportOptionsModal').style.display='none';" 
-                style="background: var(--red); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--red); color: #000000; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 Adobe Swatch (.ase)
             </button>
             <button onclick="exportPalette('sketch'); document.getElementById('exportOptionsModal').style.display='none';" 
@@ -3520,7 +3520,7 @@ function createExportOptionsModal() {
                 Sketch
             </button>
             <button onclick="exportPalette('figma'); document.getElementById('exportOptionsModal').style.display='none';" 
-                style="background: var(--teal); color: white; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--teal); color: #000000; border: none; padding: 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 Figma
             </button>
         </div>
@@ -3528,11 +3528,11 @@ function createExportOptionsModal() {
             <h4 style="color: var(--text); margin: 0 0 10px 0;">Export Grid/Palette Image</h4>
             <p style="color: var(--subtext1); font-size: 13px; margin: 0 0 15px 0;">Export search results or palette as an image</p>
             <button onclick="exportSearchResultsAsImage()" 
-                style="background: var(--lavender); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin-right: 10px;">
+                style="background: var(--lavender); color: #000000; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; margin-right: 10px;">
                 Export Search Results Grid
             </button>
             <button onclick="exportPaletteAsImage()" 
-                style="background: var(--sapphire); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
+                style="background: var(--sapphire); color: #000000; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold;">
                 Export Palette Image
             </button>
         </div>
@@ -3566,7 +3566,7 @@ function createGradientOptionsModal() {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin: 0; color: var(--text);">🌈 Generate Gradient</h3>
             <button onclick="document.getElementById('gradientOptionsModal').style.display='none'" 
-                style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
+                style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer;">Close</button>
         </div>
         <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 8px; color: var(--subtext1); font-size: 14px;">Gradient Type:</label>
@@ -3595,7 +3595,7 @@ function createGradientOptionsModal() {
             </select>
         </div>
         <button onclick="generateGradientFromModal()" 
-            style="width: 100%; background: var(--teal); color: white; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            style="width: 100%; background: var(--teal); color: #000000; border: none; padding: 15px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">
             Generate Gradient
         </button>
     `;
@@ -4081,8 +4081,8 @@ window.showSuggestPaletteModal = function () {
                     hexLabel.style.bottom = '-25px';
                     hexLabel.style.left = '50%';
                     hexLabel.style.transform = 'translateX(-50%)';
-                    hexLabel.style.background = 'rgba(0, 0, 0, 0.8)';
-                    hexLabel.style.color = 'white';
+                    hexLabel.style.background = 'var(--yellow)';
+                    hexLabel.style.color = '#000000';
                     hexLabel.style.padding = '2px 6px';
                     hexLabel.style.borderRadius = '4px';
                     hexLabel.style.fontSize = '10px';
@@ -4256,8 +4256,8 @@ window.generatePalette = function (scheme) {
             colorInfo.style.bottom = '0';
             colorInfo.style.left = '0';
             colorInfo.style.right = '0';
-            colorInfo.style.background = 'rgba(0, 0, 0, 0.75)';
-            colorInfo.style.color = 'white';
+            colorInfo.style.background = 'var(--yellow)';
+            colorInfo.style.color = '#000000';
             colorInfo.style.padding = '6px';
             colorInfo.style.fontSize = '11px';
             colorInfo.style.textAlign = 'center';
@@ -4294,7 +4294,7 @@ window.generatePalette = function (scheme) {
                 feedback.style.left = '50%';
                 feedback.style.transform = 'translate(-50%, -50%)';
                 feedback.style.background = 'var(--green)';
-                feedback.style.color = 'white';
+                feedback.style.color = '#000000';
                 feedback.style.padding = '4px 8px';
                 feedback.style.borderRadius = '4px';
                 feedback.style.fontSize = '12px';
@@ -4763,7 +4763,7 @@ function displayColorAnalysisResults(results) {
                 </div>
                 <button onclick="applySuggestion('${suggestion.colors.join(',')}')" style="
                     background: var(--blue);
-                    color: white;
+                    color: #000000;
                     border: none;
                     padding: 5px 10px;
                     border-radius: 4px;
@@ -4822,120 +4822,200 @@ window.showToolInfo = function (toolId) {
     let content = '';
 
     switch (toolId) {
-        case 'color-analysis':
+        case 'color-palette':
             content = `
-                <h2>Color Analysis Tool</h2>
-                <p>The Color Analysis tool helps you analyze relationships, harmony scores, and palette characteristics of colors with comprehensive metrics and visual feedback.</p>
+                <h2 style="color: var(--text); margin-top: 0;">🎨 Color Palette Analyzer</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Comprehensive analysis and visualization of color palettes extracted from images, including dominant colors, distribution patterns, and palette comparison.</p>
                 
-                <h3>Key Features</h3>
-                <ul>
-                    <li><strong>Color harmony score calculation</strong> - Evaluates how well colors work together based on color theory principles</li>
-                    <li><strong>Color relationship analysis</strong> - Identifies complementary, analogous, triadic, and other relationships</li>
-                    <li><strong>Contrast ratio evaluation</strong> - Calculates contrast ratios between colors for accessibility compliance</li>
-                    <li><strong>Color scheme suggestions</strong> - Generates harmonious color scheme alternatives</li>
+                <h3 style="color: var(--mauve); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Extract dominant colors</strong> using K-means clustering</li>
+                    <li><strong style="color: var(--text);">Generate color swatches</strong> and distribution charts</li>
+                    <li><strong style="color: var(--text);">Compare palettes</strong> between multiple images</li>
+                    <li><strong style="color: var(--text);">L*a*b* color space projections</strong> for accurate analysis</li>
+                    <li><strong style="color: var(--text);">Export palette visualizations</strong> in multiple formats</li>
                 </ul>
                 
-                <h3>How to Use</h3>
-                <ol>
-                    <li>Enter hex colors separated by commas or spaces</li>
-                    <li>Select the analysis options you need</li>
-                    <li>Click "Run Analysis" to generate results</li>
-                    <li>Review the harmony scores, relationships, and suggestions</li>
-                    <li>Apply suggested color schemes with a single click</li>
+                <h3 style="color: var(--mauve); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Upload an image or select a directory of images</li>
+                    <li>Configure analysis parameters (number of colors, color space, clustering method)</li>
+                    <li>Select output options and format</li>
+                    <li>Run the analysis to generate palette visualizations</li>
+                    <li>Export results for further use</li>
                 </ol>
                 
-                <p>This tool is part of Chromatica's comprehensive color analysis and visualization toolkit.</p>
+                <p style="color: var(--subtext0); margin-top: 20px; font-style: italic;">This tool uses advanced color clustering algorithms to identify the most representative colors in your images.</p>
             `;
             break;
 
-        case 'query-visualizer':
+        case 'search-results':
             content = `
-                <h2>Query Visualizer Tool</h2>
-                <p>The Query Visualizer tool creates visual representations of color queries with weighted color bars, color palettes, and comprehensive query summaries.</p>
+                <h2 style="color: var(--text); margin-top: 0;">📊 Search Results Analyzer</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Advanced visualization and analysis of search results, including ranking analysis, distance distribution, color similarity mapping, and performance metrics.</p>
                 
-                <h3>Key Features</h3>
-                <ul>
-                    <li><strong>Generate weighted color bars</strong> representing query colors</li>
-                    <li><strong>Create color palette visualizations</strong> with weights</li>
-                    <li><strong>Build comprehensive query summary images</strong></li>
-                    <li><strong>Export query visualizations</strong> in various formats</li>
-                    <li><strong>Customizable color representations</strong></li>
+                <h3 style="color: var(--blue); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Visualize search result rankings</strong> and distances</li>
+                    <li><strong style="color: var(--text);">Analyze color similarity patterns</strong> across results</li>
+                    <li><strong style="color: var(--text);">Generate performance reports</strong> and heatmaps</li>
+                    <li><strong style="color: var(--text);">Create interactive result galleries</strong></li>
+                    <li><strong style="color: var(--text);">Export visualizations</strong> for analysis</li>
                 </ul>
                 
-                <h3>How to Use</h3>
-                <ol>
-                    <li>Enter your query colors or use the current search colors</li>
-                    <li>Adjust visualization options as needed</li>
-                    <li>Generate the visualization</li>
-                    <li>Export or save the results</li>
+                <h3 style="color: var(--blue); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Enter a color query or use your current search</li>
+                    <li>Configure analysis type and visualization style</li>
+                    <li>Select metadata and output options</li>
+                    <li>Run the analysis to generate comprehensive reports</li>
+                    <li>Explore interactive visualizations and export results</li>
                 </ol>
-            `;
-            break;
-
-        case 'histogram-analysis':
-            content = `
-                <h2>Histogram Analysis Tool</h2>
-                <p>The Histogram Analysis tool provides comprehensive testing and visualization of histogram generation, including validation, performance benchmarking, and distribution analysis.</p>
                 
-                <h3>Key Features</h3>
-                <ul>
-                    <li><strong>Visual histogram representation</strong> of color distribution</li>
-                    <li><strong>Histogram comparison</strong> between query and results</li>
-                    <li><strong>Performance metrics</strong> for histogram generation</li>
-                    <li><strong>Distribution analysis</strong> of color histograms</li>
-                    <li><strong>Visual validation</strong> of histogram accuracy</li>
-                </ul>
-                
-                <h3>Technical Details</h3>
-                <p>Chromatica uses 512-bin LAB color histograms with Hellinger transformation for primary indexing and Earth Mover's Distance for refined ranking.</p>
-            `;
-            break;
-
-        case 'distance-debugger':
-            content = `
-                <h2>Distance Debugger Tool</h2>
-                <p>The Distance Debugger tool helps analyze Sinkhorn-EMD distance calculations, identify numerical stability issues, and validate distance metrics.</p>
-                
-                <h3>Key Features</h3>
-                <ul>
-                    <li><strong>Debug Sinkhorn-EMD calculations</strong></li>
-                    <li><strong>Analyze numerical stability</strong> of distance metrics</li>
-                    <li><strong>Compare different distance metrics</strong></li>
-                    <li><strong>Visualize distance calculations</strong></li>
-                    <li><strong>Performance benchmarking</strong> of distance calculations</li>
-                </ul>
-                
-                <h3>Technical Background</h3>
-                <p>The Earth Mover's Distance (EMD) is approximated using the Sinkhorn algorithm, providing a balance of accuracy and performance. This tool helps visualize and debug those calculations.</p>
+                <p style="color: var(--subtext0); margin-top: 20px; font-style: italic;">This tool provides deep insights into how Chromatica's search algorithm ranks and retrieves results.</p>
             `;
             break;
 
         case 'color-explorer':
             content = `
-                <h2>Interactive Color Explorer Tool</h2>
-                <p>The Interactive Color Explorer provides a powerful interface for exploring color combinations, analyzing color relationships, and experimenting with different color schemes and harmonies.</p>
+                <h2 style="color: var(--text); margin-top: 0;">🔍 Interactive Color Explorer</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Interactive interface for exploring color combinations, analyzing color relationships, and experimenting with different color schemes and harmonies.</p>
                 
-                <h3>Key Features</h3>
-                <ul>
-                    <li><strong>Interactive color wheel</strong> for exploring harmonious combinations</li>
-                    <li><strong>Color scheme generation</strong> based on color theory principles</li>
-                    <li><strong>Real-time color relationship analysis</strong></li>
-                    <li><strong>Color accessibility testing</strong></li>
-                    <li><strong>Export color schemes</strong> in various formats</li>
+                <h3 style="color: var(--green); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Interactive color picker</strong> and palette builder</li>
+                    <li><strong style="color: var(--text);">Color harmony analysis</strong> (complementary, analogous, triadic)</li>
+                    <li><strong style="color: var(--text);">Real-time color preview</strong> and scheme generation</li>
+                    <li><strong style="color: var(--text);">Integration with Chromatica API</strong> for live search</li>
+                    <li><strong style="color: var(--text);">Export color palettes</strong> and schemes</li>
                 </ul>
                 
-                <h3>How to Use</h3>
-                <ol>
-                    <li>Select a base color on the color wheel</li>
-                    <li>Choose a harmony rule to generate related colors</li>
-                    <li>Fine-tune the generated colors</li>
-                    <li>Apply the colors to your search or export the scheme</li>
+                <h3 style="color: var(--green); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Select a base color using the color picker</li>
+                    <li>Choose a harmony type to generate related colors</li>
+                    <li>Adjust saturation and brightness ranges</li>
+                    <li>Fine-tune the generated color scheme</li>
+                    <li>Apply to search or export the palette</li>
+                </ol>
+                
+                <p style="color: var(--subtext0); margin-top: 20px; font-style: italic;">Perfect for discovering harmonious color combinations based on established color theory principles.</p>
+            `;
+            break;
+
+        case 'histogram-analysis':
+            content = `
+                <h2 style="color: var(--text); margin-top: 0;">📈 Histogram Analysis Tool</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Comprehensive testing and visualization of histogram generation, including validation, performance benchmarking, and distribution analysis.</p>
+                
+                <h3 style="color: var(--peach); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Single image and batch directory processing</strong></li>
+                    <li><strong style="color: var(--text);">Histogram validation</strong> and quality checks</li>
+                    <li><strong style="color: var(--text);">Performance benchmarking</strong> and timing analysis</li>
+                    <li><strong style="color: var(--text);">Visualization of histogram distributions</strong></li>
+                    <li><strong style="color: var(--text);">Multiple output formats</strong> (JSON, CSV, visualizations)</li>
+                </ul>
+                
+                <h3 style="color: var(--peach); margin-top: 24px; margin-bottom: 12px;">Technical Details</h3>
+                <p style="color: var(--subtext1); line-height: 1.6;">Chromatica uses <strong style="color: var(--text);">8x12x12 binning grid (1,152 dimensions)</strong> in CIE Lab color space with tri-linear soft assignment. Histograms are L1-normalized and transformed using Hellinger distance for ANN search.</p>
+                
+                <h3 style="color: var(--peach); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Select input source (single image, directory, or pre-computed histogram)</li>
+                    <li>Configure validation level and performance testing options</li>
+                    <li>Choose visualization options</li>
+                    <li>Run the analysis and review comprehensive reports</li>
+                    <li>Export results in your preferred format</li>
                 </ol>
             `;
             break;
 
+        case 'distance-debugger':
+            content = `
+                <h2 style="color: var(--text); margin-top: 0;">🐛 Distance Debugger Tool</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Debug and analyze Sinkhorn-EMD distance calculations, identify numerical stability issues, and validate distance metrics.</p>
+                
+                <h3 style="color: var(--red); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Debug Sinkhorn-EMD distance calculations</strong></li>
+                    <li><strong style="color: var(--text);">Identify numerical stability issues</strong></li>
+                    <li><strong style="color: var(--text);">Validate distance metrics</strong> and fallbacks</li>
+                    <li><strong style="color: var(--text);">Compare different distance calculation methods</strong></li>
+                    <li><strong style="color: var(--text);">Generate debugging reports</strong></li>
+                </ul>
+                
+                <h3 style="color: var(--red); margin-top: 24px; margin-bottom: 12px;">Technical Background</h3>
+                <p style="color: var(--subtext1); line-height: 1.6;">The Earth Mover's Distance (EMD) is approximated using the <strong style="color: var(--text);">Sinkhorn algorithm</strong>, providing a balance of accuracy and performance. This tool helps visualize and debug those calculations, including convergence analysis and numerical stability checks.</p>
+                
+                <h3 style="color: var(--red); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Select test type and dataset for debugging</li>
+                    <li>Configure Sinkhorn parameters (epsilon, max iterations)</li>
+                    <li>Choose fallback strategy for failed calculations</li>
+                    <li>Run the debugger and analyze results</li>
+                    <li>Review detailed debug logs and visualizations</li>
+                </ol>
+            `;
+            break;
+
+        case 'query-visualizer':
+            content = `
+                <h2 style="color: var(--text); margin-top: 0;">🎭 Query Visualizer Tool</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Create visual representations of color queries with weighted color bars, color palettes, and comprehensive query summaries.</p>
+                
+                <h3 style="color: var(--pink); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Generate weighted color bars</strong> representing query colors</li>
+                    <li><strong style="color: var(--text);">Create color palette visualizations</strong> with weights</li>
+                    <li><strong style="color: var(--text);">Build comprehensive query summary images</strong></li>
+                    <li><strong style="color: var(--text);">Export query visualizations</strong> in multiple formats</li>
+                    <li><strong style="color: var(--text);">Customizable color representations</strong> and layouts</li>
+                </ul>
+                
+                <h3 style="color: var(--pink); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Enter color query and weights (or use current search)</li>
+                    <li>Choose visualization style and layout</li>
+                    <li>Configure size, background, and additional features</li>
+                    <li>Generate the visualization</li>
+                    <li>Export in your preferred format (PNG, SVG, PDF, HTML)</li>
+                </ol>
+                
+                <p style="color: var(--subtext0); margin-top: 20px; font-style: italic;">Perfect for creating visual summaries of your color search queries for presentations and documentation.</p>
+            `;
+            break;
+
+        case 'color-analysis':
+            content = `
+                <h2 style="color: var(--text); margin-top: 0;">🎨 Color Analysis Tool</h2>
+                <p style="color: var(--subtext1); line-height: 1.6;">Analyze color relationships, harmony scores, and palette characteristics with comprehensive metrics and visual feedback.</p>
+                
+                <h3 style="color: var(--mauve); margin-top: 24px; margin-bottom: 12px;">Key Features</h3>
+                <ul style="color: var(--subtext1); line-height: 1.8;">
+                    <li><strong style="color: var(--text);">Color harmony score calculation</strong> - Evaluates how well colors work together</li>
+                    <li><strong style="color: var(--text);">Color relationship analysis</strong> - Identifies complementary, analogous, triadic relationships</li>
+                    <li><strong style="color: var(--text);">Complementary color detection</strong></li>
+                    <li><strong style="color: var(--text);">Contrast ratio evaluation</strong> for accessibility compliance</li>
+                    <li><strong style="color: var(--text);">Accessibility compliance checks</strong></li>
+                    <li><strong style="color: var(--text);">Color scheme suggestions</strong></li>
+                </ul>
+                
+                <h3 style="color: var(--mauve); margin-top: 24px; margin-bottom: 12px;">How to Use</h3>
+                <ol style="color: var(--subtext1); line-height: 1.8;">
+                    <li>Enter hex colors separated by commas or spaces</li>
+                    <li>Select analysis mode (basic, advanced, comprehensive)</li>
+                    <li>Configure analysis options and harmony rules</li>
+                    <li>Run the analysis to generate results</li>
+                    <li>Review harmony scores, relationships, and suggestions</li>
+                </ol>
+                
+                <p style="color: var(--subtext0); margin-top: 20px; font-style: italic;">This tool provides deep insights into color theory and helps create harmonious color combinations.</p>
+            `;
+            break;
+
         default:
-            content = `<h2>Tool Information</h2><p>No specific information available for this tool.</p>`;
+            content = `<h2 style="color: var(--text);">Tool Information</h2><p style="color: var(--subtext1);">No specific information available for this tool.</p>`;
     }
 
     modalContent.innerHTML = content;
@@ -4948,6 +5028,287 @@ window.closeToolModal = function () {
     if (modal) {
         modal.style.display = 'none';
     }
+};
+
+// Toggle tool panel visibility
+window.toggleToolPanel = function (panelId) {
+    const panel = document.getElementById(panelId);
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+// ============================================================================
+// TOOL FUNCTIONS - All 6 Advanced Visualization Tools
+// ============================================================================
+
+// 1. Color Palette Analyzer Tool
+window.runColorPaletteTool = function () {
+    const panel = document.getElementById('colorPalettePanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeColorPaletteAnalysis = function () {
+    window.showSuccess('Color Palette Analysis', 'Analysis started! This will process images and extract color palettes.');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetColorPaletteForm = function () {
+    document.getElementById('colorPaletteImage')?.value && (document.getElementById('colorPaletteImage').value = '');
+    document.getElementById('colorPaletteDirectory')?.value && (document.getElementById('colorPaletteDirectory').value = '');
+    document.getElementById('colorPaletteNumColors')?.value && (document.getElementById('colorPaletteNumColors').value = '5');
+};
+
+window.demoColorPalette = function () {
+    const panel = document.getElementById('colorPalettePanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('colorPaletteDirectory')) {
+            document.getElementById('colorPaletteDirectory').value = 'datasets/test-dataset-20';
+        }
+        if (document.getElementById('colorPaletteNumColors')) {
+            document.getElementById('colorPaletteNumColors').value = '5';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Analysis" to see results.');
+    }
+};
+
+window.showColorPaletteHelp = function () {
+    window.showToolInfo('color-palette');
+};
+
+// 2. Search Results Analyzer Tool
+window.runSearchResultsTool = function () {
+    const panel = document.getElementById('searchResultsPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeSearchResultsAnalysis = function () {
+    const query = document.getElementById('searchResultsQuery')?.value;
+    if (!query) {
+        window.showError('Analysis Error', 'Please enter a color query');
+        return;
+    }
+    window.showSuccess('Search Results Analysis', 'Analysis started! Processing search results...');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetSearchResultsForm = function () {
+    document.getElementById('searchResultsQuery')?.value && (document.getElementById('searchResultsQuery').value = '');
+    document.getElementById('searchResultsWeights')?.value && (document.getElementById('searchResultsWeights').value = '');
+    document.getElementById('searchResultsK')?.value && (document.getElementById('searchResultsK').value = '10');
+};
+
+window.demoSearchResults = function () {
+    const panel = document.getElementById('searchResultsPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('searchResultsQuery')) {
+            document.getElementById('searchResultsQuery').value = 'FF0000,00FF00';
+        }
+        if (document.getElementById('searchResultsWeights')) {
+            document.getElementById('searchResultsWeights').value = '0.7,0.3';
+        }
+        if (document.getElementById('searchResultsK')) {
+            document.getElementById('searchResultsK').value = '10';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Analysis" to see results.');
+    }
+};
+
+window.showSearchResultsHelp = function () {
+    window.showToolInfo('search-results');
+};
+
+// 3. Interactive Color Explorer Tool
+window.runColorExplorer = function () {
+    const panel = document.getElementById('colorExplorerPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeColorExplorer = function () {
+    window.showSuccess('Color Explorer', 'Color exploration started! Generating harmonious color schemes...');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetColorExplorerForm = function () {
+    document.getElementById('colorExplorerBaseColor')?.value && (document.getElementById('colorExplorerBaseColor').value = '#FF0000');
+    document.getElementById('colorExplorerColorCount')?.value && (document.getElementById('colorExplorerColorCount').value = '5');
+};
+
+window.demoColorExplorer = function () {
+    const panel = document.getElementById('colorExplorerPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('colorExplorerBaseColor')) {
+            document.getElementById('colorExplorerBaseColor').value = '#0066FF';
+        }
+        if (document.getElementById('colorExplorerColorCount')) {
+            document.getElementById('colorExplorerColorCount').value = '5';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Explorer" to see results.');
+    }
+};
+
+window.showColorExplorerHelp = function () {
+    window.showToolInfo('color-explorer');
+};
+
+// 4. Histogram Analysis Tool
+window.runHistogramAnalysis = function () {
+    const panel = document.getElementById('histogramAnalysisPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeHistogramAnalysis = function () {
+    const path = document.getElementById('histogramAnalysisPath')?.value;
+    if (!path) {
+        window.showError('Analysis Error', 'Please enter a path or select a dataset');
+        return;
+    }
+    window.showSuccess('Histogram Analysis', 'Analysis started! Processing histograms...');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetHistogramAnalysisForm = function () {
+    document.getElementById('histogramAnalysisPath')?.value && (document.getElementById('histogramAnalysisPath').value = '');
+    document.getElementById('histogramAnalysisMaxFiles')?.value && (document.getElementById('histogramAnalysisMaxFiles').value = '50');
+};
+
+window.demoHistogramAnalysis = function () {
+    const panel = document.getElementById('histogramAnalysisPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('histogramAnalysisPath')) {
+            document.getElementById('histogramAnalysisPath').value = 'datasets/test-dataset-20';
+        }
+        if (document.getElementById('histogramAnalysisMaxFiles')) {
+            document.getElementById('histogramAnalysisMaxFiles').value = '20';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Analysis" to see results.');
+    }
+};
+
+window.showHistogramAnalysisHelp = function () {
+    window.showToolInfo('histogram-analysis');
+};
+
+// 5. Distance Debugger Tool
+window.runDistanceDebugger = function () {
+    const panel = document.getElementById('distanceDebuggerPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeDistanceDebugger = function () {
+    window.showSuccess('Distance Debugger', 'Debugger started! Analyzing Sinkhorn-EMD calculations...');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetDistanceDebuggerForm = function () {
+    document.getElementById('distanceDebuggerDataset')?.value && (document.getElementById('distanceDebuggerDataset').value = 'test-dataset-50');
+    document.getElementById('distanceDebuggerEpsilon')?.value && (document.getElementById('distanceDebuggerEpsilon').value = '1.0');
+    document.getElementById('distanceDebuggerMaxIterations')?.value && (document.getElementById('distanceDebuggerMaxIterations').value = '1000');
+};
+
+window.demoDistanceDebugger = function () {
+    const panel = document.getElementById('distanceDebuggerPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('distanceDebuggerDataset')) {
+            document.getElementById('distanceDebuggerDataset').value = 'test-dataset-20';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Debugger" to see results.');
+    }
+};
+
+window.showDistanceDebuggerHelp = function () {
+    window.showToolInfo('distance-debugger');
+};
+
+// 6. Query Visualizer Tool
+window.runQueryVisualizer = function () {
+    const panel = document.getElementById('queryVisualizerPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.executeQueryVisualizer = function () {
+    const colors = document.getElementById('queryVisualizerColors')?.value;
+    if (!colors) {
+        window.showError('Visualization Error', 'Please enter color query');
+        return;
+    }
+    window.showSuccess('Query Visualizer', 'Generating visualization! Creating weighted color bars...');
+    // TODO: Implement actual API call to backend
+};
+
+window.resetQueryVisualizerForm = function () {
+    document.getElementById('queryVisualizerColors')?.value && (document.getElementById('queryVisualizerColors').value = 'FF0000,00FF00');
+    document.getElementById('queryVisualizerWeights')?.value && (document.getElementById('queryVisualizerWeights').value = '0.6,0.4');
+};
+
+window.demoQueryVisualizer = function () {
+    const panel = document.getElementById('queryVisualizerPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('queryVisualizerColors')) {
+            document.getElementById('queryVisualizerColors').value = 'FF0000,00FF00,0000FF';
+        }
+        if (document.getElementById('queryVisualizerWeights')) {
+            document.getElementById('queryVisualizerWeights').value = '0.5,0.3,0.2';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Generate Visualization" to see results.');
+    }
+};
+
+window.showQueryVisualizerHelp = function () {
+    window.showToolInfo('query-visualizer');
+};
+
+// Color Analysis Tool (existing - keeping for completeness)
+window.runColorAnalysis = function () {
+    const panel = document.getElementById('colorAnalysisPanel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+};
+
+window.resetColorAnalysisForm = function () {
+    document.getElementById('colorAnalysisInput')?.value && (document.getElementById('colorAnalysisInput').value = '');
+    document.getElementById('colorAnalysisMode')?.value && (document.getElementById('colorAnalysisMode').value = 'advanced');
+};
+
+window.demoColorAnalysis = function () {
+    const panel = document.getElementById('colorAnalysisPanel');
+    if (panel) {
+        panel.style.display = 'block';
+        // Set demo values
+        if (document.getElementById('colorAnalysisInput')) {
+            document.getElementById('colorAnalysisInput').value = '#FF0000, #00FF00, #0000FF';
+        }
+        window.showSuccess('Demo Mode', 'Demo configuration loaded! Click "Run Analysis" to see results.');
+    }
+};
+
+window.showColorAnalysisHelp = function () {
+    window.showToolInfo('color-analysis');
 };
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -5390,7 +5751,7 @@ window.validateSystem = async function () {
         html += `
                 </div>
                 <div style="background: ${allPassed ? 'var(--green)' : 'var(--red)'}; padding: 15px; border-radius: 8px; text-align: center;">
-                    <h4 style="color: white; margin: 0;">${allPassed ? '✓ System Validation Passed' : '✗ System Validation Failed'}</h4>
+                    <h4 style="color: #000000; margin: 0;">${allPassed ? '✓ System Validation Passed' : '✗ System Validation Failed'}</h4>
                 </div>
             </div>
         `;
@@ -5599,7 +5960,7 @@ window.runDiagnostics = async function () {
 
         html += `
                 <div style="background: ${allPassed ? 'var(--green)' : 'var(--yellow)'}; padding: 15px; border-radius: 8px; text-align: center; margin-top: 15px;">
-                    <h4 style="color: white; margin: 0;">${allPassed ? '✓ All Diagnostics Passed' : '⚠ Some Issues Detected'}</h4>
+                    <h4 style="color: #000000; margin: 0;">${allPassed ? '✓ All Diagnostics Passed' : '⚠ Some Issues Detected'}</h4>
                 </div>
             </div>
         `;

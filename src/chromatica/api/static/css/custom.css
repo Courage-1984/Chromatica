@@ -41,8 +41,8 @@
 div.preview-item>div:nth-child(n) {
     position: absolute !important;
     bottom: 5px !important;
-    background: rgba(0, 0, 0, 0.7) !important;
-    color: white !important;
+    background: var(--yellow) !important;
+    color: #000000 !important;
     padding: 3px 5px !important;
     font-size: 10px !important;
     font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
@@ -95,13 +95,13 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     gap: 5px !Important;
 
     /* Optional: Standard button height and padding */
-        padding: 10px !Important;
-        height: 40px !Important;
-        border-radius: 5px !Important;
-    
-        padding: 4px 2px !Important;
-        font-size: 1rem !Important;
-    
+    padding: 10px !Important;
+    height: 40px !Important;
+    border-radius: 5px !Important;
+
+    padding: 4px 2px !Important;
+    font-size: 1rem !Important;
+
 }
 
 .color-swatch .color-label {
@@ -124,8 +124,8 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
 
 
 .color-row .remove-btn {
-background: #e53e3e !important;
-    color: white !important;
+    background: var(--red) !important;
+    color: #000000 !important;
     border: none !important;
     padding: 8px 12px !important;
     border-radius: 6px !important;

@@ -42,22 +42,22 @@
             <div id="colorSuggestions"></div>
             <div style="display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap;">
                 <button onclick="addColor()"
-                    style="background: var(--blue); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
+                    style="background: var(--blue); color: #000000; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">➕</span>
                     <span>Add Another Color</span>
                 </button>
                 <button onclick="showSuggestPaletteModal()"
-                    style="background: var(--mauve); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
+                    style="background: var(--mauve); color: #000000; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🎨</span>
                     <span>Suggest Palette</span>
                 </button>
                 <button onclick="rollDice()"
-                    style="background: var(--yellow); color: var(--base); padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
+                    style="background: var(--yellow); color: #000000; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🎲</span>
                     <span>Roll Dice</span>
                 </button>
                 <button onclick="showImageUploadModal()"
-                    style="background: var(--teal); color: white; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
+                    style="background: var(--teal); color: #000000; padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; min-width: 160px; justify-content: center; transition: all 0.2s; font-family: inherit;">
                     <span style="font-size: 16px;">🖼️</span>
                     <span>Input Image</span>
                 </button>
@@ -105,7 +105,7 @@
                     </label>
 
                     <button onclick="showPerformanceInfo()"
-                        style="background: var(--blue); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        style="background: var(--blue); color: #000000; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                         ℹ️ Info
                     </button>
                 </div>
@@ -206,35 +206,35 @@
                     ⚡ Quick Color Presets</h4>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="loadPreset('complementary', ['FF0000', '00FFFF'])" class="preset-btn"
-                        style="background: var(--blue); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--blue); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🎨</span> Complementary
                     </button>
                     <button onclick="loadPreset('analogous', ['FF0000', 'FF8000', 'FFFF00'])" class="preset-btn"
-                        style="background: var(--green); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--green); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🌈</span> Analogous
                     </button>
                     <button onclick="loadPreset('triadic', ['FF0000', '00FF00', '0000FF'])" class="preset-btn"
-                        style="background: var(--mauve); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--mauve); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🎭</span> Triadic
                     </button>
                     <button onclick="loadPreset('split-complementary', ['FF0000', '00FFFF', 'FFFF00'])" class="preset-btn"
-                        style="background: var(--yellow); color: var(--base); border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--yellow); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>✨</span> Split-Complementary
                     </button>
                     <button onclick="loadPreset('tetradic', ['FF0000', '00FF00', '0000FF', 'FFFF00'])" class="preset-btn"
-                        style="background: var(--teal); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--teal); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🎪</span> Tetradic
                     </button>
                     <button onclick="loadPreset('monochrome', ['FF0000', 'CC0000', '990000', '660000'])" class="preset-btn"
-                        style="background: var(--red); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: var(--red); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>⬛</span> Monochrome
                     </button>
                     <button onclick="loadPreset('warm', ['FF0000', 'FF6600', 'FFCC00', 'FFFF99'])" class="preset-btn"
-                        style="background: linear-gradient(90deg, #FF0000, #FFCC00); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: linear-gradient(90deg, #FF0000, #FFCC00); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>🔥</span> Warm
                     </button>
                     <button onclick="loadPreset('cool', ['0066FF', '00CCFF', '0099FF', '99CCFF'])" class="preset-btn"
-                        style="background: linear-gradient(90deg, #0066FF, #99CCFF); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+                        style="background: linear-gradient(90deg, #0066FF, #99CCFF); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 8px;">
                         <span>❄️</span> Cool
                     </button>
                 </div>
@@ -248,35 +248,35 @@
                     🚀 Advanced Features</h4>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="showAdvancedFilters()"
-                        style="background: var(--mauve); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--mauve); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         🎛️ Filters
                     </button>
                     <button onclick="showColorWheel()"
-                        style="background: var(--teal); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--teal); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         🎨 Color Wheel
                     </button>
                     <button onclick="showExportOptions()"
-                        style="background: var(--green); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--green); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         📤 Export
                     </button>
                     <button onclick="analyzeHarmony(true)"
-                        style="background: var(--blue); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--blue); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         🎭 Harmony
                     </button>
                     <button onclick="showGradientOptions()"
-                        style="background: var(--yellow); color: var(--base); border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--yellow); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         🌈 Gradient
                     </button>
                     <button onclick="analyzeStatistics()"
-                        style="background: var(--pink); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--pink); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         📊 Statistics
                     </button>
                     <button onclick="saveFavorite()"
-                        style="background: var(--lavender); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--lavender); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         ⭐ Save Favorite
                     </button>
                     <button onclick="loadFavorites(); document.getElementById('favoritesList').style.display = document.getElementById('favoritesList').style.display === 'none' ? 'block' : 'none';"
-                        style="background: var(--sapphire); color: white; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
+                        style="background: var(--sapphire); color: #000000; border: none; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;">
                         📋 Favorites
                     </button>
                 </div>
@@ -415,12 +415,12 @@
 
                 <div style="display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px;">
                     <button onclick="generateHistogramVisualization()"
-                        style="background: linear-gradient(45deg, var(--green), var(--teal)); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(166, 227, 161, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                        style="background: linear-gradient(45deg, var(--green), var(--teal)); color: #000000; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(166, 227, 161, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
                         <span>📈</span>
                         <span>Generate Histogram Visualization</span>
                     </button>
                     <button onclick="compareHistograms()"
-                        style="background: linear-gradient(45deg, var(--blue), var(--sky)); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(137, 180, 250, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
+                        style="background: linear-gradient(45deg, var(--blue), var(--sky)); color: #000000; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 4px 15px rgba(137, 180, 250, 0.3); transition: all 0.2s; display: flex; align-items: center; gap: 8px;">
                         <span>🔍</span>
                         <span>Compare Histograms</span>
                     </button>
@@ -445,7 +445,7 @@
 
                 <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;">
                     <button onclick="generateColorSchemesFromResults()"
-                        style="background: var(--mauve); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        style="background: var(--mauve); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
                         🎨 Generate Schemes
                     </button>
                     <p style="color: var(--subtext1); margin: 0; font-size: 14px;">
@@ -476,11 +476,11 @@
                         </select>
                     </div>
                     <button onclick="generateResultsCollage()"
-                        style="background: var(--mauve); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        style="background: var(--mauve); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
                         🎨 Generate Collage
                     </button>
                     <button onclick="downloadCollage()"
-                        style="background: var(--green); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
+                        style="background: var(--green); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s;">
                         Download
                     </button>
                 </div>
@@ -541,11 +541,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="runSearchTest()"
-                            style="background: var(--green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--green); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🚀 Run Search Test
                         </button>
                         <button onclick="runPerformanceBenchmark()"
-                            style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--blue); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             ⚡ Performance Test
                         </button>
                     </div>
@@ -559,11 +559,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="runHistogramTest()"
-                            style="background: var(--yellow); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--yellow); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             📈 Test Histograms
                         </button>
                         <button onclick="validateSystem()"
-                            style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             ✅ Validate System
                         </button>
                     </div>
@@ -578,15 +578,15 @@
                 </p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="showSystemStatus()"
-                        style="background: var(--mauve); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        style="background: var(--mauve); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                         📊 System Status
                     </button>
                     <button onclick="runDiagnostics()"
-                        style="background: var(--peach); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        style="background: var(--peach); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                         🔧 Diagnostics
                     </button>
                     <button onclick="exportLogs()"
-                        style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                        style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                         📋 Export Logs
                     </button>
                 </div>
@@ -622,15 +622,15 @@
                         🏷️ Show Labels
                     </label>
                     <button onclick="toggle3DVisualization()"
-                        style="background: var(--red); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        style="background: var(--red); color: #000000; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                         ⏸️ Pause/Resume
                     </button>
                     <button onclick="reset3DVisualization()"
-                        style="background: var(--yellow); color: var(--base); border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        style="background: var(--yellow); color: #000000; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                         🔄 Reset View
                     </button>
                     <button onclick="turnOff3DVisualization()"
-                        style="background: var(--red); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        style="background: var(--red); color: #000000; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">
                         ⏹️ Turn Off
                     </button>
                 </div>
@@ -664,11 +664,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateColorSpaceNavigator()"
-                            style="background: var(--mauve); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--mauve); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🎨 Generate Navigator
                         </button>
                         <button onclick="exportColorSpaceData()"
-                            style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -684,11 +684,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateColorDensityVolume()"
-                            style="background: var(--sapphire); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--sapphire); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🧊 Generate Volume
                         </button>
                         <button onclick="exportColorDensityData()"
-                            style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -716,11 +716,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateOTTransport3D()"
-                            style="background: var(--flamingo); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--flamingo); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🚚 Generate Transport
                         </button>
                         <button onclick="exportOTTransportData()"
-                            style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -748,11 +748,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateHNSWExplorer()"
-                            style="background: var(--peach); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--peach); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🕸️ Generate Explorer
                         </button>
                         <button onclick="exportHNSWData()"
-                            style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -766,11 +766,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateImageGlobe()"
-                            style="background: var(--sapphire); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--sapphire); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🌐 Generate Globe
                         </button>
                         <button onclick="exportGlobeData()"
-                            style="background: var(--sky); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--sky); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -784,11 +784,11 @@
                     </p>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateConnectionsGraph()"
-                            style="background: var(--maroon); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--maroon); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🔗 Generate Graph
                         </button>
                         <button onclick="exportGraphData()"
-                            style="background: var(--peach); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--peach); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -812,11 +812,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateHistogramCloud()"
-                            style="background: var(--blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--blue); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             📊 Generate Cloud
                         </button>
                         <button onclick="exportHistogramData()"
-                            style="background: var(--green); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--green); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -847,11 +847,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateRerankingAnimation()"
-                            style="background: var(--pink); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--pink); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             ⚡ Start Animation
                         </button>
                         <button onclick="exportAnimationData()"
-                            style="background: var(--lavender); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--lavender); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -882,11 +882,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateSimilarityLandscape()"
-                            style="background: var(--red); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--red); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🔍 Generate Landscape
                         </button>
                         <button onclick="exportSimilarityData()"
-                            style="background: var(--yellow); color: var(--base); border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--yellow); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -909,11 +909,11 @@
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateImageThumbnails3D()"
-                            style="background: var(--lavender); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--lavender); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             🖼️ Generate Thumbnails
                         </button>
                         <button onclick="exportThumbnailsData()"
-                            style="background: var(--teal); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
+                            style="background: var(--teal); color: #000000; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px;">
                             💾 Export Data
                         </button>
                     </div>
@@ -939,21 +939,11 @@
         </div>
 
         <!-- Advanced Visualization Tools -->
-        <div class="tools-section">
-            <h2>🎨 Advanced Visualization Tools</h2>
-            <p>Professional-grade tools for color analysis, search result visualization, and data exploration.</p>
-        </div>
-
-        <!-- Visualization Tools Section -->
         <div class="visualization-tools-section">
-            <h2>🔬 Advanced Visualization Tools</h2>
-
-            <!-- Core Visualization Tools -->
-            <div class="tool-category">
-                <h3>🎨 Core Visualization Module</h3>
-                <p>Built-in visualization capabilities for queries and search results, including weighted color bars,
-                    color palettes, and result collages.</p>
-            </div>
+            <h2>🎨 Advanced Visualization Tools</h2>
+            <p style="text-align: center; color: var(--subtext1); margin-bottom: 30px; font-family: 'JetBrainsMono Nerd Font Mono', monospace;">
+                Professional-grade tools for color analysis, search result visualization, and data exploration.
+            </p>
 
             <div class="tools-grid">
                 <!-- Color Palette Visualization Tool -->
@@ -979,7 +969,7 @@
                     <div class="tool-actions">
                         <button class="tool-btn primary-btn" onclick="runColorPaletteTool()">Run Tool</button>
                         <button class="tool-btn info-btn" onclick="showToolInfo('color-palette')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestColorPalette()">Quick Test</button>
+                        <button class="tool-btn demo-btn" onclick="demoColorPalette()">Demo</button>
                     </div>
 
                     <!-- Expandable Tool Panel -->
@@ -1114,7 +1104,7 @@
                     <div class="tool-actions">
                         <button class="tool-btn primary-btn" onclick="runSearchResultsTool()">Run Tool</button>
                         <button class="tool-btn info-btn" onclick="showToolInfo('search-results')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestSearchResults()">Quick Test</button>
+                        <button class="tool-btn demo-btn" onclick="demoSearchResults()">Demo</button>
                     </div>
 
                     <!-- Expandable Tool Panel -->
@@ -1252,7 +1242,7 @@
                     <div class="tool-actions">
                         <button class="tool-btn primary-btn" onclick="runColorExplorer()">Run Tool</button>
                         <button class="tool-btn info-btn" onclick="showToolInfo('color-explorer')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestColorExplorer()">Quick Test</button>
+                        <button class="tool-btn demo-btn" onclick="demoColorExplorer()">Demo</button>
                     </div>
 
                     <!-- Expandable Tool Panel -->
@@ -1394,8 +1384,7 @@
                     <div class="tool-actions">
                         <button class="tool-btn primary-btn" onclick="runHistogramAnalysis()">Run Tool</button>
                         <button class="tool-btn info-btn" onclick="showToolInfo('histogram-analysis')">Info</button>
-                        <button class="tool-btn quick-test-btn" onclick="quickTestHistogramAnalysis()">Quick
-                            Test</button>
+                        <button class="tool-btn demo-btn" onclick="demoHistogramAnalysis()">Demo</button>
                     </div>
 
                     <!-- Expandable Tool Panel -->
@@ -1558,8 +1547,7 @@
                         <div class="tool-actions">
                             <button class="tool-btn primary-btn" onclick="runDistanceDebugger()">Run Tool</button>
                             <button class="tool-btn info-btn" onclick="showToolInfo('distance-debugger')">Info</button>
-                            <button class="tool-btn quick-test-btn" onclick="quickTestDistanceDebugger()">Quick
-                                Test</button>
+                            <button class="tool-btn demo-btn" onclick="demoDistanceDebugger()">Demo</button>
                         </div>
 
                         <!-- Expandable Tool Panel -->
@@ -1731,8 +1719,7 @@
                         <div class="tool-actions">
                             <button class="tool-btn primary-btn" onclick="runQueryVisualizer()">Run Tool</button>
                             <button class="tool-btn info-btn" onclick="showToolInfo('query-visualizer')">Info</button>
-                            <button class="tool-btn quick-test-btn" onclick="quickTestQueryVisualizer()">Quick
-                                Test</button>
+                            <button class="tool-btn demo-btn" onclick="demoQueryVisualizer()">Demo</button>
                         </div>
 
                         <!-- Expandable Tool Panel -->
@@ -1949,145 +1936,7 @@
                         <div class="tool-actions">
                             <button class="tool-btn primary-btn" onclick="runColorAnalysis()">Run Tool</button>
                             <button class="tool-btn info-btn" onclick="showToolInfo('color-analysis')">Info</button>
-                            <button class="tool-btn quick-test-btn" onclick="quickTestColorAnalysis()">Quick
-                                Test</button>
-                        </div>
-
-                        <!-- Expandable Tool Panel -->
-                        <div class="tool-panel" id="colorAnalysisPanel" style="display: none;">
-                            <div class="panel-header">
-                                <h5>🎨 Color Analysis Configuration</h5>
-                                <button class="panel-close" onclick="toggleToolPanel('colorAnalysisPanel')">×</button>
-                            </div>
-
-                            <div class="panel-content">
-                                <div class="input-section">
-                                    <h6>Color Input</h6>
-                                    <div class="input-group">
-                                        <label for="colorAnalysisInput">Colors to Analyze:</label>
-                                        <input type="text" id="colorAnalysisInput" class="text-input"
-                                            placeholder="Enter hex colors (e.g., #FF0000, #00FF00)" value="">
-                                        <small>Enter hex colors separated by commas or spaces</small>
-                                    </div>
-
-                                    <div class="input-group">
-                                        <label for="colorAnalysisMode">Analysis Mode:</label>
-                                        <select id="colorAnalysisMode" class="select-input">
-                                            <option value="basic">Basic Analysis</option>
-                                            <option value="advanced" selected>Advanced Analysis</option>
-                                            <option value="comprehensive">Comprehensive Analysis</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="input-section">
-                                    <h6>Analysis Options</h6>
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="analyzeHarmony" checked> Color Harmony</label>
-                                        <label><input type="checkbox" id="analyzeRelationships" checked> Color
-                                            Relationships</label>
-                                        <label><input type="checkbox" id="analyzeContrast" checked> Contrast
-                                            Ratios</label>
-                                        <label><input type="checkbox" id="analyzeAccessibility" checked>
-                                            Accessibility</label>
-                                        <label><input type="checkbox" id="analyzePsychology" checked> Color
-                                            Psychology</label>
-                                        <label><input type="checkbox" id="generateSuggestions" checked> Generate
-                                            Suggestions</label>
-                                    </div>
-                                </div>
-
-                                <div class="input-section">
-                                    <h6>Harmony Metrics</h6>
-                                    <div class="input-group">
-                                        <label for="harmonyThreshold">Harmony Threshold:</label>
-                                        <input type="range" id="harmonyThreshold" min="0" max="100" value="75"
-                                            class="range-input">
-                                        <span id="harmonyThresholdValue">75%</span>
-                                    </div>
-
-                                    <div class="input-group">
-                                        <label for="harmonyRules">Harmony Rules:</label>
-                                        <select id="harmonyRules" class="select-input" multiple>
-                                            <option value="complementary" selected>Complementary</option>
-                                            <option value="analogous" selected>Analogous</option>
-                                            <option value="triadic" selected>Triadic</option>
-                                            <option value="split-complementary" selected>Split Complementary</option>
-                                            <option value="tetradic" selected>Tetradic</option>
-                                            <option value="monochromatic" selected>Monochromatic</option>
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div class="input-section">
-                                    <h6>Output Options</h6>
-                                    <div class="input-group">
-                                        <label for="outputFormat">Output Format:</label>
-                                        <select id="outputFormat" class="select-input">
-                                            <option value="visual">Visual Report</option>
-                                            <option value="detailed">Detailed Text Report</option>
-                                            <option value="json">JSON Data</option>
-                                            <option value="all" selected>All Formats</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="checkbox-group">
-                                        <label><input type="checkbox" id="includeVisualizations" checked> Include
-                                            Visualizations</label>
-                                        <label><input type="checkbox" id="includeMetrics" checked> Include
-                                            Metrics</label>
-                                        <label><input type="checkbox" id="includeSuggestions" checked> Include
-                                            Suggestions</label>
-                                        <label><input type="checkbox" id="includeExplanations" checked> Include
-                                            Explanations</label>
-                                    </div>
-                                </div>
-
-                                <div class="panel-actions">
-                                    <button class="action-btn primary-btn" onclick="executeColorAnalysis()">Run
-                                        Analysis</button>
-                                    <button class="action-btn secondary-btn"
-                                        onclick="resetColorAnalysisForm()">Reset</button>
-                                    <button class="action-btn info-btn" onclick="showColorAnalysisHelp()">Help</button>
-                                </div>
-                            </div>
-
-                            <!-- Results Display Area -->
-                            <div class="results-area" id="colorAnalysisResults" style="display: none;">
-                                <h6>Analysis Results</h6>
-                                <div class="results-content" id="colorAnalysisResultsContent">
-                                    <!-- Results will be populated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Color Analysis Tool -->
-                    <div class="tool-card">
-                        <div class="tool-header">
-                            <div class="tool-icon">🎨</div>
-                            <h4 class="tool-title">Color Analysis</h4>
-                        </div>
-                        <div class="tool-description">
-                            Analyze color relationships, harmony scores, and palette characteristics with comprehensive
-                            metrics and visual feedback.
-                        </div>
-                        <div class="tool-features">
-                            <h4>Key Features:</h4>
-                            <ul class="feature-list">
-                                <li>Color harmony score calculation</li>
-                                <li>Color relationship analysis</li>
-                                <li>Complementary color detection</li>
-                                <li>Contrast ratio evaluation</li>
-                                <li>Accessibility compliance checks</li>
-                                <li>Color scheme suggestions</li>
-                            </ul>
-                        </div>
-                        <div class="tool-actions">
-                            <button class="tool-btn primary-btn" onclick="runColorAnalysis()">Run Tool</button>
-                            <button class="tool-btn info-btn" onclick="showToolInfo('color-analysis')">Info</button>
-                            <button class="tool-btn quick-test-btn" onclick="quickTestColorAnalysis()">Quick
-                                Test</button>
+                            <button class="tool-btn demo-btn" onclick="demoColorAnalysis()">Demo</button>
                         </div>
 
                         <!-- Expandable Tool Panel -->
@@ -2331,7 +2180,7 @@
                                     Cancel
                                 </button>
                                 <button onclick="applyGeneratedPalette()"
-                                    style="background: var(--blue); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
+                                    style="background: var(--blue); color: #000000; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.2s;">
                                     ✓ Apply Palette
                                 </button>
                             </div>
@@ -2390,7 +2239,7 @@
                             <button onclick="closeImageUploadModal()"
                                 style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
                             <button onclick="extractColorsFromImage()"
-                                style="background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract
+                                style="background: var(--teal); color: #000000; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract
                                 Colors</button>
                         </div>
                     </div>
@@ -2399,7 +2248,7 @@
 
             <!-- Sticky Restart Button -->
             <div id="restartButton"
-                style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: white; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
+                style="position: fixed; top: 20px; right: 20px; z-index: 1000; background: var(--red); color: #000000; border: none; padding: 12px 16px; border-radius: 50px; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); font-size: 14px; font-weight: bold; transition: all 0.3s ease;"
                 onclick="restartServer()" title="Restart Chromatica Server">
                 🔄 Restart Server
             </div>
