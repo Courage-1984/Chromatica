@@ -2798,7 +2798,8 @@ async function loadAllVisualizationModules() {
         'connectionsGraph',
         'otTransport3D',
         'hnswGraphExplorer',
-        'colorDensityVolume'
+        'colorDensityVolume',
+        'imageThumbnails3D'
     ];
 
     try {
@@ -2935,6 +2936,9 @@ window.exportHNSWData = async function(){ await loadVisualizationModule('hnswGra
 
 window.generateColorDensityVolume = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.generateColorDensityVolume; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 window.exportColorDensityData = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.exportColorDensityData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+
+window.generateImageThumbnails3D = async function(){ await loadVisualizationModule('imageThumbnails3D'); const func = window.generateImageThumbnails3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.exportThumbnailsData = async function(){ await loadVisualizationModule('imageThumbnails3D'); const func = window.exportThumbnailsData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
 
 // ============================================================================
 // 3D VISUALIZATION SHARED UTILITIES
