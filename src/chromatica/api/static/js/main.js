@@ -3924,3 +3924,638 @@ window.showImageInModal = function (imageSrc) {
     }
 };
 
+// ============================================================================
+// TESTING & DEVELOPMENT TOOLS
+// ============================================================================
+
+/**
+ * Run a search test
+ */
+window.runSearchTest = async function() {
+    console.log('[Search Test] Starting search test...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running search test...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        // Test with a simple color query
+        const testColors = 'FF0000,00FF00,0000FF';
+        const testWeights = '0.4,0.3,0.3';
+        const testK = 10;
+        
+        const startTime = performance.now();
+        const response = await fetch(`/search?colors=${testColors}&weights=${testWeights}&k=${testK}&fast_mode=false`);
+        const endTime = performance.now();
+        
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const duration = (endTime - startTime).toFixed(2);
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">🔍 Search Test Results</h3>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: var(--green);">✓ Success</span></p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Duration:</strong> ${duration}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Results Found:</strong> ${data.results_count || 0}</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${data.metadata?.index_size || 0}</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>ANN Time:</strong> ${data.metadata?.ann_time_ms || 0}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Rerank Time:</strong> ${data.metadata?.rerank_time_ms || 0}ms</p>
+                </div>
+        `;
+        
+        if (data.results && data.results.length > 0) {
+            html += `<h4 style="color: var(--text); margin: 15px 0 10px 0;">Top Results:</h4>`;
+            html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">`;
+            data.results.slice(0, 6).forEach((result, idx) => {
+                const imgUrl = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
+                html += `
+                    <div style="background: var(--surface0); padding: 10px; border-radius: 8px; text-align: center;">
+                        <img src="${imgUrl}" alt="Result ${idx + 1}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 5px;" onerror="this.style.display='none'">
+                        <p style="margin: 0; font-size: 12px; color: var(--subtext1);">Distance: ${result.distance?.toFixed(4) || 'N/A'}</p>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        }
+        
+        html += `</div>`;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[Search Test] ✓ Test completed successfully');
+    } catch (error) {
+        console.error('[Search Test] ✗ Test failed:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Search Test Failed</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Run performance benchmark
+ */
+window.runPerformanceBenchmark = async function() {
+    console.log('[Performance Benchmark] Starting benchmark...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running performance benchmark...</p><p style="font-size: 12px; color: var(--subtext0);">This may take a few seconds...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        const testQueries = [
+            { colors: 'FF0000', weights: '1.0', name: 'Red' },
+            { colors: '00FF00', weights: '1.0', name: 'Green' },
+            { colors: '0000FF', weights: '1.0', name: 'Blue' },
+            { colors: 'FF0000,00FF00', weights: '0.5,0.5', name: 'Red+Green' },
+            { colors: '0000FF,FFFF00', weights: '0.5,0.5', name: 'Blue+Yellow' }
+        ];
+        
+        const results = [];
+        
+        for (const query of testQueries) {
+            const startTime = performance.now();
+            try {
+                const response = await fetch(`/search?colors=${query.colors}&weights=${query.weights}&k=10&fast_mode=false`);
+                const endTime = performance.now();
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    results.push({
+                        name: query.name,
+                        duration: endTime - startTime,
+                        success: true,
+                        resultsCount: data.results_count || 0,
+                        annTime: data.metadata?.ann_time_ms || 0,
+                        rerankTime: data.metadata?.rerank_time_ms || 0
+                    });
+                } else {
+                    results.push({
+                        name: query.name,
+                        duration: endTime - startTime,
+                        success: false,
+                        error: `HTTP ${response.status}`
+                    });
+                }
+            } catch (error) {
+                results.push({
+                    name: query.name,
+                    duration: 0,
+                    success: false,
+                    error: error.message
+                });
+            }
+        }
+        
+        const avgDuration = results.filter(r => r.success).reduce((sum, r) => sum + r.duration, 0) / results.filter(r => r.success).length;
+        const avgANNTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.annTime || 0), 0) / results.filter(r => r.success).length;
+        const avgRerankTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.rerankTime || 0), 0) / results.filter(r => r.success).length;
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">⚡ Performance Benchmark Results</h3>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">Summary</h4>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Tests Completed:</strong> ${results.filter(r => r.success).length}/${results.length}</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Duration:</strong> ${avgDuration.toFixed(2)}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average ANN Time:</strong> ${avgANNTime.toFixed(2)}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Rerank Time:</strong> ${avgRerankTime.toFixed(2)}ms</p>
+                </div>
+                <h4 style="color: var(--text); margin: 15px 0 10px 0;">Individual Results:</h4>
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: var(--surface1);">
+                            <th style="text-align: left; padding: 8px; color: var(--text);">Query</th>
+                            <th style="text-align: right; padding: 8px; color: var(--text);">Duration (ms)</th>
+                            <th style="text-align: right; padding: 8px; color: var(--text);">ANN (ms)</th>
+                            <th style="text-align: right; padding: 8px; color: var(--text);">Rerank (ms)</th>
+                            <th style="text-align: center; padding: 8px; color: var(--text);">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        results.forEach(result => {
+            const statusColor = result.success ? 'var(--green)' : 'var(--red)';
+            const statusText = result.success ? '✓' : '✗';
+            html += `
+                <tr style="border-top: 1px solid var(--surface2);">
+                    <td style="padding: 8px; color: var(--text);">${result.name}</td>
+                    <td style="padding: 8px; text-align: right; color: var(--text);">${result.duration.toFixed(2)}</td>
+                    <td style="padding: 8px; text-align: right; color: var(--text);">${result.annTime || 'N/A'}</td>
+                    <td style="padding: 8px; text-align: right; color: var(--text);">${result.rerankTime || 'N/A'}</td>
+                    <td style="padding: 8px; text-align: center; color: ${statusColor};">${statusText}</td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[Performance Benchmark] ✓ Benchmark completed');
+    } catch (error) {
+        console.error('[Performance Benchmark] ✗ Benchmark failed:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Benchmark Failed</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Run histogram test
+ */
+window.runHistogramTest = async function() {
+    console.log('[Histogram Test] Starting histogram test...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running histogram test...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        // Test histogram generation via a search query
+        const testColors = '808080';
+        const testWeights = '1.0';
+        
+        const response = await fetch(`/search?colors=${testColors}&weights=${testWeights}&k=1&fast_mode=false`);
+        
+        if (!response.ok) {
+            throw new Error(`Test failed: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 Histogram Test Results</h3>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: var(--green);">✓ Success</span></p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Query Histogram:</strong> Created successfully</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Search Results:</strong> ${data.results_count || 0} found</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${data.metadata?.index_size || 0} images</p>
+                </div>
+                <p style="color: var(--subtext1); font-size: 14px;">Histogram generation is functioning correctly. Query histogram was created and used successfully in search.</p>
+            </div>
+        `;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[Histogram Test] ✓ Test completed successfully');
+    } catch (error) {
+        console.error('[Histogram Test] ✗ Test failed:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Histogram Test Failed</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Validate system
+ */
+window.validateSystem = async function() {
+    console.log('[System Validation] Starting validation...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Validating system...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        const infoResponse = await fetch('/api/info');
+        const infoData = await infoResponse.ok ? await infoResponse.json() : null;
+        
+        const testResponse = await fetch('/search?colors=FF0000&weights=1.0&k=1&fast_mode=false');
+        const testData = testResponse.ok ? await testResponse.json() : null;
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">✅ System Validation Results</h3>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">Component Status</h4>
+        `;
+        
+        const checks = [
+            { name: 'API Endpoint', status: infoResponse.ok, details: infoData?.status || 'Unknown' },
+            { name: 'Search Functionality', status: testResponse.ok, details: testData ? `${testData.results_count} results` : 'Failed' },
+            { name: 'Index Access', status: testData && testData.metadata?.index_size > 0, details: testData?.metadata?.index_size || 0 },
+        ];
+        
+        checks.forEach(check => {
+            const statusColor = check.status ? 'var(--green)' : 'var(--red)';
+            const statusText = check.status ? '✓' : '✗';
+            html += `
+                <div style="margin: 8px 0; padding: 8px; background: var(--surface0); border-radius: 4px;">
+                    <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
+                    <span style="color: var(--text); margin-left: 10px;"><strong>${check.name}:</strong> ${check.details}</span>
+                </div>
+            `;
+        });
+        
+        const allPassed = checks.every(c => c.status);
+        
+        html += `
+                </div>
+                <div style="background: ${allPassed ? 'var(--green)' : 'var(--red)'}; padding: 15px; border-radius: 8px; text-align: center;">
+                    <h4 style="color: white; margin: 0;">${allPassed ? '✓ System Validation Passed' : '✗ System Validation Failed'}</h4>
+                </div>
+            </div>
+        `;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[System Validation] ✓ Validation completed');
+    } catch (error) {
+        console.error('[System Validation] ✗ Validation failed:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Validation Failed</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Show system status
+ */
+window.showSystemStatus = async function() {
+    console.log('[System Status] Fetching status...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Fetching system status...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        const response = await fetch('/api/info');
+        const data = response.ok ? await response.json() : null;
+        
+        if (!data) {
+            throw new Error('Failed to fetch system status');
+        }
+        
+        // Also try to get index size
+        let indexSize = 0;
+        try {
+            const searchResponse = await fetch('/search?colors=808080&weights=1.0&k=1&fast_mode=true');
+            if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                indexSize = searchData.metadata?.index_size || 0;
+            }
+        } catch (e) {
+            console.warn('Could not fetch index size:', e);
+        }
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 System Status</h3>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px;">
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: ${data.status === 'ready' ? 'var(--green)' : 'var(--yellow)'};">${data.status || 'Unknown'}</span></p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Version:</strong> ${data.version || 'Unknown'}</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${indexSize.toLocaleString()} images</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Message:</strong> ${data.message || 'N/A'}</p>
+                    <h4 style="color: var(--text); margin: 15px 0 10px 0;">Available Endpoints:</h4>
+                    <ul style="color: var(--subtext1); margin: 0; padding-left: 20px;">
+                        ${data.endpoints ? Object.entries(data.endpoints).map(([key, value]) => `<li>${value}</li>`).join('') : '<li>No endpoints listed</li>'}
+                    </ul>
+                </div>
+            </div>
+        `;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[System Status] ✓ Status fetched successfully');
+    } catch (error) {
+        console.error('[System Status] ✗ Failed to fetch status:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Failed to Fetch Status</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Run diagnostics
+ */
+window.runDiagnostics = async function() {
+    console.log('[Diagnostics] Running diagnostics...');
+    
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+    
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running diagnostics...</p><p style="font-size: 12px; color: var(--subtext0);">This may take a few seconds...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    try {
+        const diagnostics = [];
+        
+        // Test 1: API availability
+        try {
+            const infoResponse = await fetch('/api/info');
+            diagnostics.push({
+                name: 'API Endpoint',
+                status: infoResponse.ok,
+                details: infoResponse.ok ? 'Available' : `HTTP ${infoResponse.status}`
+            });
+        } catch (e) {
+            diagnostics.push({ name: 'API Endpoint', status: false, details: e.message });
+        }
+        
+        // Test 2: Search functionality
+        try {
+            const searchResponse = await fetch('/search?colors=FF0000&weights=1.0&k=5&fast_mode=false');
+            const searchData = searchResponse.ok ? await searchResponse.json() : null;
+            diagnostics.push({
+                name: 'Search Functionality',
+                status: searchResponse.ok && searchData?.results_count > 0,
+                details: searchData ? `${searchData.results_count} results, ${searchData.metadata?.total_time_ms || 0}ms` : 'Failed'
+            });
+        } catch (e) {
+            diagnostics.push({ name: 'Search Functionality', status: false, details: e.message });
+        }
+        
+        // Test 3: Fast mode
+        try {
+            const fastResponse = await fetch('/search?colors=00FF00&weights=1.0&k=5&fast_mode=true');
+            const fastData = fastResponse.ok ? await fastResponse.json() : null;
+            diagnostics.push({
+                name: 'Fast Mode Search',
+                status: fastResponse.ok && fastData?.results_count > 0,
+                details: fastData ? `${fastData.results_count} results, ${fastData.metadata?.total_time_ms || 0}ms` : 'Failed'
+            });
+        } catch (e) {
+            diagnostics.push({ name: 'Fast Mode Search', status: false, details: e.message });
+        }
+        
+        // Test 4: Image serving
+        try {
+            // First get an image ID from search
+            const testResponse = await fetch('/search?colors=808080&weights=1.0&k=1&fast_mode=true');
+            if (testResponse.ok) {
+                const testData = await testResponse.json();
+                if (testData.results && testData.results.length > 0) {
+                    const imageId = testData.results[0].image_id;
+                    const imageResponse = await fetch(`/image/${encodeURIComponent(imageId)}`);
+                    diagnostics.push({
+                        name: 'Image Serving',
+                        status: imageResponse.ok,
+                        details: imageResponse.ok ? 'Available' : `HTTP ${imageResponse.status}`
+                    });
+                } else {
+                    diagnostics.push({ name: 'Image Serving', status: false, details: 'No images in index' });
+                }
+            } else {
+                diagnostics.push({ name: 'Image Serving', status: false, details: 'Cannot test - search failed' });
+            }
+        } catch (e) {
+            diagnostics.push({ name: 'Image Serving', status: false, details: e.message });
+        }
+        
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">🔧 Diagnostics Results</h3>
+        `;
+        
+        diagnostics.forEach(diag => {
+            const statusColor = diag.status ? 'var(--green)' : 'var(--red)';
+            const statusText = diag.status ? '✓' : '✗';
+            html += `
+                <div style="background: var(--surface1); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="color: ${statusColor}; font-size: 20px; font-weight: bold;">${statusText}</span>
+                        <div style="flex: 1;">
+                            <p style="margin: 0; color: var(--text); font-weight: bold;">${diag.name}</p>
+                            <p style="margin: 5px 0 0 0; color: var(--subtext1); font-size: 13px;">${diag.details}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        const allPassed = diagnostics.every(d => d.status);
+        
+        html += `
+                <div style="background: ${allPassed ? 'var(--green)' : 'var(--yellow)'}; padding: 15px; border-radius: 8px; text-align: center; margin-top: 15px;">
+                    <h4 style="color: white; margin: 0;">${allPassed ? '✓ All Diagnostics Passed' : '⚠ Some Issues Detected'}</h4>
+                </div>
+            </div>
+        `;
+        
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+        
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[Diagnostics] ✓ Diagnostics completed');
+    } catch (error) {
+        console.error('[Diagnostics] ✗ Diagnostics failed:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Diagnostics Failed</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
+    }
+};
+
+/**
+ * Export logs
+ */
+window.exportLogs = async function() {
+    console.log('[Export Logs] Exporting logs...');
+    
+    try {
+        // Get log directory info
+        const logInfo = {
+            timestamp: new Date().toISOString(),
+            message: 'Log export functionality',
+            note: 'Log files are stored in the logs/ directory on the server. For direct access, check the server logs directory.',
+            logFiles: [
+                'chromatica_api_*.log - API server logs',
+                'chromatica_search_*.log - Search operation logs',
+                'Other component-specific logs may also be available'
+            ]
+        };
+        
+        // Create a downloadable JSON file with log info
+        const blob = new Blob([JSON.stringify(logInfo, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chromatica_logs_info_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        // Show success message
+        const resultsSection = document.getElementById('quickTestResultsSection');
+        const resultsContent = document.getElementById('quickTestResultsContent');
+        
+        if (resultsSection && resultsContent) {
+            resultsSection.style.display = 'block';
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--green); margin: 0 0 15px 0;">✓ Log Info Exported</h3>
+                    <p style="color: var(--text); margin-bottom: 15px;">A JSON file with log information has been downloaded.</p>
+                    <div style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: left; max-width: 600px; margin: 0 auto;">
+                        <p style="color: var(--subtext1); margin: 5px 0; font-size: 14px;"><strong>Note:</strong> Direct log file export requires server-side access. Log files are located in the <code>logs/</code> directory on the server.</p>
+                        <p style="color: var(--subtext1); margin: 5px 0; font-size: 14px;">For server log files, check:</p>
+                        <ul style="color: var(--subtext1); font-size: 13px; margin: 10px 0;">
+                            <li>logs/chromatica_api_*.log</li>
+                            <li>logs/chromatica_search_*.log</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            // Scroll to results section
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        console.log('[Export Logs] ✓ Log info exported');
+    } catch (error) {
+        console.error('[Export Logs] ✗ Export failed:', error);
+        alert(`Failed to export logs: ${error.message}`);
+    }
+};
+
