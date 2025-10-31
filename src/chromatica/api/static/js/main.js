@@ -1177,7 +1177,7 @@ window.performSearch = async function () {
     searchBtn.disabled = true;
     searchBtn.textContent = '⏳ Searching...';
     loading.style.display = 'block';
-    
+
     // Scroll to center the loading indicator
     if (loading) {
         setTimeout(() => {
@@ -1267,6 +1267,17 @@ window.performSearch = async function () {
         // Store the search results for later use by histogram functions
         window.lastSearchResults = data.results;
 
+        // Debug: Log first result to check dominant_colors
+        if (data.results && data.results.length > 0) {
+            console.log('[Search] First result:', {
+                image_id: data.results[0].image_id,
+                dominant_colors: data.results[0].dominant_colors,
+                dominant_colors_type: typeof data.results[0].dominant_colors,
+                is_array: Array.isArray(data.results[0].dominant_colors),
+                length: data.results[0].dominant_colors ? data.results[0].dominant_colors.length : 0
+            });
+        }
+
         // Update UI with results
         if (resultsSection) resultsSection.style.display = 'block';
         if (visualizationSection) visualizationSection.style.display = 'block';
@@ -1277,7 +1288,7 @@ window.performSearch = async function () {
         window.showSuccess('Search Complete', `Found ${data.results.length} matching images`);
         window.updateSearchResults(data);
         window.updateVisualization(data);
-        
+
         // Scroll to Query Visualization h2 (almost at top)
         setTimeout(() => {
             const visualizationSection = document.getElementById('visualizationSection');
@@ -1336,7 +1347,7 @@ window.updateSearchResults = function (data) {
             file_path: result.file_path,
             distance: result.distance
         }); // Debug log for each result
-        
+
         const imgSrc = result.image_url || `/image/${encodeURIComponent(result.image_id)}`;
         console.log(`Using imgSrc: ${imgSrc}`); // Debug log for image source
         const distance = typeof result.distance === 'number' ? result.distance.toFixed(6) : 'N/A';
@@ -2283,11 +2294,20 @@ window.generateColorSchemesFromResults = function () {
     const topResults = window.lastSearchResults.slice(0, 5);
     const allColors = [];
 
-    topResults.forEach(result => {
-        if (result.dominant_colors && Array.isArray(result.dominant_colors)) {
+    topResults.forEach((result, idx) => {
+        console.log(`[Generate Schemes] Result ${idx + 1}:`, {
+            image_id: result.image_id,
+            dominant_colors: result.dominant_colors,
+            dominant_colors_type: typeof result.dominant_colors,
+            is_array: Array.isArray(result.dominant_colors),
+            length: result.dominant_colors ? (Array.isArray(result.dominant_colors) ? result.dominant_colors.length : 0) : 0
+        });
+        if (result.dominant_colors && Array.isArray(result.dominant_colors) && result.dominant_colors.length > 0) {
             allColors.push(...result.dominant_colors);
         }
     });
+
+    console.log(`[Generate Schemes] Total colors collected: ${allColors.length}`);
 
     if (allColors.length === 0) {
         schemesSection.innerHTML = '<p style="color: var(--subtext1);">No dominant colors found in search results.</p>';
@@ -2312,7 +2332,7 @@ window.generateColorSchemesFromResults = function () {
 
     // Show success message
     window.showSuccess('Color Schemes Generated', `Created ${schemes.length} color schemes from search results.`);
-    
+
     // Scroll to center the colorSchemesSection
     setTimeout(() => {
         if (schemesSection) {
@@ -2861,18 +2881,18 @@ function loadVisualizationModule(moduleName) {
         script.src = `/static/js/modules/${moduleName}.js`;
         script.type = 'text/javascript';
         script.setAttribute('data-viz-module', moduleName);
-        
+
         script.onload = () => {
             visualizationModules[moduleName] = true;
             console.log(`✓ Visualization module loaded: ${moduleName}`);
             resolve();
         };
-        
+
         script.onerror = () => {
             console.error(`✗ Failed to load visualization module: ${moduleName}`);
             reject(new Error(`Failed to load ${moduleName}`));
         };
-        
+
         document.head.appendChild(script);
     });
 }
@@ -2920,7 +2940,7 @@ if (document.readyState === 'loading') {
 // These ensure modules are loaded before execution.
 // When a module loads, it overwrites the corresponding window function with its implementation.
 // After loadVisualizationModule completes, the function on window is the module's version.
-window.generateColorSpaceNavigator = async function() {
+window.generateColorSpaceNavigator = async function () {
     await loadVisualizationModule('colorSpaceNavigator');
     // Scroll to Interactive 3D Visualizations h2 (almost at top)
     scrollTo3DVisualizationsHeader();
@@ -2932,7 +2952,7 @@ window.generateColorSpaceNavigator = async function() {
     }
 };
 
-window.generateHistogramCloud = async function() {
+window.generateHistogramCloud = async function () {
     await loadVisualizationModule('histogramCloud');
     scrollTo3DVisualizationsHeader();
     const func = window.generateHistogramCloud;
@@ -2941,7 +2961,7 @@ window.generateHistogramCloud = async function() {
     }
 };
 
-window.generateSimilarityLandscape = async function() {
+window.generateSimilarityLandscape = async function () {
     await loadVisualizationModule('similarityLandscape');
     scrollTo3DVisualizationsHeader();
     const func = window.generateSimilarityLandscape;
@@ -2950,7 +2970,7 @@ window.generateSimilarityLandscape = async function() {
     }
 };
 
-window.generateRerankingAnimation = async function() {
+window.generateRerankingAnimation = async function () {
     await loadVisualizationModule('rerankingAnimation');
     scrollTo3DVisualizationsHeader();
     const func = window.generateRerankingAnimation;
@@ -2959,7 +2979,7 @@ window.generateRerankingAnimation = async function() {
     }
 };
 
-window.generateImageGlobe = async function() {
+window.generateImageGlobe = async function () {
     await loadVisualizationModule('imageGlobe');
     scrollTo3DVisualizationsHeader();
     const func = window.generateImageGlobe;
@@ -2968,7 +2988,7 @@ window.generateImageGlobe = async function() {
     }
 };
 
-window.generateConnectionsGraph = async function() {
+window.generateConnectionsGraph = async function () {
     await loadVisualizationModule('connectionsGraph');
     scrollTo3DVisualizationsHeader();
     const func = window.generateConnectionsGraph;
@@ -2978,7 +2998,7 @@ window.generateConnectionsGraph = async function() {
 };
 
 // Export function wrappers
-window.exportColorSpaceData = async function() {
+window.exportColorSpaceData = async function () {
     await loadVisualizationModule('colorSpaceNavigator');
     const func = window.exportColorSpaceData;
     if (func && func !== arguments.callee) {
@@ -2986,7 +3006,7 @@ window.exportColorSpaceData = async function() {
     }
 };
 
-window.exportHistogramData = async function() {
+window.exportHistogramData = async function () {
     await loadVisualizationModule('histogramCloud');
     const func = window.exportHistogramData;
     if (func && func !== arguments.callee) {
@@ -2994,7 +3014,7 @@ window.exportHistogramData = async function() {
     }
 };
 
-window.exportSimilarityData = async function() {
+window.exportSimilarityData = async function () {
     await loadVisualizationModule('similarityLandscape');
     const func = window.exportSimilarityData;
     if (func && func !== arguments.callee) {
@@ -3002,7 +3022,7 @@ window.exportSimilarityData = async function() {
     }
 };
 
-window.exportAnimationData = async function() {
+window.exportAnimationData = async function () {
     await loadVisualizationModule('rerankingAnimation');
     const func = window.exportAnimationData;
     if (func && func !== arguments.callee) {
@@ -3010,7 +3030,7 @@ window.exportAnimationData = async function() {
     }
 };
 
-window.exportGlobeData = async function() {
+window.exportGlobeData = async function () {
     await loadVisualizationModule('imageGlobe');
     const func = window.exportGlobeData;
     if (func && func !== arguments.callee) {
@@ -3018,7 +3038,7 @@ window.exportGlobeData = async function() {
     }
 };
 
-window.exportGraphData = async function() {
+window.exportGraphData = async function () {
     await loadVisualizationModule('connectionsGraph');
     const func = window.exportGraphData;
     if (func && func !== arguments.callee) {
@@ -3027,17 +3047,17 @@ window.exportGraphData = async function() {
 };
 
 // New visualizations wrappers
-window.generateOTTransport3D = async function(){ await loadVisualizationModule('otTransport3D'); scrollTo3DVisualizationsHeader(); const func = window.generateOTTransport3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
-window.exportOTTransportData = async function(){ await loadVisualizationModule('otTransport3D'); const func = window.exportOTTransportData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateOTTransport3D = async function () { await loadVisualizationModule('otTransport3D'); scrollTo3DVisualizationsHeader(); const func = window.generateOTTransport3D; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
+window.exportOTTransportData = async function () { await loadVisualizationModule('otTransport3D'); const func = window.exportOTTransportData; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
 
-window.generateHNSWExplorer = async function(){ await loadVisualizationModule('hnswGraphExplorer'); scrollTo3DVisualizationsHeader(); const func = window.generateHNSWExplorer; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
-window.exportHNSWData = async function(){ await loadVisualizationModule('hnswGraphExplorer'); const func = window.exportHNSWData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateHNSWExplorer = async function () { await loadVisualizationModule('hnswGraphExplorer'); scrollTo3DVisualizationsHeader(); const func = window.generateHNSWExplorer; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
+window.exportHNSWData = async function () { await loadVisualizationModule('hnswGraphExplorer'); const func = window.exportHNSWData; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
 
-window.generateColorDensityVolume = async function(){ await loadVisualizationModule('colorDensityVolume'); scrollTo3DVisualizationsHeader(); const func = window.generateColorDensityVolume; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
-window.exportColorDensityData = async function(){ await loadVisualizationModule('colorDensityVolume'); const func = window.exportColorDensityData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateColorDensityVolume = async function () { await loadVisualizationModule('colorDensityVolume'); scrollTo3DVisualizationsHeader(); const func = window.generateColorDensityVolume; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
+window.exportColorDensityData = async function () { await loadVisualizationModule('colorDensityVolume'); const func = window.exportColorDensityData; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
 
-window.generateImageThumbnails3D = async function(){ await loadVisualizationModule('imageThumbnails3D'); scrollTo3DVisualizationsHeader(); const func = window.generateImageThumbnails3D; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
-window.exportThumbnailsData = async function(){ await loadVisualizationModule('imageThumbnails3D'); const func = window.exportThumbnailsData; if(func && func !== arguments.callee){ return func.apply(this, arguments);} };
+window.generateImageThumbnails3D = async function () { await loadVisualizationModule('imageThumbnails3D'); scrollTo3DVisualizationsHeader(); const func = window.generateImageThumbnails3D; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
+window.exportThumbnailsData = async function () { await loadVisualizationModule('imageThumbnails3D'); const func = window.exportThumbnailsData; if (func && func !== arguments.callee) { return func.apply(this, arguments); } };
 
 // ============================================================================
 // 3D VISUALIZATION SHARED UTILITIES
@@ -3072,15 +3092,15 @@ window.current3DVisualization = {
 /**
  * Clear any existing 3D visualization
  */
-window.clear3DVisualization = function() {
+window.clear3DVisualization = function () {
     console.log('[3D Visualization] Clearing previous visualization...');
-    
+
     // Stop any running animations
     if (window.current3DVisualization.animationId) {
         cancelAnimationFrame(window.current3DVisualization.animationId);
         window.current3DVisualization.animationId = null;
     }
-    
+
     // Dispose of Three.js resources
     if (window.current3DVisualization.scene) {
         // Remove all objects from scene
@@ -3097,7 +3117,7 @@ window.clear3DVisualization = function() {
             window.current3DVisualization.scene.remove(child);
         }
     }
-    
+
     // Remove renderer from DOM
     const container = document.getElementById('visualization3d-container');
     if (container && window.current3DVisualization.renderer) {
@@ -3106,32 +3126,32 @@ window.clear3DVisualization = function() {
             container.removeChild(canvas);
         }
     }
-    
+
     // Dispose renderer
     if (window.current3DVisualization.renderer) {
         window.current3DVisualization.renderer.dispose();
     }
-    
+
     // Clear references
     window.current3DVisualization.scene = null;
     window.current3DVisualization.camera = null;
     window.current3DVisualization.renderer = null;
     window.current3DVisualization.controls = null;
     window.current3DVisualization.isPaused = false;
-    
+
     // Show placeholder
     const placeholder = document.getElementById('3d-placeholder');
     const loading = document.getElementById('3d-loading');
     if (placeholder) placeholder.style.display = 'block';
     if (loading) loading.style.display = 'none';
-    
+
     console.log('[3D Visualization] Previous visualization cleared');
 };
 
 /**
  * Show loading indicator
  */
-window.show3DLoading = function() {
+window.show3DLoading = function () {
     const loading = document.getElementById('3d-loading');
     const placeholder = document.getElementById('3d-placeholder');
     if (loading) loading.style.display = 'block';
@@ -3141,7 +3161,7 @@ window.show3DLoading = function() {
 /**
  * Hide loading indicator
  */
-window.hide3DLoading = function() {
+window.hide3DLoading = function () {
     const loading = document.getElementById('3d-loading');
     const placeholder = document.getElementById('3d-placeholder');
     if (loading) loading.style.display = 'none';
@@ -3151,7 +3171,7 @@ window.hide3DLoading = function() {
 /**
  * Get container for 3D visualization
  */
-window.get3DContainer = function() {
+window.get3DContainer = function () {
     return document.getElementById('visualization3d-container');
 };
 
@@ -3169,14 +3189,14 @@ function randomHexColor() {
 /**
  * Generate random colors string
  */
-window.randomSimilarityColors = function() {
+window.randomSimilarityColors = function () {
     const numColors = Math.floor(Math.random() * 3) + 1; // 1-3 colors
     const colors = Array.from({ length: numColors }, () => randomHexColor());
     document.getElementById('similarityColors').value = colors.join(',');
     console.log('[Random] Generated similarity colors:', colors.join(','));
 };
 
-window.randomAnimationColors = function() {
+window.randomAnimationColors = function () {
     const numColors = Math.floor(Math.random() * 3) + 1;
     const colors = Array.from({ length: numColors }, () => randomHexColor());
     document.getElementById('animationColors').value = colors.join(',');
@@ -3186,7 +3206,7 @@ window.randomAnimationColors = function() {
 /**
  * Generate random weights string
  */
-window.randomSimilarityWeights = function() {
+window.randomSimilarityWeights = function () {
     const numWeights = document.getElementById('similarityColors').value.split(',').length || 1;
     const weights = Array.from({ length: numWeights }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
     const sum = weights.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
@@ -3195,7 +3215,7 @@ window.randomSimilarityWeights = function() {
     console.log('[Random] Generated similarity weights:', normalized.join(','));
 };
 
-window.randomAnimationWeights = function() {
+window.randomAnimationWeights = function () {
     const numWeights = document.getElementById('animationColors').value.split(',').length || 1;
     const weights = Array.from({ length: numWeights }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
     const sum = weights.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
@@ -3207,7 +3227,7 @@ window.randomAnimationWeights = function() {
 /**
  * Generate random image ID (fetches from search results)
  */
-window.randomHistogramImageId = async function() {
+window.randomHistogramImageId = async function () {
     try {
         console.log('[Random] Fetching random image ID...');
         const response = await fetch(`/search?colors=808080&weights=1.0&k=50&fast_mode=true`);
@@ -3227,35 +3247,35 @@ window.randomHistogramImageId = async function() {
 };
 
 // Random for OT Transport 3D
-window.randomOTColors = function() {
+window.randomOTColors = function () {
     const numColors = Math.floor(Math.random() * 3) + 1;
     const colors = Array.from({ length: numColors }, () => randomHexColor());
     const el = document.getElementById('otColors'); if (el) el.value = colors.join(',');
     console.log('[Random] Generated OT colors:', colors.join(','));
 };
-window.randomOTWeights = function() {
+window.randomOTWeights = function () {
     const el = document.getElementById('otColors');
     const num = el?.value ? el.value.split(',').length : 1;
     const ws = Array.from({ length: num }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
-    const sum = ws.reduce((a,b)=>parseFloat(a)+parseFloat(b),0);
-    const norm = ws.map(w => (parseFloat(w)/sum).toFixed(3));
+    const sum = ws.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+    const norm = ws.map(w => (parseFloat(w) / sum).toFixed(3));
     const we = document.getElementById('otWeights'); if (we) we.value = norm.join(',');
     console.log('[Random] Generated OT weights:', norm.join(','));
 };
 
 // Random for HNSW Explorer
-window.randomHNSWColors = function() {
+window.randomHNSWColors = function () {
     const numColors = Math.floor(Math.random() * 3) + 1;
     const colors = Array.from({ length: numColors }, () => randomHexColor());
     const el = document.getElementById('hnswColors'); if (el) el.value = colors.join(',');
     console.log('[Random] Generated HNSW colors:', colors.join(','));
 };
-window.randomHNSWWeights = function() {
+window.randomHNSWWeights = function () {
     const el = document.getElementById('hnswColors');
     const num = el?.value ? el.value.split(',').length : 1;
     const ws = Array.from({ length: num }, () => (Math.random() * 0.8 + 0.1).toFixed(2));
-    const sum = ws.reduce((a,b)=>parseFloat(a)+parseFloat(b),0);
-    const norm = ws.map(w => (parseFloat(w)/sum).toFixed(3));
+    const sum = ws.reduce((a, b) => parseFloat(a) + parseFloat(b), 0);
+    const norm = ws.map(w => (parseFloat(w) / sum).toFixed(3));
     const we = document.getElementById('hnswWeights'); if (we) we.value = norm.join(',');
     console.log('[Random] Generated HNSW weights:', norm.join(','));
 };
@@ -3264,12 +3284,12 @@ window.randomHNSWWeights = function() {
 // 3D VISUALIZATION CONTROLS
 // ============================================================================
 
-window.toggle3DVisualization = function() {
+window.toggle3DVisualization = function () {
     window.current3DVisualization.isPaused = !window.current3DVisualization.isPaused;
     console.log('[3D Controls] Visualization', window.current3DVisualization.isPaused ? 'paused' : 'resumed');
 };
 
-window.reset3DVisualization = function() {
+window.reset3DVisualization = function () {
     if (window.current3DVisualization.camera && window.current3DVisualization.controls) {
         window.current3DVisualization.camera.position.set(150, 150, 150);
         window.current3DVisualization.camera.lookAt(0, 0, 0);
@@ -3282,7 +3302,7 @@ window.reset3DVisualization = function() {
     }
 };
 
-window.turnOff3DVisualization = function() {
+window.turnOff3DVisualization = function () {
     console.log('[3D Controls] Turning off visualization');
     window.clear3DVisualization();
 };
@@ -4007,14 +4027,14 @@ document.addEventListener('DOMContentLoaded', function () {
             setTimeout(() => mode.style.transform = 'scale(1)', 100);
         });
     });
-    
+
     // Set up event handlers for initial color row(s)
     const initialColorRows = document.querySelectorAll('.color-row');
     initialColorRows.forEach(colorRow => {
         const colorPicker = colorRow.querySelector('.color-picker');
         const formatSelect = colorRow.querySelector('.color-format-select');
         const formatInput = colorRow.querySelector('.color-format-input');
-        
+
         if (colorPicker && formatSelect && formatInput) {
             // Update format input when color picker changes
             const updateFormatInput = () => {
@@ -4022,7 +4042,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const hexColor = colorPicker.value;
                 formatInput.value = convertColorToFormat(hexColor, currentFormat);
             };
-            
+
             // Update color picker when format input changes
             formatInput.addEventListener('input', () => {
                 try {
@@ -4038,14 +4058,14 @@ document.addEventListener('DOMContentLoaded', function () {
                     console.warn('Invalid color format:', e);
                 }
             });
-            
+
             // Update format input when format select changes
             formatSelect.addEventListener('change', updateFormatInput);
-            
+
             // Update format input when color picker changes
             colorPicker.addEventListener('input', updateFormatInput);
             colorPicker.addEventListener('change', updateFormatInput);
-            
+
             // Initial update
             updateFormatInput();
         }
@@ -4089,36 +4109,36 @@ window.showImageInModal = function (imageSrc) {
 /**
  * Run a search test
  */
-window.runSearchTest = async function() {
+window.runSearchTest = async function () {
     console.log('[Search Test] Starting search test...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running search test...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         // Test with a simple color query
         const testColors = 'FF0000,00FF00,0000FF';
         const testWeights = '0.4,0.3,0.3';
         const testK = 10;
-        
+
         const startTime = performance.now();
         const response = await fetch(`/search?colors=${testColors}&weights=${testWeights}&k=${testK}&fast_mode=false`);
         const endTime = performance.now();
-        
+
         if (!response.ok) {
             throw new Error(`Search failed: ${response.status} ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         const duration = (endTime - startTime).toFixed(2);
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">🔍 Search Test Results</h3>
@@ -4131,7 +4151,7 @@ window.runSearchTest = async function() {
                     <p style="margin: 5px 0; color: var(--text);"><strong>Rerank Time:</strong> ${data.metadata?.rerank_time_ms || 0}ms</p>
                 </div>
         `;
-        
+
         if (data.results && data.results.length > 0) {
             html += `<h4 style="color: var(--text); margin: 15px 0 10px 0;">Top Results:</h4>`;
             html += `<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px;">`;
@@ -4146,18 +4166,18 @@ window.runSearchTest = async function() {
             });
             html += `</div>`;
         }
-        
+
         html += `</div>`;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[Search Test] ✓ Test completed successfully');
     } catch (error) {
         console.error('[Search Test] ✗ Test failed:', error);
@@ -4175,19 +4195,19 @@ window.runSearchTest = async function() {
 /**
  * Run performance benchmark
  */
-window.runPerformanceBenchmark = async function() {
+window.runPerformanceBenchmark = async function () {
     console.log('[Performance Benchmark] Starting benchmark...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running performance benchmark...</p><p style="font-size: 12px; color: var(--subtext0);">This may take a few seconds...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         const testQueries = [
             { colors: 'FF0000', weights: '1.0', name: 'Red' },
@@ -4196,15 +4216,15 @@ window.runPerformanceBenchmark = async function() {
             { colors: 'FF0000,00FF00', weights: '0.5,0.5', name: 'Red+Green' },
             { colors: '0000FF,FFFF00', weights: '0.5,0.5', name: 'Blue+Yellow' }
         ];
-        
+
         const results = [];
-        
+
         for (const query of testQueries) {
             const startTime = performance.now();
             try {
                 const response = await fetch(`/search?colors=${query.colors}&weights=${query.weights}&k=10&fast_mode=false`);
                 const endTime = performance.now();
-                
+
                 if (response.ok) {
                     const data = await response.json();
                     results.push({
@@ -4232,11 +4252,11 @@ window.runPerformanceBenchmark = async function() {
                 });
             }
         }
-        
+
         const avgDuration = results.filter(r => r.success).reduce((sum, r) => sum + r.duration, 0) / results.filter(r => r.success).length;
         const avgANNTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.annTime || 0), 0) / results.filter(r => r.success).length;
         const avgRerankTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.rerankTime || 0), 0) / results.filter(r => r.success).length;
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">⚡ Performance Benchmark Results</h3>
@@ -4260,7 +4280,7 @@ window.runPerformanceBenchmark = async function() {
                     </thead>
                     <tbody>
         `;
-        
+
         results.forEach(result => {
             const statusColor = result.success ? 'var(--green)' : 'var(--red)';
             const statusText = result.success ? '✓' : '✗';
@@ -4274,22 +4294,22 @@ window.runPerformanceBenchmark = async function() {
                 </tr>
             `;
         });
-        
+
         html += `
                     </tbody>
                 </table>
             </div>
         `;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[Performance Benchmark] ✓ Benchmark completed');
     } catch (error) {
         console.error('[Performance Benchmark] ✗ Benchmark failed:', error);
@@ -4307,32 +4327,32 @@ window.runPerformanceBenchmark = async function() {
 /**
  * Run histogram test
  */
-window.runHistogramTest = async function() {
+window.runHistogramTest = async function () {
     console.log('[Histogram Test] Starting histogram test...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running histogram test...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         // Test histogram generation via a search query
         const testColors = '808080';
         const testWeights = '1.0';
-        
+
         const response = await fetch(`/search?colors=${testColors}&weights=${testWeights}&k=1&fast_mode=false`);
-        
+
         if (!response.ok) {
             throw new Error(`Test failed: ${response.status} ${response.statusText}`);
         }
-        
+
         const data = await response.json();
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 Histogram Test Results</h3>
@@ -4345,16 +4365,16 @@ window.runHistogramTest = async function() {
                 <p style="color: var(--subtext1); font-size: 14px;">Histogram generation is functioning correctly. Query histogram was created and used successfully in search.</p>
             </div>
         `;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[Histogram Test] ✓ Test completed successfully');
     } catch (error) {
         console.error('[Histogram Test] ✗ Test failed:', error);
@@ -4372,39 +4392,39 @@ window.runHistogramTest = async function() {
 /**
  * Validate system
  */
-window.validateSystem = async function() {
+window.validateSystem = async function () {
     console.log('[System Validation] Starting validation...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Validating system...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         const infoResponse = await fetch('/api/info');
         const infoData = await infoResponse.ok ? await infoResponse.json() : null;
-        
+
         const testResponse = await fetch('/search?colors=FF0000&weights=1.0&k=1&fast_mode=false');
         const testData = testResponse.ok ? await testResponse.json() : null;
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">✅ System Validation Results</h3>
                 <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h4 style="color: var(--text); margin: 0 0 10px 0;">Component Status</h4>
         `;
-        
+
         const checks = [
             { name: 'API Endpoint', status: infoResponse.ok, details: infoData?.status || 'Unknown' },
             { name: 'Search Functionality', status: testResponse.ok, details: testData ? `${testData.results_count} results` : 'Failed' },
             { name: 'Index Access', status: testData && testData.metadata?.index_size > 0, details: testData?.metadata?.index_size || 0 },
         ];
-        
+
         checks.forEach(check => {
             const statusColor = check.status ? 'var(--green)' : 'var(--red)';
             const statusText = check.status ? '✓' : '✗';
@@ -4415,9 +4435,9 @@ window.validateSystem = async function() {
                 </div>
             `;
         });
-        
+
         const allPassed = checks.every(c => c.status);
-        
+
         html += `
                 </div>
                 <div style="background: ${allPassed ? 'var(--green)' : 'var(--red)'}; padding: 15px; border-radius: 8px; text-align: center;">
@@ -4425,16 +4445,16 @@ window.validateSystem = async function() {
                 </div>
             </div>
         `;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[System Validation] ✓ Validation completed');
     } catch (error) {
         console.error('[System Validation] ✗ Validation failed:', error);
@@ -4452,27 +4472,27 @@ window.validateSystem = async function() {
 /**
  * Show system status
  */
-window.showSystemStatus = async function() {
+window.showSystemStatus = async function () {
     console.log('[System Status] Fetching status...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Fetching system status...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         const response = await fetch('/api/info');
         const data = response.ok ? await response.json() : null;
-        
+
         if (!data) {
             throw new Error('Failed to fetch system status');
         }
-        
+
         // Also try to get index size
         let indexSize = 0;
         try {
@@ -4484,7 +4504,7 @@ window.showSystemStatus = async function() {
         } catch (e) {
             console.warn('Could not fetch index size:', e);
         }
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 System Status</h3>
@@ -4500,16 +4520,16 @@ window.showSystemStatus = async function() {
                 </div>
             </div>
         `;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[System Status] ✓ Status fetched successfully');
     } catch (error) {
         console.error('[System Status] ✗ Failed to fetch status:', error);
@@ -4527,22 +4547,22 @@ window.showSystemStatus = async function() {
 /**
  * Run diagnostics
  */
-window.runDiagnostics = async function() {
+window.runDiagnostics = async function () {
     console.log('[Diagnostics] Running diagnostics...');
-    
+
     const resultsSection = document.getElementById('quickTestResultsSection');
     const resultsContent = document.getElementById('quickTestResultsContent');
-    
+
     if (resultsSection && resultsContent) {
         resultsSection.style.display = 'block';
         resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Running diagnostics...</p><p style="font-size: 12px; color: var(--subtext0);">This may take a few seconds...</p></div>';
         // Scroll to results section
         resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
-    
+
     try {
         const diagnostics = [];
-        
+
         // Test 1: API availability
         try {
             const infoResponse = await fetch('/api/info');
@@ -4554,7 +4574,7 @@ window.runDiagnostics = async function() {
         } catch (e) {
             diagnostics.push({ name: 'API Endpoint', status: false, details: e.message });
         }
-        
+
         // Test 2: Search functionality
         try {
             const searchResponse = await fetch('/search?colors=FF0000&weights=1.0&k=5&fast_mode=false');
@@ -4567,7 +4587,7 @@ window.runDiagnostics = async function() {
         } catch (e) {
             diagnostics.push({ name: 'Search Functionality', status: false, details: e.message });
         }
-        
+
         // Test 3: Fast mode
         try {
             const fastResponse = await fetch('/search?colors=00FF00&weights=1.0&k=5&fast_mode=true');
@@ -4580,7 +4600,7 @@ window.runDiagnostics = async function() {
         } catch (e) {
             diagnostics.push({ name: 'Fast Mode Search', status: false, details: e.message });
         }
-        
+
         // Test 4: Image serving
         try {
             // First get an image ID from search
@@ -4604,12 +4624,12 @@ window.runDiagnostics = async function() {
         } catch (e) {
             diagnostics.push({ name: 'Image Serving', status: false, details: e.message });
         }
-        
+
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">🔧 Diagnostics Results</h3>
         `;
-        
+
         diagnostics.forEach(diag => {
             const statusColor = diag.status ? 'var(--green)' : 'var(--red)';
             const statusText = diag.status ? '✓' : '✗';
@@ -4625,25 +4645,25 @@ window.runDiagnostics = async function() {
                 </div>
             `;
         });
-        
+
         const allPassed = diagnostics.every(d => d.status);
-        
+
         html += `
                 <div style="background: ${allPassed ? 'var(--green)' : 'var(--yellow)'}; padding: 15px; border-radius: 8px; text-align: center; margin-top: 15px;">
                     <h4 style="color: white; margin: 0;">${allPassed ? '✓ All Diagnostics Passed' : '⚠ Some Issues Detected'}</h4>
                 </div>
             </div>
         `;
-        
+
         if (resultsContent) {
             resultsContent.innerHTML = html;
         }
-        
+
         // Scroll to results section after results are displayed
         if (resultsSection) {
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[Diagnostics] ✓ Diagnostics completed');
     } catch (error) {
         console.error('[Diagnostics] ✗ Diagnostics failed:', error);
@@ -4661,9 +4681,9 @@ window.runDiagnostics = async function() {
 /**
  * Export logs
  */
-window.exportLogs = async function() {
+window.exportLogs = async function () {
     console.log('[Export Logs] Exporting logs...');
-    
+
     try {
         // Get log directory info
         const logInfo = {
@@ -4676,7 +4696,7 @@ window.exportLogs = async function() {
                 'Other component-specific logs may also be available'
             ]
         };
-        
+
         // Create a downloadable JSON file with log info
         const blob = new Blob([JSON.stringify(logInfo, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -4685,11 +4705,11 @@ window.exportLogs = async function() {
         a.download = `chromatica_logs_info_${Date.now()}.json`;
         a.click();
         URL.revokeObjectURL(url);
-        
+
         // Show success message
         const resultsSection = document.getElementById('quickTestResultsSection');
         const resultsContent = document.getElementById('quickTestResultsContent');
-        
+
         if (resultsSection && resultsContent) {
             resultsSection.style.display = 'block';
             resultsContent.innerHTML = `
@@ -4709,7 +4729,7 @@ window.exportLogs = async function() {
             // Scroll to results section
             resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        
+
         console.log('[Export Logs] ✓ Log info exported');
     } catch (error) {
         console.error('[Export Logs] ✗ Export failed:', error);
@@ -4727,16 +4747,16 @@ window.exportLogs = async function() {
 function hexToHsv(hex) {
     const rgb = hexToRgb(hex);
     if (!rgb) return null;
-    
+
     let { r, g, b } = rgb;
     r /= 255;
     g /= 255;
     b /= 255;
-    
+
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
     const delta = max - min;
-    
+
     let h = 0;
     if (delta !== 0) {
         if (max === r) {
@@ -4749,10 +4769,10 @@ function hexToHsv(hex) {
     }
     h = Math.round(h * 60);
     if (h < 0) h += 360;
-    
+
     const s = max === 0 ? 0 : Math.round((delta / max) * 100);
     const v = Math.round(max * 100);
-    
+
     return { h, s, v };
 }
 
@@ -4764,13 +4784,13 @@ function hsvToHex(h, s, v) {
     if (h < 0) h += 360;
     s = s / 100;
     v = v / 100;
-    
+
     const c = v * s;
     const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
     const m = v - c;
-    
+
     let r = 0, g = 0, b = 0;
-    
+
     if (h >= 0 && h < 60) {
         r = c; g = x; b = 0;
     } else if (h >= 60 && h < 120) {
@@ -4784,11 +4804,11 @@ function hsvToHex(h, s, v) {
     } else if (h >= 300 && h < 360) {
         r = c; g = 0; b = x;
     }
-    
+
     r = Math.round((r + m) * 255);
     g = Math.round((g + m) * 255);
     b = Math.round((b + m) * 255);
-    
+
     return rgbToHex(r, g, b);
 }
 
@@ -4798,17 +4818,17 @@ function hsvToHex(h, s, v) {
 function hexToCmyk(hex) {
     const rgb = hexToRgb(hex);
     if (!rgb) return null;
-    
+
     let { r, g, b } = rgb;
     r /= 255;
     g /= 255;
     b /= 255;
-    
+
     const k = 1 - Math.max(r, g, b);
     const c = k === 1 ? 0 : (1 - r - k) / (1 - k);
     const m = k === 1 ? 0 : (1 - g - k) / (1 - k);
     const y = k === 1 ? 0 : (1 - b - k) / (1 - k);
-    
+
     return {
         c: Math.round(c * 100),
         m: Math.round(m * 100),
@@ -4825,11 +4845,11 @@ function cmykToHex(c, m, y, k) {
     m = m / 100;
     y = y / 100;
     k = k / 100;
-    
+
     const r = Math.round(255 * (1 - c) * (1 - k));
     const g = Math.round(255 * (1 - m) * (1 - k));
     const b = Math.round(255 * (1 - y) * (1 - k));
-    
+
     return rgbToHex(r, g, b);
 }
 
@@ -4838,7 +4858,7 @@ function cmykToHex(c, m, y, k) {
  */
 function convertColorToFormat(hex, format) {
     if (!hex) return '';
-    
+
     switch (format) {
         case 'HEX':
             return hex;
@@ -4864,9 +4884,9 @@ function convertColorToFormat(hex, format) {
  */
 function convertFormatToHex(colorString, format) {
     if (!colorString || !format) return null;
-    
+
     colorString = colorString.trim();
-    
+
     try {
         switch (format) {
             case 'HEX':
@@ -4876,7 +4896,7 @@ function convertFormatToHex(colorString, format) {
                 } else {
                     return colorString.length === 6 ? '#' + colorString : null;
                 }
-            
+
             case 'RGB':
                 // Parse rgb(r, g, b) or r, g, b
                 const rgbMatch = colorString.match(/\d+/g);
@@ -4887,7 +4907,7 @@ function convertFormatToHex(colorString, format) {
                     }
                 }
                 return null;
-            
+
             case 'HSL':
                 // Parse hsl(h, s%, l%) or h, s, l
                 const hslMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
@@ -4900,7 +4920,7 @@ function convertFormatToHex(colorString, format) {
                     }
                 }
                 return null;
-            
+
             case 'HSV':
                 // Parse hsv(h, s%, v%) or h, s, v
                 const hsvMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
@@ -4913,7 +4933,7 @@ function convertFormatToHex(colorString, format) {
                     }
                 }
                 return null;
-            
+
             case 'CMYK':
                 // Parse cmyk(c%, m%, y%, k%) or c, m, y, k
                 const cmykMatch = colorString.match(/(\d+(?:\.\d+)?)/g);
@@ -4927,7 +4947,7 @@ function convertFormatToHex(colorString, format) {
                     }
                 }
                 return null;
-            
+
             default:
                 return null;
         }
@@ -4944,29 +4964,29 @@ function convertFormatToHex(colorString, format) {
 /**
  * Randomize the color in a specific row
  */
-window.randomizeColorRow = function(buttonElement) {
+window.randomizeColorRow = function (buttonElement) {
     const colorRow = buttonElement.closest('.color-row');
     if (!colorRow) return;
-    
+
     const colorPicker = colorRow.querySelector('.color-picker');
     if (!colorPicker) return;
-    
+
     // Generate random hex color
     const randomHex = '#' + randomHexColor();
     colorPicker.value = randomHex;
-    
+
     // Update format input
     const formatSelect = colorRow.querySelector('.color-format-select');
     const formatInput = colorRow.querySelector('.color-format-input');
     if (formatSelect && formatInput) {
         formatInput.value = convertColorToFormat(randomHex, formatSelect.value);
     }
-    
+
     // Trigger color picker change handler
     if (window.handleColorPickerChange) {
         window.handleColorPickerChange({ target: colorPicker });
     }
-    
+
     console.log('[Randomize] Changed color row to:', randomHex);
 };
 
@@ -4977,41 +4997,41 @@ window.randomizeColorRow = function(buttonElement) {
 /**
  * Roll Dice: Generate random number of colors with random weights
  */
-window.rollDice = function() {
+window.rollDice = function () {
     console.log('[Roll Dice] Generating random color query...');
-    
+
     // Generate random number of colors (2-5, not too many)
     const numColors = Math.floor(Math.random() * 4) + 2; // 2-5 colors
-    
+
     // Generate random colors
     const colors = [];
     for (let i = 0; i < numColors; i++) {
         colors.push('#' + randomHexColor());
     }
-    
+
     // Generate random weights (percentages)
     const weights = [];
     for (let i = 0; i < numColors; i++) {
         weights.push(Math.floor(Math.random() * 80) + 10); // 10-90%
     }
-    
+
     // Normalize weights to sum to 100
     const totalWeight = weights.reduce((sum, w) => sum + w, 0);
     const normalizedWeights = weights.map(w => Math.round((w / totalWeight) * 100));
-    
+
     // Clear existing color inputs
     const colorInputs = document.getElementById('colorInputs');
     if (!colorInputs) return;
     colorInputs.innerHTML = '';
-    
+
     // Add new colors with weights
     colors.forEach((color, index) => {
         addColorRow(color, normalizedWeights[index]);
     });
-    
+
     // Update color palette
     window.updateColorPalette();
-    
+
     console.log('[Roll Dice] Generated query with', numColors, 'colors:', colors, 'weights:', normalizedWeights);
     window.showSuccess('🎲 Roll Dice', `Generated random query with ${numColors} colors`);
 };
@@ -5023,7 +5043,7 @@ window.rollDice = function() {
 /**
  * Show image upload modal
  */
-window.showImageUploadModal = function() {
+window.showImageUploadModal = function () {
     const modal = document.getElementById('imageUploadModal');
     if (modal) {
         // Reset modal state
@@ -5031,12 +5051,12 @@ window.showImageUploadModal = function() {
         const previewImg = document.getElementById('uploadedImagePreview');
         const extractionStatus = document.getElementById('extractionStatus');
         const fileInput = document.getElementById('imageFileInput');
-        
+
         if (preview) preview.style.display = 'none';
         if (previewImg) previewImg.src = '';
         if (extractionStatus) extractionStatus.style.display = 'none';
         if (fileInput) fileInput.value = '';
-        
+
         // Ensure modal is properly centered and displayed
         modal.style.display = 'flex';
         modal.style.position = 'absolute';
@@ -5051,7 +5071,7 @@ window.showImageUploadModal = function() {
         modal.style.alignItems = 'center';
         modal.style.padding = '20px';
         modal.style.boxSizing = 'border-box';
-        
+
         console.log('[Image Upload] Modal opened');
     }
 };
@@ -5059,7 +5079,7 @@ window.showImageUploadModal = function() {
 /**
  * Close image upload modal
  */
-window.closeImageUploadModal = function() {
+window.closeImageUploadModal = function () {
     const modal = document.getElementById('imageUploadModal');
     if (modal) {
         modal.style.display = 'none';
@@ -5070,7 +5090,7 @@ window.closeImageUploadModal = function() {
 /**
  * Handle drag over event
  */
-window.handleDragOver = function(event) {
+window.handleDragOver = function (event) {
     event.preventDefault();
     event.stopPropagation();
     const uploadArea = document.getElementById('imageUploadArea');
@@ -5083,7 +5103,7 @@ window.handleDragOver = function(event) {
 /**
  * Handle drag leave event
  */
-window.handleDragLeave = function(event) {
+window.handleDragLeave = function (event) {
     event.preventDefault();
     event.stopPropagation();
     const uploadArea = document.getElementById('imageUploadArea');
@@ -5096,16 +5116,16 @@ window.handleDragLeave = function(event) {
 /**
  * Handle drop event
  */
-window.handleDrop = function(event) {
+window.handleDrop = function (event) {
     event.preventDefault();
     event.stopPropagation();
-    
+
     const uploadArea = document.getElementById('imageUploadArea');
     if (uploadArea) {
         uploadArea.style.borderColor = 'var(--surface2)';
         uploadArea.style.backgroundColor = 'var(--surface0)';
     }
-    
+
     const files = event.dataTransfer.files;
     if (files && files.length > 0) {
         handleImageFile(files[0]);
@@ -5115,7 +5135,7 @@ window.handleDrop = function(event) {
 /**
  * Handle file select event
  */
-window.handleFileSelect = function(event) {
+window.handleFileSelect = function (event) {
     const files = event.target.files;
     if (files && files.length > 0) {
         handleImageFile(files[0]);
@@ -5130,80 +5150,80 @@ function handleImageFile(file) {
         window.showError('Invalid File', 'Please select an image file (JPG, PNG, GIF, WebP)');
         return;
     }
-    
+
     // Show preview
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = function (e) {
         const preview = document.getElementById('imagePreview');
         const previewImg = document.getElementById('uploadedImagePreview');
-        
+
         if (preview && previewImg) {
             previewImg.src = e.target.result;
             preview.style.display = 'block';
         }
-        
+
         // Store file for extraction
         window.selectedImageFile = file;
         console.log('[Image Upload] File selected:', file.name, 'Size:', (file.size / 1024).toFixed(2), 'KB');
     };
-    
+
     reader.readAsDataURL(file);
 }
 
 /**
  * Extract colors from uploaded image
  */
-window.extractColorsFromImage = async function() {
+window.extractColorsFromImage = async function () {
     const file = window.selectedImageFile;
     if (!file) {
         window.showError('No Image', 'Please select an image file first');
         return;
     }
-    
+
     const numColors = parseInt(document.getElementById('numColorsToExtract')?.value) || 5;
     if (numColors < 1 || numColors > 10) {
         window.showError('Invalid Number', 'Number of colors must be between 1 and 10');
         return;
     }
-    
+
     const extractionStatus = document.getElementById('extractionStatus');
     if (extractionStatus) {
         extractionStatus.style.display = 'block';
     }
-    
+
     try {
         console.log('[Image Upload] Extracting', numColors, 'colors from image...');
-        
+
         // Create FormData for file upload
         const formData = new FormData();
         formData.append('image', file);
         formData.append('num_colors', numColors);
-        
+
         // Upload and extract colors
         const response = await fetch('/extract_colors', {
             method: 'POST',
             body: formData
         });
-        
+
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ detail: 'Failed to extract colors' }));
             throw new Error(errorData.detail || `HTTP ${response.status}`);
         }
-        
+
         const data = await response.json();
-        
+
         if (!data.colors || !Array.isArray(data.colors) || data.colors.length === 0) {
             throw new Error('No colors extracted from image');
         }
-        
+
         console.log('[Image Upload] Extracted colors:', data.colors);
         console.log('[Image Upload] Color weights:', data.weights);
-        
+
         // Clear existing color inputs
         const colorInputs = document.getElementById('colorInputs');
         if (!colorInputs) return;
         colorInputs.innerHTML = '';
-        
+
         // Add extracted colors with their weights
         data.colors.forEach((color, index) => {
             // Ensure color is in hex format
@@ -5211,29 +5231,29 @@ window.extractColorsFromImage = async function() {
             if (!color.startsWith('#')) {
                 hexColor = '#' + color;
             }
-            
+
             // Convert weight percentage to slider value (0-100)
             const weight = data.weights && data.weights[index] ? Math.round(data.weights[index] * 100) : 100;
             addColorRow(hexColor, weight);
         });
-        
+
         // Update color palette
         window.updateColorPalette();
-        
+
         // Close modal
         window.closeImageUploadModal();
-        
+
         // Hide extraction status
         if (extractionStatus) {
             extractionStatus.style.display = 'none';
         }
-        
+
         window.showSuccess('🎨 Colors Extracted', `Extracted ${data.colors.length} colors from image`);
-        
+
     } catch (error) {
         console.error('[Image Upload] Error extracting colors:', error);
         window.showError('Extraction Failed', error.message || 'Failed to extract colors from image');
-        
+
         if (extractionStatus) {
             extractionStatus.style.display = 'none';
         }

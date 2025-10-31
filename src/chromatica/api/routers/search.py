@@ -33,7 +33,6 @@ update_performance_stats = state.update_performance_stats
 # ---------------------------------------------
 
 
-
 # Define the router instance
 router = APIRouter(
     prefix="/search",
@@ -280,7 +279,65 @@ async def search_images(
             # SearchResponse Pydantic model to ensure all required fields are included.
             from dataclasses import asdict
 
-            formatted_results = [asdict(r) for r in results]
+            # Convert SearchResult objects to dicts and verify dominant_colors
+            formatted_results = []
+            for idx, r in enumerate(results):
+                # Log the SearchResult object before conversion
+                search_logger.debug(
+                    f"Processing result {idx + 1}: image_id={getattr(r, 'image_id', 'N/A')}, "
+                    f"has_dominant_colors={hasattr(r, 'dominant_colors')}, "
+                    f"dominant_colors_type={type(getattr(r, 'dominant_colors', None))}, "
+                    f"dominant_colors_value={getattr(r, 'dominant_colors', None)}"
+                )
+
+                result_dict = asdict(r)
+
+                # Log the dict after conversion
+                search_logger.debug(
+                    f"After asdict: image_id={result_dict.get('image_id')}, "
+                    f"has_dominant_colors={'dominant_colors' in result_dict}, "
+                    f"dominant_colors_value={result_dict.get('dominant_colors')}"
+                )
+
+                # Ensure dominant_colors is present and is a list
+                if "dominant_colors" not in result_dict:
+                    search_logger.error(
+                        f"SearchResult {idx + 1} missing dominant_colors field after asdict! "
+                        f"Available keys: {list(result_dict.keys())}"
+                    )
+                    result_dict["dominant_colors"] = []
+                elif result_dict["dominant_colors"] is None:
+                    search_logger.warning(
+                        f"SearchResult {idx + 1} has None for dominant_colors, converting to empty list"
+                    )
+                    result_dict["dominant_colors"] = []
+                elif not isinstance(result_dict["dominant_colors"], list):
+                    search_logger.warning(
+                        f"SearchResult {idx + 1} dominant_colors is not a list: {type(result_dict['dominant_colors'])}, converting"
+                    )
+                    result_dict["dominant_colors"] = (
+                        list(result_dict["dominant_colors"])
+                        if result_dict["dominant_colors"]
+                        else []
+                    )
+                else:
+                    # Log if it's a list but empty
+                    if len(result_dict["dominant_colors"]) == 0:
+                        search_logger.warning(
+                            f"SearchResult {idx + 1} has empty dominant_colors list: {result_dict.get('image_id')}"
+                        )
+
+                formatted_results.append(result_dict)
+
+            # Log dominant colors for debugging
+            if formatted_results:
+                first_result = formatted_results[0]
+                search_logger.info(
+                    f"First result dominant_colors: {first_result.get('dominant_colors', 'MISSING')}, "
+                    f"type: {type(first_result.get('dominant_colors'))}, "
+                    f"length: {len(first_result.get('dominant_colors', []))}, "
+                    f"value: {first_result.get('dominant_colors', [])[:3]}..."  # Show first 3 colors
+                )
 
             # Calculate timing metadata
             total_time = time.time() - total_start_time

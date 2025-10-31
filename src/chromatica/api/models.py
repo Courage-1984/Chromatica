@@ -64,7 +64,7 @@ class SearchResponse(BaseModel):
     query_id: str = Field(..., description="Unique identifier for this search query")
     query: QueryColors = Field(..., description="Original query colors and weights")
     results_count: int = Field(..., description="Number of results returned")
-    results: List[SearchResult] = Field(..., description="Ranked search results")
+    results: List[Dict[str, Any]] = Field(..., description="Ranked search results")
     metadata: SearchMetadata = Field(..., description="Performance timing metadata")
 
 
@@ -194,5 +194,3 @@ class ColorExtractionResponse(BaseModel):
     num_colors: int = Field(
         ..., description="The number of colors successfully extracted."
     )
-
-

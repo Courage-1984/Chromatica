@@ -47,11 +47,12 @@ class RerankResult:
     """Result from reranking a single candidate."""
 
     image_id: str
-    file_path: str
     distance: float
-    rank: int
-    ann_score: float  # Original ANN distance score
     confidence: float = 1.0
+    # Optional fields - will be populated later from metadata
+    file_path: str = "N/A"
+    rank: int = 0
+    ann_score: float = 0.0  # Original ANN distance score
     image_url: Optional[str] = None  # URL of the image
 
 # --- Add this helper function immediately before 'create_cost_matrix' ---
@@ -211,21 +212,52 @@ def histogram_top_hex_colors(hist: np.ndarray, top_n: int = 5) -> List[str]:
     """
     try:
         hist = np.asarray(hist, dtype=np.float64).flatten()
-        if hist.sum() <= 0 or top_n <= 0:
+        
+        # Validate histogram shape
+        if hist.shape[0] != TOTAL_BINS:
+            logger.warning(f"Histogram shape mismatch: expected {TOTAL_BINS}, got {hist.shape[0]}")
             return []
+        
+        # Check if histogram is valid (not all zeros)
+        hist_sum = hist.sum()
+        hist_max = hist.max()
+        hist_min = hist.min()
+        
+        logger.info(f"histogram_top_hex_colors called: sum={hist_sum:.6f}, min={hist_min:.6f}, max={hist_max:.6f}, shape={hist.shape}, top_n={top_n}")
+        
+        if hist_sum <= 0 or top_n <= 0:
+            if hist_sum <= 0:
+                logger.warning(f"Histogram sum is {hist_sum:.6f}, returning empty list. Min={hist_min:.6f}, Max={hist_max:.6f}, shape={hist.shape}")
+            return []
+        
         centers = _get_lab_bin_centers()
         if centers is None:
+            logger.error("Failed to get Lab bin centers")
             return []
+        
+        if centers.shape[0] != TOTAL_BINS:
+            logger.error(f"Bin centers shape mismatch: expected {TOTAL_BINS}, got {centers.shape[0]}")
+            return []
+        
         n = int(max(1, top_n))
         idx = np.argpartition(hist, -n)[-n:]
         # Sort by probability descending
         idx = idx[np.argsort(-hist[idx])]
         lab = centers[idx]
+        
+        logger.debug(f"Top {n} bin indices: {idx}, corresponding histogram values: {hist[idx]}")
+        logger.debug(f"Lab values for top bins: {lab}")
+        
         # skimage expects Lab with L in [0,100], a,b in roughly [-128,127]
         rgb = skcolor.lab2rgb(lab.reshape(1, n, 3)).reshape(n, 3)
         rgb = np.clip(np.round(rgb * 255), 0, 255).astype(np.uint8)
-        return [f"#{r:02x}{g:02x}{b:02x}" for r, g, b in rgb]
-    except Exception:
+        
+        result = [f"#{r:02x}{g:02x}{b:02x}" for r, g, b in rgb]
+        logger.debug(f"Converted to hex colors: {result}")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Error in histogram_top_hex_colors: {e}", exc_info=True)
         return []
 
 

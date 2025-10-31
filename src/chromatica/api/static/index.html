@@ -38,7 +38,8 @@
             <div id="colorInputs">
                 <div class="color-row">
                     <input type="color" class="color-picker" value="#FF0000">
-                    <select class="color-format-select" style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px;">
+                    <select class="color-format-select"
+                        style="padding: 6px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 13px;">
                         <option value="HEX">HEX</option>
                         <option value="RGB">RGB</option>
                         <option value="HSL">HSL</option>
@@ -519,7 +520,8 @@
                 <!-- Row 3 (Requested order): Density Volume, OT Transport 3D, HNSW Explorer -->
                 <div
                     style="background: var(--surface1); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2);">
-                    <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">🧊 Color Space Density Volume</h3>
+                    <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">🧊 Color Space Density Volume
+                    </h3>
                     <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 14px; line-height: 1.4;">
                         Volumetric view of dataset density in Lab; reveals global color biases.
                     </p>
@@ -545,13 +547,15 @@
                         <input type="text" id="otColors" placeholder="Colors (e.g., FF0000,00FF00)"
                             style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
                         <button onclick="randomOTColors()"
-                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲 Random</button>
+                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲
+                            Random</button>
                     </div>
                     <div style="display: flex; gap: 5px; margin-bottom: 10px; align-items: center;">
                         <input type="text" id="otWeights" placeholder="Weights (e.g., 0.5,0.5)"
                             style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
                         <button onclick="randomOTWeights()"
-                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲 Random</button>
+                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲
+                            Random</button>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateOTTransport3D()"
@@ -575,13 +579,15 @@
                         <input type="text" id="hnswColors" placeholder="Colors (e.g., FF0000,00FF00)"
                             style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
                         <button onclick="randomHNSWColors()"
-                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲 Random</button>
+                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲
+                            Random</button>
                     </div>
                     <div style="display: flex; gap: 5px; margin-bottom: 10px; align-items: center;">
                         <input type="text" id="hnswWeights" placeholder="Weights (e.g., 0.5,0.5)"
                             style="flex: 1; padding: 8px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
                         <button onclick="randomHNSWWeights()"
-                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲 Random</button>
+                            style="background: var(--overlay1); color: var(--text); border: 1px solid var(--surface2); padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; white-space: nowrap;">🎲
+                            Random</button>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateHNSWExplorer()"
@@ -734,13 +740,15 @@
                     style="background: var(--surface1); padding: 20px; border-radius: 12px; border: 1px solid var(--surface2); grid-column: 1 / -1;">
                     <h3 style="color: var(--text); margin: 0 0 15px 0; font-size: 16px;">🖼️ Image Thumbnails 3D</h3>
                     <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 14px; line-height: 1.4;">
-                        Browse all indexed images as small thumbnails positioned in 3D Lab color space by their dominant colors. Navigate your entire image collection visually.
+                        Browse all indexed images as small thumbnails positioned in 3D Lab color space by their dominant
+                        colors. Navigate your entire image collection visually.
                     </p>
                     <div style="display: flex; gap: 5px; margin-bottom: 10px; align-items: center;">
                         <label style="color: var(--subtext1); font-size: 14px; margin-right: 10px;">Max Images:</label>
                         <input type="number" id="thumbnailLimit" placeholder="300" min="10" max="1000" value="300"
                             style="flex: 0 0 100px; padding: 8px; border-radius: 4px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text);">
-                        <small style="color: var(--subtext0); font-size: 12px; margin-left: 10px;">10-1000 images (default: 300)</small>
+                        <small style="color: var(--subtext0); font-size: 12px; margin-left: 10px;">10-1000 images
+                            (default: 300)</small>
                     </div>
                     <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                         <button onclick="generateImageThumbnails3D()"
@@ -2158,34 +2166,45 @@
                 <!-- Image Upload Modal -->
                 <div id="imageUploadModal" class="modal"
                     style="display: none; position: absolute !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%); width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; overflow: auto; flex-direction: column; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box;">
-                    <div class="modal-content" style="width: 90%; max-width: 600px; background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1);">
+                    <div class="modal-content"
+                        style="width: 90%; max-width: 600px; background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1);">
                         <span class="close" onclick="closeImageUploadModal()"
                             style="color: var(--text); float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 20px;">&times;</span>
                         <h2 style="color: var(--text); margin-top: 0;">🖼️ Upload Image to Extract Colors</h2>
-                        <p style="color: var(--subtext1); margin-bottom: 20px;">Drag and drop an image here, or click to select a file.</p>
-                        
+                        <p style="color: var(--subtext1); margin-bottom: 20px;">Drag and drop an image here, or click to
+                            select a file.</p>
+
                         <div id="imageUploadArea"
                             style="border: 3px dashed var(--surface2); border-radius: 12px; padding: 40px; text-align: center; background: var(--surface0); cursor: pointer; transition: all 0.3s; margin-bottom: 20px;"
-                            ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('imageFileInput').click()">
+                            ondrop="handleDrop(event)" ondragover="handleDragOver(event)"
+                            ondragleave="handleDragLeave(event)"
+                            onclick="document.getElementById('imageFileInput').click()">
                             <div style="font-size: 48px; margin-bottom: 15px;">📎</div>
-                            <div style="color: var(--text); font-size: 16px; font-weight: bold; margin-bottom: 10px;">Drop image here or click to upload</div>
+                            <div style="color: var(--text); font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+                                Drop image here or click to upload</div>
                             <div style="color: var(--subtext1); font-size: 14px;">Supports: JPG, PNG, GIF, WebP</div>
-                            <input type="file" id="imageFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+                            <input type="file" id="imageFileInput" accept="image/*" style="display: none;"
+                                onchange="handleFileSelect(event)">
                         </div>
 
                         <div id="imagePreview" style="display: none; margin-bottom: 20px;">
-                            <img id="uploadedImagePreview" src="" alt="Preview" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 2px solid var(--surface2);">
+                            <img id="uploadedImagePreview" src="" alt="Preview"
+                                style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 2px solid var(--surface2);">
                         </div>
 
                         <div style="margin-bottom: 20px;">
-                            <label style="display: block; color: var(--text); margin-bottom: 10px; font-weight: bold;">Number of colors to extract:</label>
+                            <label
+                                style="display: block; color: var(--text); margin-bottom: 10px; font-weight: bold;">Number
+                                of colors to extract:</label>
                             <input type="number" id="numColorsToExtract" min="1" max="10" value="5"
                                 style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--surface2); background: var(--surface0); color: var(--text); font-size: 14px;">
-                            <small style="color: var(--subtext1); font-size: 12px;">Choose how many dominant colors to extract (1-10)</small>
+                            <small style="color: var(--subtext1); font-size: 12px;">Choose how many dominant colors to
+                                extract (1-10)</small>
                         </div>
 
                         <div id="extractionStatus" style="display: none; margin-bottom: 20px;">
-                            <div style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: center;">
+                            <div
+                                style="background: var(--surface1); padding: 15px; border-radius: 8px; text-align: center;">
                                 <div style="color: var(--yellow); font-size: 18px; margin-bottom: 10px;">⏳</div>
                                 <div style="color: var(--text);">Extracting colors...</div>
                             </div>
@@ -2195,7 +2214,8 @@
                             <button onclick="closeImageUploadModal()"
                                 style="background: var(--surface2); color: var(--text); border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px;">Cancel</button>
                             <button onclick="extractColorsFromImage()"
-                                style="background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract Colors</button>
+                                style="background: var(--teal); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold;">Extract
+                                Colors</button>
                         </div>
                     </div>
                 </div>
