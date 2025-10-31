@@ -378,3 +378,5 @@ curl -X POST http://127.0.0.1:8000/restart
 import requests
 response = requests.post("http://127.0.0.1:8000/restart")
 
+http://127.0.0.1:8000/docs
+

@@ -5180,7 +5180,7 @@ window.extractColorsFromImage = async function() {
         formData.append('num_colors', numColors);
         
         // Upload and extract colors
-        const response = await fetch('/api/extract-colors', {
+        const response = await fetch('/extract_colors', {
             method: 'POST',
             body: formData
         });

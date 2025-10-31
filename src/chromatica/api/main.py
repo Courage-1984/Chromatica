@@ -41,6 +41,7 @@ from dataclasses import asdict
 from .routers import search as search_router
 from .routers import stats as stats_router
 from .routers import system as system_router
+from .routers import extract as extract_router
 
 from ..utils.config import (
     LOG_DIR,
@@ -348,7 +349,7 @@ app = FastAPI(
 app.include_router(search_router.router)
 app.include_router(stats_router.router)
 app.include_router(system_router.router)
-
+app.include_router(extract_router.router)
 
 # Get absolute path to static directory for mounting
 static_dir = Path(__file__).parent / "static"
@@ -1075,68 +1076,6 @@ async def execute_command(request: CommandRequest):
         webui_logger.error(f"Quick Test command execution error: {error_msg}")
         return CommandResponse(
             success=False, output="Command execution failed", error=error_msg
-        )
-
-@app.post("/api/extract-colors")
-async def extract_colors_from_image(
-    image: UploadFile = File(...),
-    num_colors: int = Form(5)
-):
-    """
-    Extract dominant colors from an uploaded image.
-    
-    Args:
-        image: Uploaded image file
-        num_colors: Number of colors to extract (1-10)
-    
-    Returns:
-        JSON response with extracted colors and weights
-    """
-    try:
-        # Validate num_colors
-        if num_colors < 1 or num_colors > 10:
-            raise HTTPException(
-                status_code=400,
-                detail="Number of colors must be between 1 and 10"
-            )
-        
-        # Validate file type
-        if not image.content_type or not image.content_type.startswith('image/'):
-            raise HTTPException(
-                status_code=400,
-                detail="File must be an image (JPG, PNG, GIF, WebP)"
-            )
-        
-        # Read image bytes
-        image_bytes = await image.read()
-        
-        if len(image_bytes) == 0:
-            raise HTTPException(
-                status_code=400,
-                detail="Image file is empty"
-            )
-        
-        logger.info(f"Extracting {num_colors} colors from uploaded image: {image.filename}")
-        
-        # Extract colors and weights
-        colors, weights = extract_dominant_colors_with_weights(image_bytes, num_colors)
-        
-        logger.info(f"Extracted {len(colors)} colors: {colors}")
-        logger.info(f"Color weights: {weights}")
-        
-        return {
-            "colors": colors,
-            "weights": weights,
-            "num_colors": len(colors)
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error extracting colors from image: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to extract colors from image: {str(e)}"
         )
 
 

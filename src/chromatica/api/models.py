@@ -175,3 +175,24 @@ class StatusResponse(BaseModel):
     message: str = Field(
         ..., description="Human-readable message describing the operation result."
     )
+
+
+class ColorExtractionResponse(BaseModel):
+    """
+    Response model for the /extract_colors endpoint, returning hex colors and weights.
+    """
+
+    status: str = Field(..., description="Extraction status (e.g., 'ok').")
+    colors: List[str] = Field(
+        ...,
+        description="List of dominant colors in hex format (e.g., ['#FF0000', '#00FF00']).",
+    )
+    weights: List[float] = Field(
+        ...,
+        description="List of normalized weights (0.0 to 1.0) corresponding to each color.",
+    )
+    num_colors: int = Field(
+        ..., description="The number of colors successfully extracted."
+    )
+
+
