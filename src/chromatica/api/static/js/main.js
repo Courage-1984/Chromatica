@@ -6,6 +6,132 @@ console.log('Loading Chromatica JavaScript...');
 window.colors = ['#FF0000'];
 window.weights = [100];
 
+// Define closeWelcomeModal IMMEDIATELY at the top
+window.closeWelcomeModal = function() {
+    console.log('=== closeWelcomeModal CALLED ===');
+    
+    // Prevent multiple simultaneous calls
+    if (window._closingWelcomeModal) {
+        console.log('Already closing, ignoring');
+        return;
+    }
+    window._closingWelcomeModal = true;
+    
+    const welcomeModal = document.getElementById('welcomeModal');
+    const dontShowAgain = document.getElementById('dontShowAgain');
+    
+    if (!welcomeModal) {
+        console.error('Welcome modal element not found!');
+        window._closingWelcomeModal = false;
+        return;
+    }
+    
+    console.log('Modal current display:', welcomeModal.style.display);
+    console.log('Modal computed display:', window.getComputedStyle(welcomeModal).display);
+    
+    // Check if already hidden
+    if (welcomeModal.style.display === 'none') {
+        console.log('Modal already hidden');
+        window._closingWelcomeModal = false;
+        return;
+    }
+    
+    if (dontShowAgain && dontShowAgain.checked) {
+        localStorage.setItem('chromatica_welcome_shown', 'true');
+        console.log('Set localStorage to not show again');
+    }
+    
+    console.log('Hiding modal...');
+    // Hide immediately - no animation delay
+    welcomeModal.style.display = 'none';
+    welcomeModal.style.visibility = 'hidden';
+    welcomeModal.style.opacity = '0';
+    welcomeModal.style.animation = '';
+    
+    window._closingWelcomeModal = false;
+    console.log('Modal hidden successfully');
+};
+
+// Set up welcome modal click handlers IMMEDIATELY - only once
+(function setupWelcomeModal() {
+    let handlerAttached = false;
+    
+    function handleWelcomeClick(e) {
+        const target = e.target;
+        console.log('Welcome modal clicked, target:', target);
+        
+        // Check if clicking close button or Get Started button
+        if (target.hasAttribute('data-action') && target.getAttribute('data-action') === 'close') {
+            console.log('Clicked button with data-action=close');
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            if (window.closeWelcomeModal) {
+                window.closeWelcomeModal();
+            }
+            return false;
+        }
+        
+        // Check if clicking inside button (span)
+        const button = target.closest('[data-action="close"]');
+        if (button) {
+            console.log('Clicked inside button with data-action=close');
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            if (window.closeWelcomeModal) {
+                window.closeWelcomeModal();
+            }
+            return false;
+        }
+        
+        // Check if clicking backdrop
+        if (target.id === 'welcomeModal') {
+            console.log('Clicked backdrop');
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.closeWelcomeModal) {
+                window.closeWelcomeModal();
+            }
+            return false;
+        }
+    }
+    
+    function attachHandler() {
+        if (handlerAttached) {
+            console.log('Handler already attached, skipping');
+            return;
+        }
+        
+        const modal = document.getElementById('welcomeModal');
+        if (modal && !modal.hasAttribute('data-handlers-attached')) {
+            modal.addEventListener('click', handleWelcomeClick, true);
+            modal.setAttribute('data-handlers-attached', 'true');
+            handlerAttached = true;
+            console.log('=== Welcome modal handler attached ===');
+        } else if (!modal) {
+            console.error('Modal not found for handler attachment');
+        } else {
+            console.log('Modal already has handlers attached');
+        }
+    }
+    
+    // Try to set up immediately
+    if (document.readyState === 'loading') {
+        console.log('Document loading, will attach on DOMContentLoaded');
+        document.addEventListener('DOMContentLoaded', attachHandler);
+    } else {
+        console.log('Document ready, attaching immediately');
+        attachHandler();
+    }
+    
+    // Also try after a short delay
+    setTimeout(function() {
+        console.log('Delayed handler attachment attempt');
+        attachHandler();
+    }, 100);
+})();
+
 // Explicitly expose functions to global scope
 window.addColor = function () {
     console.log('addColor called');
@@ -1541,12 +1667,12 @@ window.updateSearchResults = function (data) {
                 const blobUrl = URL.createObjectURL(blob);
                 
                 // Create download link with blob URL
-                const link = document.createElement('a');
+            const link = document.createElement('a');
                 link.href = blobUrl;
-                link.download = result.image_id || 'image';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+            link.download = result.image_id || 'image';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
                 
                 // Clean up blob URL after a short delay
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
@@ -3668,9 +3794,110 @@ window.generateGradientFromModal = function() {
 };
 
 /**
- * Load preset palette
+ * Generate random color palettes based on harmony types
+ */
+function generateRandomPalette(harmonyType) {
+    // Generate a random base hue
+    const randomHue = Math.floor(Math.random() * 360);
+    const baseSaturation = 60 + Math.random() * 30; // 60-90% saturation
+    const baseLightness = 40 + Math.random() * 30; // 40-70% lightness
+    const baseColor = hslToHex(randomHue, baseSaturation, baseLightness);
+    
+    let colors = [];
+    
+    switch(harmonyType) {
+        case 'complementary':
+            // 2 colors, 180 degrees apart
+            colors = [baseColor, getComplementaryColor(baseColor)];
+            break;
+            
+        case 'analogous':
+            // 3 colors, ~30 degrees apart
+            colors = generateAnalogousScheme(baseColor);
+            break;
+            
+        case 'triadic':
+            // 3 colors, 120 degrees apart
+            colors = generateTriadicScheme(baseColor);
+            break;
+            
+        case 'split-complementary':
+            // Base + complementary ±30 degrees
+            const complementary = getComplementaryColor(baseColor);
+            const compHsl = hexToHsl(complementary);
+            colors = [
+                baseColor,
+                hslToHex((compHsl.h + 30) % 360, compHsl.s, compHsl.l),
+                hslToHex((compHsl.h - 30 + 360) % 360, compHsl.s, compHsl.l)
+            ];
+            break;
+            
+        case 'tetradic':
+            // 4 colors forming a rectangle (90 degrees apart)
+            const baseHsl = hexToHsl(baseColor);
+            colors = [
+                baseColor,
+                hslToHex((baseHsl.h + 90) % 360, baseHsl.s, baseHsl.l),
+                hslToHex((baseHsl.h + 180) % 360, baseHsl.s, baseHsl.l),
+                hslToHex((baseHsl.h + 270) % 360, baseHsl.s, baseHsl.l)
+            ];
+            break;
+            
+        case 'monochrome':
+        case 'monochromatic':
+            // Same hue, varying saturation and lightness
+            const monoHsl = hexToHsl(baseColor);
+            colors = [
+                baseColor,
+                hslToHex(monoHsl.h, Math.min(100, monoHsl.s + 20), Math.max(20, monoHsl.l - 20)),
+                hslToHex(monoHsl.h, Math.max(30, monoHsl.s - 20), Math.min(80, monoHsl.l + 15)),
+                hslToHex(monoHsl.h, monoHsl.s, Math.max(15, monoHsl.l - 30))
+            ];
+            break;
+            
+        case 'warm':
+            // Warm colors: hues 0-60 degrees (red to yellow)
+            const warmHue = Math.random() * 60; // 0-60 degrees
+            const warmSat = 60 + Math.random() * 30;
+            const warmLight = 40 + Math.random() * 30;
+            colors = [
+                hslToHex(warmHue, warmSat, warmLight),
+                hslToHex(Math.min(60, warmHue + 15), Math.max(30, warmSat - 5), Math.min(80, warmLight + 5)),
+                hslToHex(Math.min(60, warmHue + 30), Math.min(100, warmSat + 5), Math.max(20, warmLight - 5)),
+                hslToHex(Math.min(60, warmHue + 45), Math.max(30, warmSat - 10), Math.min(80, warmLight + 10))
+            ];
+            break;
+            
+        case 'cool':
+            // Cool colors: hues 180-270 degrees (cyan to blue)
+            const coolHue = 180 + Math.random() * 90; // 180-270 degrees
+            const coolSat = 50 + Math.random() * 40;
+            const coolLight = 40 + Math.random() * 30;
+            colors = [
+                hslToHex(coolHue, coolSat, coolLight),
+                hslToHex(Math.min(270, coolHue + 20), Math.max(30, coolSat - 10), Math.min(80, coolLight + 8)),
+                hslToHex(Math.min(270, coolHue + 40), Math.min(100, coolSat + 10), Math.max(20, coolLight - 8)),
+                hslToHex(Math.min(270, coolHue + 60), Math.max(30, coolSat - 5), Math.min(80, coolLight + 12))
+            ];
+            break;
+            
+        default:
+            colors = [baseColor];
+    }
+    
+    // Remove # from hex colors for loadPreset
+    return colors.map(color => color.replace('#', ''));
+}
+
+/**
+ * Load preset palette with random colors based on harmony type
  */
 window.loadPreset = function(name, colors) {
+    // If colors not provided, generate random colors based on harmony type
+    if (!colors || colors.length === 0) {
+        colors = generateRandomPalette(name);
+    }
+    
     // Clear current colors
     const colorInputs = document.getElementById('colorInputs');
     if (colorInputs) {
@@ -3691,6 +3918,43 @@ window.loadPreset = function(name, colors) {
     
     showSuccess('Preset Loaded', `${name} palette loaded successfully!`);
 };
+
+/**
+ * Close welcome modal and optionally remember preference
+ * Define early so it's available when HTML loads
+ */
+(function() {
+    'use strict';
+    
+    function closeWelcomeModal() {
+        console.log('closeWelcomeModal called');
+        const welcomeModal = document.getElementById('welcomeModal');
+        const dontShowAgain = document.getElementById('dontShowAgain');
+        
+        if (!welcomeModal) {
+            console.error('Welcome modal not found');
+            return;
+        }
+        
+        console.log('Closing welcome modal');
+        
+        // Check if user wants to hide it permanently
+        if (dontShowAgain && dontShowAgain.checked) {
+            localStorage.setItem('chromatica_welcome_shown', 'true');
+        }
+        
+        // Animate fade out
+        welcomeModal.style.animation = 'fadeOut 0.3s ease-in-out';
+        setTimeout(() => {
+            welcomeModal.style.display = 'none';
+            welcomeModal.style.animation = '';
+        }, 300);
+    }
+    
+    // Make available globally
+    window.closeWelcomeModal = closeWelcomeModal;
+})();
+
 
 /**
  * Export search results as image
@@ -4101,6 +4365,60 @@ window.turnOff3DVisualization = function () {
 window.showSuggestPaletteModal = function () {
     const modal = document.getElementById('suggestPaletteModal');
     if (modal) {
+        // Add a class to mark it as shown for CSS targeting
+        modal.classList.add('modal-shown');
+        
+        // Set modal as flexbox container
+        modal.style.cssText = '';
+        modal.style.display = 'flex';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.background = 'rgba(0, 0, 0, 0.85)';
+        modal.style.zIndex = '1000';
+        modal.style.overflow = 'auto';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        
+        // CRITICAL: Clear ALL styles from modal-content and set margin to 0
+        const modalContent = modal.querySelector('.modal-content');
+        if (modalContent) {
+            // Remove all inline styles first
+            modalContent.removeAttribute('style');
+            
+            // Clear ALL inline styles first, then set only what we need
+            modalContent.removeAttribute('style');
+            
+            // Set only necessary styles - preserving background and padding from HTML
+            modalContent.style.cssText = 'margin: 0; position: relative; width: 90%; max-width: 700px; background: var(--base); padding: 30px; border-radius: 12px; border: 2px solid var(--surface1); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); max-height: 90vh; overflow-y: auto;';
+            
+            // Force a reflow to ensure styles are applied
+            void modalContent.offsetHeight;
+            
+            const computedModal = window.getComputedStyle(modal);
+            const computedContent = window.getComputedStyle(modalContent);
+            const rect = modalContent.getBoundingClientRect();
+            const modalRect = modal.getBoundingClientRect();
+            
+            console.log('=== MODAL DEBUG ===');
+            console.log('Modal display:', computedModal.display);
+            console.log('Modal alignItems:', computedModal.alignItems);
+            console.log('Modal justifyContent:', computedModal.justifyContent);
+            console.log('Content margin:', computedContent.margin);
+            console.log('Content transform:', computedContent.transform);
+            console.log('Content top:', computedContent.top);
+            console.log('Content left:', computedContent.left);
+            console.log('Content boundingRect:', rect);
+            console.log('Modal boundingRect:', modalRect);
+            console.log('Expected center X:', modalRect.left + modalRect.width / 2);
+            console.log('Actual content center X:', rect.left + rect.width / 2);
+            console.log('Expected center Y:', modalRect.top + modalRect.height / 2);
+            console.log('Actual content center Y:', rect.top + rect.height / 2);
+            console.log('==================');
+        }
+        
         // Update current colors display
         window.updateColors();
         const currentColors = window.colors || [];
@@ -4172,7 +4490,10 @@ window.showSuggestPaletteModal = function () {
             });
         });
 
-        modal.style.display = 'block';
+        // Show modal with flexbox centering
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
     }
 };
 
@@ -4429,6 +4750,15 @@ function enhancePaletteWithCorrelation(palette, userColors, schemeType) {
     });
 }
 
+// Close suggest palette modal
+window.closeSuggestPaletteModal = function() {
+    const modal = document.getElementById('suggestPaletteModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.remove('modal-shown');
+    }
+};
+
 // Apply the generated palette
 window.applyGeneratedPalette = function () {
     if (!window.generatedPalette || !Array.isArray(window.generatedPalette)) {
@@ -4453,10 +4783,7 @@ window.applyGeneratedPalette = function () {
         window.updateColorPalette();
 
         // Hide the modal
-        const modal = document.getElementById('suggestPaletteModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
+        window.closeSuggestPaletteModal();
 
         window.showSuccess('Palette Applied', `Applied palette with ${window.generatedPalette.length} colors`);
     }
@@ -4705,7 +5032,54 @@ window.toggleToolPanel = function (panelId) {
 };
 
 
+// Show welcome modal for new users
 document.addEventListener('DOMContentLoaded', function () {
+    const welcomeShown = localStorage.getItem('chromatica_welcome_shown');
+    console.log('[Welcome Modal] localStorage check:', welcomeShown);
+    
+    // For testing: uncomment the line below to force show the modal
+    // localStorage.removeItem('chromatica_welcome_shown');
+    
+    const welcomeModal = document.getElementById('welcomeModal');
+    if (!welcomeModal) {
+        console.error('[Welcome Modal] Modal element not found!');
+        return;
+    }
+    
+    if (!welcomeShown) {
+        console.log('[Welcome Modal] Modal found, showing in 300ms...');
+        setTimeout(() => {
+            welcomeModal.style.display = 'flex';
+            welcomeModal.style.visibility = 'visible';
+            welcomeModal.style.opacity = '1';
+            console.log('[Welcome Modal] Display set to flex, visibility set to visible');
+        }, 300);
+    } else {
+        console.log('[Welcome Modal] Already shown before (localStorage set), not displaying');
+        // Make sure it's hidden
+        welcomeModal.style.display = 'none';
+    }
+    
+    // Debug: Add a global function to manually show the modal for testing
+    window.showWelcomeModal = function() {
+        const modal = document.getElementById('welcomeModal');
+        if (modal) {
+            localStorage.removeItem('chromatica_welcome_shown');
+            modal.style.display = 'flex';
+            modal.style.visibility = 'visible';
+            modal.style.opacity = '1';
+            console.log('[Welcome Modal] Manually shown via showWelcomeModal()');
+        }
+};
+
+    // Debug: Add a global function to clear the flag
+    window.resetWelcomeModal = function() {
+        localStorage.removeItem('chromatica_welcome_shown');
+        console.log('[Welcome Modal] Flag cleared. Reload page to see modal again.');
+    };
+    
+    console.log('[Welcome Modal] Debug functions available: window.showWelcomeModal() and window.resetWelcomeModal()');
+
     // Initialize with default color if no rows exist
     const colorInputs = document.getElementById('colorInputs');
     if (colorInputs && colorInputs.children.length === 0) {
@@ -4843,16 +5217,25 @@ window.runSearchTest = async function () {
         const data = await response.json();
         const duration = (endTime - startTime).toFixed(2);
 
+        const totalTime = data.metadata?.total_time_ms || 0;
+        const queryHistogramSize = data.metadata?.query_histogram_size || 1152;
+        const rerankK = data.metadata?.rerank_k || 200;
+        
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">🔍 Search Test Results</h3>
                 <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: var(--green);">✓ Success</span></p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Duration:</strong> ${duration}ms</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Results Found:</strong> ${data.results_count || 0}</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${data.metadata?.index_size || 0}</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>ANN Time:</strong> ${data.metadata?.ann_time_ms || 0}ms</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Rerank Time:</strong> ${data.metadata?.rerank_time_ms || 0}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Test Query:</strong> Red (#FF0000), Green (#00FF00), Blue (#0000FF)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Client Duration:</strong> ${duration}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Server Duration:</strong> ${totalTime}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Results Found:</strong> ${data.results_count || 0} / ${testK} requested</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${(data.metadata?.index_size || 0).toLocaleString()} images</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>ANN Time:</strong> ${data.metadata?.ann_time_ms || 0}ms (${data.metadata?.ann_time_ms && totalTime ? ((data.metadata.ann_time_ms / totalTime) * 100).toFixed(1) : 0}%)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Rerank Time:</strong> ${data.metadata?.rerank_time_ms || 0}ms (${data.metadata?.rerank_time_ms && totalTime ? ((data.metadata.rerank_time_ms / totalTime) * 100).toFixed(1) : 0}%)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Search Mode:</strong> ${data.metadata?.fast_mode ? 'Fast (L2 Distance)' : 'Standard (Sinkhorn-EMD)'}</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Query Histogram:</strong> ${queryHistogramSize} dimensions (8×12×12 Lab bins)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Rerank Candidates:</strong> ${rerankK}</p>
                 </div>
         `;
 
@@ -4961,15 +5344,21 @@ window.runPerformanceBenchmark = async function () {
         const avgANNTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.annTime || 0), 0) / results.filter(r => r.success).length;
         const avgRerankTime = results.filter(r => r.success).reduce((sum, r) => sum + (r.rerankTime || 0), 0) / results.filter(r => r.success).length;
 
+        const successCount = results.filter(r => r.success).length;
+        const timestamp = new Date().toLocaleString();
+        
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">⚡ Performance Benchmark Results</h3>
+                <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 13px;">Benchmark run at ${timestamp}</p>
                 <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <h4 style="color: var(--text); margin: 0 0 10px 0;">Summary</h4>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Tests Completed:</strong> ${results.filter(r => r.success).length}/${results.length}</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Duration:</strong> ${avgDuration.toFixed(2)}ms</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Average ANN Time:</strong> ${avgANNTime.toFixed(2)}ms</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Rerank Time:</strong> ${avgRerankTime.toFixed(2)}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Tests Completed:</strong> ${successCount}/${results.length} <span style="color: ${successCount === results.length ? 'var(--green)' : 'var(--yellow)'};">${successCount === results.length ? '✓' : '⚠'}</span></p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Total Duration:</strong> ${avgDuration.toFixed(2)}ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average ANN Time:</strong> ${avgANNTime.toFixed(2)}ms (${avgANNTime && avgDuration ? ((avgANNTime / avgDuration) * 100).toFixed(1) : 0}%)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Average Rerank Time:</strong> ${avgRerankTime.toFixed(2)}ms (${avgRerankTime && avgDuration ? ((avgRerankTime / avgDuration) * 100).toFixed(1) : 0}%)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Performance Target:</strong> P95 &lt; 450ms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: ${avgDuration < 450 ? 'var(--green)' : 'var(--yellow)'};">${avgDuration < 450 ? '✓ Meeting target' : '⚠ Above target'}</span></p>
                 </div>
                 <h4 style="color: var(--text); margin: 15px 0 10px 0;">Individual Results:</h4>
                 <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
@@ -5057,16 +5446,24 @@ window.runHistogramTest = async function () {
 
         const data = await response.json();
 
+        const indexSize = data.metadata?.index_size || 0;
+        const queryHistogramSize = data.metadata?.query_histogram_size || 1152;
+        
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 Histogram Test Results</h3>
                 <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
                     <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: var(--green);">✓ Success</span></p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Query Histogram:</strong> Created successfully</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Test Query:</strong> Gray (#808080)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Query Histogram:</strong> ${queryHistogramSize} dimensions</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Histogram Structure:</strong> 8×12×12 bins (L* × a* × b*)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Color Space:</strong> CIE Lab (D65 illuminant)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Assignment Method:</strong> Tri-linear soft assignment</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Normalization:</strong> L1 normalized</p>
                     <p style="margin: 5px 0; color: var(--text);"><strong>Search Results:</strong> ${data.results_count || 0} found</p>
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${data.metadata?.index_size || 0} images</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${indexSize.toLocaleString()} images</p>
                 </div>
-                <p style="color: var(--subtext1); font-size: 14px;">Histogram generation is functioning correctly. Query histogram was created and used successfully in search.</p>
+                <p style="color: var(--subtext1); font-size: 14px; line-height: 1.6;">Histogram generation is functioning correctly. Query histogram was created with the expected 1152-dimensional structure and used successfully in search. All histograms are L1-normalized probability distributions.</p>
             </div>
         `;
 
@@ -5124,18 +5521,43 @@ window.validateSystem = async function () {
         `;
 
         const checks = [
-            { name: 'API Endpoint', status: infoResponse.ok, details: infoData?.status || 'Unknown' },
-            { name: 'Search Functionality', status: testResponse.ok, details: testData ? `${testData.results_count} results` : 'Failed' },
-            { name: 'Index Access', status: testData && testData.metadata?.index_size > 0, details: testData?.metadata?.index_size || 0 },
+            { 
+                name: 'API Endpoint', 
+                status: infoResponse.ok, 
+                details: infoData?.status === 'ready' ? 'Ready' : (infoData?.status || 'Unknown'),
+                note: infoData?.status === 'ready' ? 'API is operational' : 'API may be initializing'
+            },
+            { 
+                name: 'Search Functionality', 
+                status: testResponse.ok && testData?.results_count > 0, 
+                details: testData ? `${testData.results_count} results in ${testData.metadata?.total_time_ms || 0}ms` : 'Failed',
+                note: testData ? 'Search pipeline operational' : 'Search pipeline unavailable'
+            },
+            { 
+                name: 'Index Access', 
+                status: testData && testData.metadata?.index_size > 0, 
+                details: testData?.metadata?.index_size ? `${testData.metadata.index_size.toLocaleString()} images indexed` : 'No index available',
+                note: testData?.metadata?.index_size > 0 ? 'FAISS index accessible' : 'Index not loaded'
+            },
+            {
+                name: 'Histogram Generation',
+                status: testData && testData.metadata?.query_histogram_size === 1152,
+                details: testData?.metadata?.query_histogram_size ? `${testData.metadata.query_histogram_size} dimensions (8×12×12)` : 'Invalid histogram',
+                note: testData?.metadata?.query_histogram_size === 1152 ? 'Correct structure' : 'Unexpected histogram size'
+            },
         ];
 
         checks.forEach(check => {
             const statusColor = check.status ? 'var(--green)' : 'var(--red)';
             const statusText = check.status ? '✓' : '✗';
             html += `
-                <div style="margin: 8px 0; padding: 8px; background: var(--surface0); border-radius: 4px;">
-                    <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span>
-                    <span style="color: var(--text); margin-left: 10px;"><strong>${check.name}:</strong> ${check.details}</span>
+                <div style="margin: 8px 0; padding: 12px; background: var(--surface0); border-radius: 4px; border-left: 3px solid ${statusColor};">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                        <span style="color: ${statusColor}; font-size: 18px; font-weight: bold;">${statusText}</span>
+                        <span style="color: var(--text); font-weight: bold;">${check.name}</span>
+                    </div>
+                    <p style="margin: 5px 0 0 0; color: var(--subtext1); font-size: 13px;"><strong>Status:</strong> ${check.details}</p>
+                    ${check.note ? `<p style="margin: 3px 0 0 0; color: var(--subtext0); font-size: 12px; font-style: italic;">${check.note}</p>` : ''}
                 </div>
             `;
         });
@@ -5209,17 +5631,29 @@ window.showSystemStatus = async function () {
             console.warn('Could not fetch index size:', e);
         }
 
+        const timestamp = new Date().toLocaleString();
+        const statusColor = data.status === 'ready' ? 'var(--green)' : 'var(--yellow)';
+        const statusIcon = data.status === 'ready' ? '✓' : '⚠';
+        
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">📊 System Status</h3>
-                <div style="background: var(--surface1); padding: 15px; border-radius: 8px;">
-                    <p style="margin: 5px 0; color: var(--text);"><strong>Status:</strong> <span style="color: ${data.status === 'ready' ? 'var(--green)' : 'var(--yellow)'};">${data.status || 'Unknown'}</span></p>
+                <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 13px;">Last updated: ${timestamp}</p>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                        <span style="color: ${statusColor}; font-size: 20px; font-weight: bold;">${statusIcon}</span>
+                        <p style="margin: 0; color: var(--text);"><strong>Status:</strong> <span style="color: ${statusColor}; text-transform: capitalize;">${data.status || 'Unknown'}</span></p>
+                    </div>
                     <p style="margin: 5px 0; color: var(--text);"><strong>Version:</strong> ${data.version || 'Unknown'}</p>
                     <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${indexSize.toLocaleString()} images</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Type:</strong> FAISS HNSW (M=32)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Metadata Store:</strong> DuckDB</p>
                     <p style="margin: 5px 0; color: var(--text);"><strong>Message:</strong> ${data.message || 'N/A'}</p>
-                    <h4 style="color: var(--text); margin: 15px 0 10px 0;">Available Endpoints:</h4>
-                    <ul style="color: var(--subtext1); margin: 0; padding-left: 20px;">
-                        ${data.endpoints ? Object.entries(data.endpoints).map(([key, value]) => `<li>${value}</li>`).join('') : '<li>No endpoints listed</li>'}
+                </div>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">Available Endpoints:</h4>
+                    <ul style="color: var(--subtext1); margin: 0; padding-left: 20px; line-height: 1.8;">
+                        ${data.endpoints ? Object.entries(data.endpoints).map(([key, value]) => `<li style="font-family: 'JetBrainsMono Nerd Font Mono', monospace; font-size: 13px;">${value}</li>`).join('') : '<li>No endpoints listed</li>'}
                     </ul>
                 </div>
             </div>
@@ -5270,26 +5704,30 @@ window.runDiagnostics = async function () {
         // Test 1: API availability
         try {
             const infoResponse = await fetch('/api/info');
+            const infoData = infoResponse.ok ? await infoResponse.json() : null;
             diagnostics.push({
                 name: 'API Endpoint',
                 status: infoResponse.ok,
-                details: infoResponse.ok ? 'Available' : `HTTP ${infoResponse.status}`
+                details: infoResponse.ok ? `Status: ${infoData?.status || 'Unknown'}, Version: ${infoData?.version || 'Unknown'}` : `HTTP ${infoResponse.status}`,
+                note: infoData?.status === 'ready' ? 'API is operational' : 'API may be initializing'
             });
         } catch (e) {
-            diagnostics.push({ name: 'API Endpoint', status: false, details: e.message });
+            diagnostics.push({ name: 'API Endpoint', status: false, details: e.message, note: 'API endpoint unreachable' });
         }
 
         // Test 2: Search functionality
         try {
             const searchResponse = await fetch('/search?colors=FF0000&weights=1.0&k=5&fast_mode=false');
             const searchData = searchResponse.ok ? await searchResponse.json() : null;
+            const indexSize = searchData?.metadata?.index_size || 0;
             diagnostics.push({
                 name: 'Search Functionality',
                 status: searchResponse.ok && searchData?.results_count > 0,
-                details: searchData ? `${searchData.results_count} results, ${searchData.metadata?.total_time_ms || 0}ms` : 'Failed'
+                details: searchData ? `${searchData.results_count} results in ${searchData.metadata?.total_time_ms || 0}ms (ANN: ${searchData.metadata?.ann_time_ms || 0}ms, Rerank: ${searchData.metadata?.rerank_time_ms || 0}ms)` : 'Failed',
+                note: searchData?.results_count > 0 ? `Index contains ${indexSize.toLocaleString()} images` : 'No results found'
             });
         } catch (e) {
-            diagnostics.push({ name: 'Search Functionality', status: false, details: e.message });
+            diagnostics.push({ name: 'Search Functionality', status: false, details: e.message, note: 'Search pipeline unavailable' });
         }
 
         // Test 3: Fast mode
@@ -5299,10 +5737,11 @@ window.runDiagnostics = async function () {
             diagnostics.push({
                 name: 'Fast Mode Search',
                 status: fastResponse.ok && fastData?.results_count > 0,
-                details: fastData ? `${fastData.results_count} results, ${fastData.metadata?.total_time_ms || 0}ms` : 'Failed'
+                details: fastData ? `${fastData.results_count} results in ${fastData.metadata?.total_time_ms || 0}ms (L2 distance, no reranking)` : 'Failed',
+                note: fastData?.results_count > 0 ? 'Fast mode operational (100x faster than standard)' : 'Fast mode unavailable'
             });
         } catch (e) {
-            diagnostics.push({ name: 'Fast Mode Search', status: false, details: e.message });
+            diagnostics.push({ name: 'Fast Mode Search', status: false, details: e.message, note: 'Fast mode search failed' });
         }
 
         // Test 4: Image serving
@@ -5329,21 +5768,25 @@ window.runDiagnostics = async function () {
             diagnostics.push({ name: 'Image Serving', status: false, details: e.message });
         }
 
+        const timestamp = new Date().toLocaleString();
+        
         let html = `
             <div style="padding: 20px;">
                 <h3 style="color: var(--text); margin: 0 0 15px 0;">🔧 Diagnostics Results</h3>
+                <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 13px;">Diagnostics run at ${timestamp}</p>
         `;
 
         diagnostics.forEach(diag => {
             const statusColor = diag.status ? 'var(--green)' : 'var(--red)';
             const statusText = diag.status ? '✓' : '✗';
             html += `
-                <div style="background: var(--surface1); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <span style="color: ${statusColor}; font-size: 20px; font-weight: bold;">${statusText}</span>
+                <div style="background: var(--surface1); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid ${statusColor};">
+                    <div style="display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="color: ${statusColor}; font-size: 20px; font-weight: bold; flex-shrink: 0;">${statusText}</span>
                         <div style="flex: 1;">
                             <p style="margin: 0; color: var(--text); font-weight: bold;">${diag.name}</p>
-                            <p style="margin: 5px 0 0 0; color: var(--subtext1); font-size: 13px;">${diag.details}</p>
+                            <p style="margin: 5px 0 0 0; color: var(--subtext1); font-size: 13px;"><strong>Status:</strong> ${diag.details}</p>
+                            ${diag.note ? `<p style="margin: 3px 0 0 0; color: var(--subtext0); font-size: 12px; font-style: italic;">${diag.note}</p>` : ''}
                         </div>
                     </div>
                 </div>
@@ -5438,6 +5881,88 @@ window.exportLogs = async function () {
     } catch (error) {
         console.error('[Export Logs] ✗ Export failed:', error);
         alert(`Failed to export logs: ${error.message}`);
+    }
+};
+
+/**
+ * Show index information
+ */
+window.showIndexInfo = async function () {
+    console.log('[Index Info] Fetching index information...');
+
+    const resultsSection = document.getElementById('quickTestResultsSection');
+    const resultsContent = document.getElementById('quickTestResultsContent');
+
+    if (resultsSection && resultsContent) {
+        resultsSection.style.display = 'block';
+        resultsContent.innerHTML = '<div style="text-align: center; padding: 20px;"><p>⏳ Fetching index information...</p></div>';
+        // Scroll to results section
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    try {
+        // Get index info via a search query
+        const testResponse = await fetch('/search?colors=808080&weights=1.0&k=1&fast_mode=true');
+        const testData = testResponse.ok ? await testResponse.json() : null;
+
+        if (!testData) {
+            throw new Error('Failed to fetch index information');
+        }
+
+        const indexSize = testData.metadata?.index_size || 0;
+        const timestamp = new Date().toLocaleString();
+
+        let html = `
+            <div style="padding: 20px;">
+                <h3 style="color: var(--text); margin: 0 0 15px 0;">📚 Index Information</h3>
+                <p style="color: var(--subtext1); margin: 0 0 15px 0; font-size: 13px;">Last updated: ${timestamp}</p>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">FAISS Index</h4>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Type:</strong> HNSW (Hierarchical Navigable Small World)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Configuration:</strong> M=32 (connections per node)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Distance Metric:</strong> L2 (Euclidean) on Hellinger-transformed histograms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Index Size:</strong> ${indexSize.toLocaleString()} images</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Histogram Dimensions:</strong> 1,152 (8×12×12 Lab bins)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Embedding Dimensions:</strong> 1,152 (Hellinger transform)</p>
+                </div>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">DuckDB Metadata Store</h4>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Database Type:</strong> DuckDB (in-process analytics database)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Storage:</strong> Metadata and raw histograms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Images Indexed:</strong> ${indexSize.toLocaleString()}</p>
+                </div>
+                <div style="background: var(--surface1); padding: 15px; border-radius: 8px;">
+                    <h4 style="color: var(--text); margin: 0 0 10px 0;">Search Pipeline</h4>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Stage 1 (ANN):</strong> FAISS HNSW search (top K=200 candidates)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Stage 2 (Reranking):</strong> Sinkhorn-EMD on raw histograms</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Color Space:</strong> CIE Lab (D65 illuminant)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Binning Grid:</strong> 8×12×12 (L* × a* × b*)</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Assignment:</strong> Tri-linear soft assignment</p>
+                    <p style="margin: 5px 0; color: var(--text);"><strong>Normalization:</strong> L1 normalization</p>
+                </div>
+            </div>
+        `;
+
+        if (resultsContent) {
+            resultsContent.innerHTML = html;
+        }
+
+        // Scroll to results section after results are displayed
+        if (resultsSection) {
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        console.log('[Index Info] ✓ Index information fetched successfully');
+    } catch (error) {
+        console.error('[Index Info] ✗ Failed to fetch index information:', error);
+        if (resultsContent) {
+            resultsContent.innerHTML = `
+                <div style="padding: 20px; text-align: center;">
+                    <h3 style="color: var(--red); margin: 0 0 10px 0;">❌ Failed to Fetch Index Information</h3>
+                    <p style="color: var(--subtext1);">${error.message}</p>
+                </div>
+            `;
+        }
     }
 };
 

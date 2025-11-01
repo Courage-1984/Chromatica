@@ -191,4 +191,251 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     justify-content: center !important;
 }
 
+/* Fix Suggest Palette Modal positioning - OVERRIDE base .modal styles */
+#suggestPaletteModal.modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+    display: none !important;
+    overflow-y: auto !important;
+}
 
+/* When modal is shown - MUST override base .modal styles and the generic modal rule */
+#suggestPaletteModal.modal.modal-shown,
+#suggestPaletteModal.modal[style*="flex"],
+#suggestPaletteModal.modal[style*="display: flex"] {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    transform: none !important;
+}
+
+/* When modal is hidden - respect display: none */
+#suggestPaletteModal.modal[style*="display: none"],
+#suggestPaletteModal.modal[style*="display:none"] {
+    display: none !important;
+}
+
+/* Modal content - AGGRESSIVELY override base .modal-content from styles.css */
+#suggestPaletteModal.modal .modal-content,
+#suggestPaletteModal .modal-content {
+    position: relative !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    transform: none !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    max-width: 700px !important;
+    width: 90% !important;
+    align-self: center !important;
+}
+
+/* Double override for when modal is shown */
+#suggestPaletteModal.modal.modal-shown .modal-content,
+#suggestPaletteModal.modal[style*="flex"] .modal-content {
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Welcome Modal Styles */
+.welcome-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(17, 17, 27, 0.95) !important;
+    z-index: 2000 !important;
+    pointer-events: auto !important;
+}
+
+.welcome-modal[style*="display: flex"] {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    animation: fadeIn 0.3s ease-in-out !important;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.welcome-modal-content {
+    background: var(--base) !important;
+    border: 2px solid var(--surface1) !important;
+    border-radius: 16px !important;
+    padding: 40px !important;
+    width: 90% !important;
+    max-width: 700px !important;
+    max-height: 85vh !important;
+    overflow-y: auto !important;
+    position: relative !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6) !important;
+    animation: slideUp 0.4s ease-out !important;
+    pointer-events: auto !important;
+    z-index: 2001 !important;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.welcome-close {
+    position: absolute !important;
+    top: 20px !important;
+    right: 25px !important;
+    background: var(--red) !important;
+    color: #000000 !important;
+    border: none !important;
+    font-size: 36px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    line-height: 1 !important;
+    width: 45px !important;
+    height: 45px !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: all 0.2s !important;
+    z-index: 100 !important;
+    pointer-events: auto !important;
+}
+
+.welcome-close:hover {
+    background: var(--peach) !important;
+    transform: scale(1.1) !important;
+}
+
+.welcome-header {
+    text-align: center !important;
+    margin-bottom: 30px !important;
+    padding-bottom: 20px !important;
+    border-bottom: 2px solid var(--surface1) !important;
+}
+
+.welcome-body {
+    margin-bottom: 30px !important;
+}
+
+.welcome-section {
+    margin-bottom: 25px !important;
+    padding: 20px !important;
+    background: var(--surface0) !important;
+    border-radius: 12px !important;
+    border-left: 4px solid transparent !important;
+    transition: all 0.2s !important;
+}
+
+.welcome-section:nth-child(1) {
+    border-left-color: var(--blue) !important;
+}
+
+.welcome-section:nth-child(2) {
+    border-left-color: var(--green) !important;
+}
+
+.welcome-section:nth-child(3) {
+    border-left-color: var(--mauve) !important;
+}
+
+.welcome-section:hover {
+    background: var(--surface1) !important;
+    transform: translateX(5px) !important;
+}
+
+.welcome-actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-top: 30px !important;
+    padding-top: 25px !important;
+    border-top: 2px solid var(--surface1) !important;
+}
+
+.welcome-btn {
+    padding: 14px 32px !important;
+    border: none !important;
+    border-radius: 10px !important;
+    cursor: pointer !important;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    font-family: 'JetBrainsMono Nerd Font Mono', monospace !important;
+    transition: all 0.3s !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 2001 !important;
+    -webkit-tap-highlight-color: transparent !important;
+    touch-action: manipulation !important;
+}
+
+.welcome-btn-primary {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--mauve) 100%) !important;
+    color: #000000 !important;
+    min-width: 200px !important;
+}
+
+.welcome-btn-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.welcome-btn-primary:active {
+    transform: translateY(0) !important;
+}
+
+.welcome-actions label {
+    user-select: none !important;
+}
+
+.welcome-actions input[type="checkbox"] {
+    width: 18px !important;
+    height: 18px !important;
+    cursor: pointer !important;
+    accent-color: var(--green) !important;
+}

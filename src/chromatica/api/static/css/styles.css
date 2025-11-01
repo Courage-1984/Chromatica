@@ -3101,8 +3101,8 @@ div.preview-item:nth-child(1)>img:nth-child(1) {
     transform: scale(1.1) !important;
 }
 
-/* Generic modal rule - keep for other modals if needed, but not for detailsModal */
-.modal:not(#detailsModal):not(#imageModal) {
+/* Generic modal rule - keep for other modals if needed, but not for detailsModal, imageModal, or suggestPaletteModal */
+.modal:not(#detailsModal):not(#imageModal):not(#suggestPaletteModal) {
     display: none;
     position: fixed;
     top: 50%;
