@@ -4140,6 +4140,7 @@ window.current3DVisualization = {
     renderer: null,
     controls: null,
     animationId: null,
+    showcaseAnimationId: null,
     isPaused: false
 };
 
@@ -4153,6 +4154,10 @@ window.clear3DVisualization = function () {
     if (window.current3DVisualization.animationId) {
         cancelAnimationFrame(window.current3DVisualization.animationId);
         window.current3DVisualization.animationId = null;
+    }
+    if (window.current3DVisualization.showcaseAnimationId) {
+        cancelAnimationFrame(window.current3DVisualization.showcaseAnimationId);
+        window.current3DVisualization.showcaseAnimationId = null;
     }
 
     // Dispose of Three.js resources
@@ -4344,6 +4349,16 @@ window.toggle3DVisualization = function () {
 };
 
 window.reset3DVisualization = function () {
+    // Stop any running showcase animation
+    if (window.current3DVisualization.showcaseAnimationId) {
+        cancelAnimationFrame(window.current3DVisualization.showcaseAnimationId);
+        window.current3DVisualization.showcaseAnimationId = null;
+        // Restore controls if they were disabled during showcase
+        if (window.current3DVisualization.controls) {
+            window.current3DVisualization.controls.enabled = true;
+        }
+    }
+    
     if (window.current3DVisualization.camera && window.current3DVisualization.controls) {
         window.current3DVisualization.camera.position.set(150, 150, 150);
         window.current3DVisualization.camera.lookAt(0, 0, 0);
@@ -4359,6 +4374,206 @@ window.reset3DVisualization = function () {
 window.turnOff3DVisualization = function () {
     console.log('[3D Controls] Turning off visualization');
     window.clear3DVisualization();
+};
+
+/**
+ * Start automatic 3D showcase with smooth s-curve animations
+ * Creates a series of camera movements: zoom, pan, rotate, etc.
+ */
+window.startAuto3DShowcase = function () {
+    const viz = window.current3DVisualization;
+    if (!viz.camera || !viz.controls || !viz.scene) {
+        console.warn('[3D Showcase] No active 3D visualization');
+        return;
+    }
+
+    console.log('[3D Showcase] Starting automatic showcase...');
+
+    // Store original control state
+    const originalEnabled = viz.controls.enabled;
+    const originalAutoRotate = viz.controls.autoRotate || false;
+
+    // Reset view first
+    window.reset3DVisualization();
+
+    // Disable controls during showcase
+    viz.controls.enabled = false;
+    viz.isPaused = false;
+
+    // Stop any existing showcase animation
+    if (viz.showcaseAnimationId) {
+        cancelAnimationFrame(viz.showcaseAnimationId);
+    }
+
+    // Easing function: s-curve (ease-in-out cubic)
+    function easeInOutCubic(t) {
+        return t < 0.5
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    // Easing function: ease-in-out quintic (smoother s-curve)
+    function easeInOutQuint(t) {
+        return t < 0.5
+            ? 16 * t * t * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 5) / 2;
+    }
+
+    // Lerp function for smooth interpolation
+    function lerp(start, end, t) {
+        return start + (end - start) * t;
+    }
+
+    // Spherical coordinate helpers
+    function sphericalToCartesian(radius, theta, phi) {
+        const x = radius * Math.sin(phi) * Math.cos(theta);
+        const y = radius * Math.cos(phi);
+        const z = radius * Math.sin(phi) * Math.sin(theta);
+        return { x, y, z };
+    }
+
+    const camera = viz.camera;
+    const controls = viz.controls;
+    const renderer = viz.renderer;
+
+    let startTime = Date.now();
+    let currentSequence = 0;
+    let sequence5StartPos = null;
+
+    // Define showcase sequences (each takes ~3-4 seconds)
+    const sequences = [
+        // Sequence 0: Zoom in smoothly
+        {
+            duration: 3000,
+            update: (t, easeT) => {
+                const startPos = { x: 150, y: 150, z: 150 };
+                const endPos = { x: 50, y: 50, z: 50 };
+                camera.position.set(
+                    lerp(startPos.x, endPos.x, easeT),
+                    lerp(startPos.y, endPos.y, easeT),
+                    lerp(startPos.z, endPos.z, easeT)
+                );
+                camera.lookAt(0, 0, 0);
+            }
+        },
+        // Sequence 1: Zoom out and rotate
+        {
+            duration: 3500,
+            update: (t, easeT) => {
+                const radius = lerp(50, 250, easeT);
+                const theta = easeT * Math.PI * 2; // Full rotation
+                const phi = Math.PI / 3;
+                const pos = sphericalToCartesian(radius, theta, phi);
+                camera.position.set(pos.x, pos.y + 30, pos.z);
+                camera.lookAt(0, 0, 0);
+            }
+        },
+        // Sequence 2: Circular pan around
+        {
+            duration: 4000,
+            update: (t, easeT) => {
+                const radius = 200;
+                const theta = easeT * Math.PI * 2; // Full circle
+                const phi = lerp(Math.PI / 3, Math.PI / 6, Math.sin(easeT * Math.PI));
+                const pos = sphericalToCartesian(radius, theta, phi);
+                camera.position.set(pos.x, pos.y, pos.z);
+                camera.lookAt(0, 0, 0);
+            }
+        },
+        // Sequence 3: Spiral movement
+        {
+            duration: 4500,
+            update: (t, easeT) => {
+                const radius = lerp(200, 100, easeT);
+                const theta = easeT * Math.PI * 4; // Two full rotations
+                const phi = lerp(Math.PI / 6, Math.PI / 2.5, easeT);
+                const pos = sphericalToCartesian(radius, theta, phi);
+                camera.position.set(pos.x, pos.y + 20, pos.z);
+                camera.lookAt(0, 0, 0);
+            }
+        },
+        // Sequence 4: Side-to-side sweep
+        {
+            duration: 3500,
+            update: (t, easeT) => {
+                const sweep = Math.sin(easeT * Math.PI * 2) * 180;
+                camera.position.set(200, lerp(100, 200, Math.sin(easeT * Math.PI)), sweep);
+                camera.lookAt(0, 0, 0);
+            }
+        },
+        // Sequence 5: Zoom out and return to default
+        {
+            duration: 3000,
+            init: () => {
+                // Capture start position when sequence 5 begins
+                sequence5StartPos = camera.position.clone();
+            },
+            update: (t, easeT) => {
+                if (!sequence5StartPos) {
+                    sequence5StartPos = camera.position.clone();
+                }
+                const endPos = { x: 150, y: 150, z: 150 };
+                camera.position.set(
+                    lerp(sequence5StartPos.x, endPos.x, easeT),
+                    lerp(sequence5StartPos.y, endPos.y, easeT),
+                    lerp(sequence5StartPos.z, endPos.z, easeT)
+                );
+                camera.lookAt(0, 0, 0);
+                controls.target.set(0, 0, 0);
+            }
+        }
+    ];
+
+    function animateShowcase() {
+        const elapsed = Date.now() - startTime;
+        let sequenceStartTime = 0;
+        let lastSequence = -1;
+
+        // Find current sequence
+        for (let i = 0; i < sequences.length; i++) {
+            const seqStart = sequenceStartTime;
+            const seqEnd = sequenceStartTime + sequences[i].duration;
+            
+            if (elapsed < seqEnd) {
+                currentSequence = i;
+                
+                // Initialize sequence if we just entered it
+                if (i !== lastSequence && sequences[i].init) {
+                    sequences[i].init();
+                }
+                
+                const sequenceTime = (elapsed - seqStart) / sequences[i].duration;
+                const easedT = easeInOutQuint(Math.max(0, Math.min(1, sequenceTime)));
+                sequences[i].update(sequenceTime, easedT);
+                lastSequence = i;
+                break;
+            }
+            sequenceStartTime += sequences[i].duration;
+        }
+
+        // Update controls and render
+        if (controls) {
+            controls.update();
+        }
+        if (renderer && viz.scene && camera) {
+            renderer.render(viz.scene, camera);
+        }
+
+        // Continue if not finished
+        const totalDuration = sequences.reduce((sum, seq) => sum + seq.duration, 0);
+        if (elapsed < totalDuration) {
+            viz.showcaseAnimationId = requestAnimationFrame(animateShowcase);
+        } else {
+            // Showcase complete - restore controls
+            viz.controls.enabled = originalEnabled;
+            viz.controls.autoRotate = originalAutoRotate;
+            viz.showcaseAnimationId = null;
+            console.log('[3D Showcase] Showcase complete');
+        }
+    }
+
+    // Start the showcase animation
+    viz.showcaseAnimationId = requestAnimationFrame(animateShowcase);
 };
 
 // Show the suggest palette modal
