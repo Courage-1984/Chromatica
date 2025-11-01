@@ -635,6 +635,26 @@ h4 {
     margin-top: 28px;
 }
 
+/* Ensure all tool cards are properly constrained within the grid */
+.tools-grid>.tool-card {
+    grid-column: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    min-height: 320px !important;
+    height: auto !important;
+}
+
+/* Prevent tool cards from breaking out of grid */
+.tools-grid .tool-card {
+    overflow: hidden !important;
+}
+
+/* Ensure tool panels don't expand cards beyond grid */
+.tool-panel {
+    max-height: none !important;
+}
+
 /* Responsive grid for 6 tools: 3 columns on large, 2 on medium, 1 on small */
 @media (min-width: 1400px) {
     .tools-grid {
@@ -730,6 +750,9 @@ h4 {
     display: flex;
     flex-direction: column;
     min-height: 320px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
 }
 
 .tool-card:hover {
